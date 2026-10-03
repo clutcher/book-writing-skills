@@ -44,8 +44,6 @@ INDEX_RECORD_ENDINGS = (".json",)
 PLACES_SHOWN = 3
 
 
-def text_paths(config):
-    return [item.path for item in config.manuscript_files()] + thinking_paths(config)
 
 
 def places_by_key(paths, root):
@@ -115,7 +113,11 @@ def main(argv=None):
             return report.emit(arguments.format)
         listed = set(entry_keys(Path(config.sources.list).read_text(encoding="utf-8"),
                                 skip_fenced=True))
-        places = places_by_key(text_paths(config), config.root)
+        manuscript = [item.path for item in config.manuscript_files()]
+        if not manuscript:
+            report.skip(f"no manuscript files at {config.manuscript.dir}")
+            return report.emit(arguments.format)
+        places = places_by_key(manuscript + thinking_paths(config), config.root)
     except (ConfigError, OSError) as error:
         return tool_failed(str(error), TOOL)
     add_findings(report, places, listed, library_keys(config.sources.library),

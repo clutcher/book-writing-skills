@@ -80,31 +80,31 @@ Always derive `N = target leading / D`.
 
 ## 6. A worked example
 
-A Garamond revival with x-height 0.400 em, a 6.14 x 9.21 in trim and a text block of about
-4.6 in:
+An old-style serif with x-height 0.410 em and an average lowercase width of 0.450 em, on a
+6 x 9 in trim with a text block of about 4.51 in:
 
 ```
-apparent size at 11pt = 11 * (0.400 / 0.448) = 9.8pt      reads like 9.8pt
-s_nom                 = 11 * (0.448 / 0.400) = 12.3pt     -> 12pt
+apparent size at 10pt = 10 * (0.410 / 0.448) = 9.2pt      reads like 9.2pt
+s_nom                 = 10 * (0.448 / 0.410) = 10.9pt     -> 11pt
 ```
 
 | Size | Apparent | Measure | Leading L (formula) | D | N |
 |------|----------|---------|---------------------|---|---|
-| 11pt | 9.8pt | ~69 cpl | ~14.2pt | 13.6 | ~1.045 |
-| 11.5pt | 10.3pt | ~66 cpl (the ideal) | ~14.7pt | 13.8 | ~1.065 |
-| 12pt | 10.7pt | ~63 cpl | ~15.1pt | 14.5 | ~1.04 |
+| 10pt | 9.2pt | ~72 cpl | ~13.2pt | 12.0 | ~1.10 |
+| 10.5pt | 9.6pt | ~69 cpl | ~13.7pt | 12.6 | ~1.09 |
+| 11pt | 10.1pt | ~66 cpl (the ideal) | ~14.2pt | 13.6 | ~1.044 |
 
-Without the x-height damping (plain `k * size`), 12pt gives about 16pt leading
-(`\setstretch{1.10}`, a "12/16" setting) and 11pt about 14.4pt (`\setstretch{1.05}`); the
-damped formula sets a small-x-height face a little tighter, as rule 2 asks.
+Without the x-height damping (plain `k * size`), 11pt gives about 14.8pt leading
+(`\setstretch{1.09}`) and 10pt about 13.8pt (`\setstretch{1.15}`); the damped formula sets a
+small-x-height face a little tighter, as rule 2 asks.
 
-- 12pt fixes apparent size best and lands the measure near the ideal, at the cost of more pages
-  (and a wider cover spine).
-- 11pt keeps the page count low and accepts an optically small body; being a small-x-height face
+- 11pt fixes apparent size best and lands the measure on the 66 cpl ideal, at the cost of more
+  pages (and a wider cover spine).
+- 10pt keeps the page count low and accepts an optically small body; being a small-x-height face
   it takes less leading, not more.
-- 11.5pt closes about half the apparent-size gap and puts the measure closest to 66 cpl. It is not
-  a native `book` class size (the class accepts only 10, 11 or 12pt and falls back silently), so
-  the build uses the `fontsize` package, whose default baselineskip is 1.2 x size.
+- 10.5pt closes about half the apparent-size gap. It is not a native `book` class size (the class
+  accepts only 10, 11 or 12pt and falls back silently), so the build uses the `fontsize` package,
+  whose default baselineskip is 1.2 x size.
 
 Which size a book uses is the author's decision; record it in the book's `decisions.md`.
 
@@ -125,7 +125,7 @@ with a 20% larger x-height is matched to the body by fontspec's `MatchLowercase`
 ## 8. Assumptions
 
 - `x_ref = 0.448 em` stands for a normal book serif. Anything from 0.43 to 0.47 moves `s_nom` for
-  the example above between about 11.8 and 12.9pt; all round toward 12pt.
+  the example above between about 10.5 and 11.5pt, around 11pt.
 - The `\setstretch` conversion assumes the standard `book` class defaults (12.0 / 13.6 / 14.5pt).
 - A larger body size means more pages, higher print cost and a wider spine: a print-economics
   input to weigh with the typographic result.
@@ -138,5 +138,4 @@ with a 20% larger x-height is matched to the body by fontspec's `MatchLowercase`
 | Butterick, *Practical Typography* (line spacing, line length, point size) | the 120-145% band; small faces need less leading; measure targets |
 | MDN, `font-size-adjust` | optical normalisation |
 | pimpmytype.com (line length, line height) | leading grows with the measure |
-| TUG Font Catalogue, EB Garamond | a Garamond revival that renders small |
 | Hochuli, *Detail in Typography* | interline spacing at the detail level |

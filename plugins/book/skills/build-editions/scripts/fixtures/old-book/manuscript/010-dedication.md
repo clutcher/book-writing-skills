@@ -1,6 +1,6 @@
 ```{=latex}
 \newpage
 \begin{center}
-\textit{To the stars: \langtext{latin}{ad astra}.}
+\textit{For my teachers: \langtext{latin}{docendo discimus}.}
 \end{center}
 ```

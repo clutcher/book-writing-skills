@@ -303,6 +303,38 @@ class MatchAddedFilesTest(unittest.TestCase):
             self.assertIn("not an entry in the sources list", book.output)
             self.assertTrue(added.exists())
 
+    def test_shouldAskInsteadOfFilingWhenTheMatchingKeyIsNotAPlainFileName(self):
+        with AddedFilesBook() as book:
+            # given
+            listed = book.root / "sources" / "list.md"
+            listed.write_text(SOURCES_LIST.replace("### [Mil08]", "### [../../../outside/Mil08]"),
+                              encoding="utf-8")
+            added = book.add("download (3).pdf", MILLER_WITH_DOI)
+
+            # when
+            exit_code = book.run("--fix")
+
+            # then
+            self.assertEqual(exit_code, 0, book.output)
+            self.assertIn("ASK", book.output)
+            self.assertIn("not a plain file name", book.output)
+            self.assertTrue(added.exists())
+            self.assertFalse((book.root.parent / "outside").exists())
+
+    def test_shouldRefuseAChosenFileGivenAsAPathOutsideTheFolder(self):
+        with AddedFilesBook() as book:
+            # given
+            outside = book.root / "private-notes.txt"
+            outside.write_text("notes that are not a source\n", encoding="utf-8")
+
+            # when
+            exit_code = book.run("--file", "../../private-notes.txt", "--key", "Web21", "--fix")
+
+            # then
+            self.assertEqual(exit_code, 2)
+            self.assertIn("not a path", book.output)
+            self.assertTrue(outside.exists())
+
     def test_shouldSayThereIsNothingToAddWhenTheFolderHoldsOnlyTheNeededList(self):
         with AddedFilesBook() as book:
             # when

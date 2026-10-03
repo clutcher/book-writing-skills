@@ -37,10 +37,15 @@ Vale needs no local install: it runs in Docker from `tools.vale_image`. BibTeX n
   ([book-yaml.md](book-yaml.md)), so a build next year uses the same pandoc and TeX as today.
   Change a pin on purpose, in its own step, and rebuild to compare.
 - **Every container writes files as the calling user**, so nothing it writes into the book is
-  owned by root. On Linux the scripts pass `-u` with your user and group ids; Docker Desktop on
-  macOS and Windows does this by itself, so no `-u` is passed there. Folders are shared with
-  `--mount`, which takes a Windows path with its drive letter. A folder owned by root inside a book (a Vale package synced by
-  an older setup) cannot be moved or removed without `sudo`; `existing.py` reports it instead.
+  owned by root. On Linux and macOS the scripts pass `-u` with your user and group ids; on
+  Windows (no user ids) no `-u` is passed and Docker Desktop maps the owner by itself. The one
+  container that runs as root, the draft-protection step that installs qpdf, gives the PDF back
+  to you with `chown` before it ends.
+- **Folders are shared two ways.** The Python scripts use `--mount`, which keeps a Windows path
+  with its drive letter whole and quotes a path that has a comma in it. `build-book.sh` uses
+  `-v`. A Vale check sees the book read-only; only `vale sync` may write to it.
+- **A folder owned by root** inside a book (a Vale package synced by an older setup) cannot be
+  moved or removed without `sudo`; `existing.py` reports it instead.
 - **Images are pulled on first use** by the script that needs them. `--pull` fetches them all at
   once, which is worth doing before working offline. The pandoc image's TeX packages and fonts
   live in the Docker volume `tools.pandoc_volume`, which the build fills itself.

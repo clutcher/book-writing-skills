@@ -255,11 +255,15 @@ def main(argv=None):
         return tool_failed("no bibliography at %s" % references, TOOL)
     if skipped_for_missing(TOOL, references, "bibliography", args.format):
         return 0
+    report = CheckReport(TOOL, CLASSES)
+    manuscript = manuscript_paths(config, TOOL, args.target)
+    if not manuscript:
+        report.skip("no manuscript files at %s" % (args.target or config.manuscript.dir))
+        return report.emit(args.format)
     entries = parse_references(references)
-    counts, where = citation_counts(manuscript_paths(config, TOOL, args.target), set(entries))
+    counts, where = citation_counts(manuscript, set(entries))
     pairs, no_first_pub, unexplained, moving = analyse(entries, counts)
 
-    report = CheckReport(TOOL, CLASSES)
     for group in sorted(pairs, key=lambda g: entries[pairs[g][0]]["title"].lower()):
         keys = pairs[group]
         cited = ", ".join("%s %s cites=%d in %s" % (k, entries[k]["year"], counts.get(k, 0),

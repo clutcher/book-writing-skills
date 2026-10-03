@@ -2,20 +2,20 @@
 
 <!-- Back cover. Single source; the cover design reads this file. -->
 
-**Most home loaves come out flat. Good loaves come only from patient timing.**
+**Why does one loaf rise high while the next one sinks in the oven?**
 
-Two bakers look at the same dough and disagree about whether it is ready.
+A starter fed at the wrong hour and a dough rushed to the oven explain most of the loaves that fail at home.
 
-**This book gives you two habits, and they hold**\
-**from one loaf to a whole bakery.** The first is feeding the starter on time. The second is giving the dough a long, cool rise.
+**This book follows the dough through three stages,**\
+**from the first mix to the oven door.** It starts with a starter kept on a fixed timetable. It ends with a dough proved slowly in a cool kitchen.
 
 ## After reading, you will
 
 - Name what makes a dough collapse.
 - Know when a dough is ready to bake.
 
-> Recipes use rye and wheat. Seventy years of practice stand behind the habits.
+> Recipes use rye and wheat. 20 years of bakery notes stand behind the method.
 
 <!-- gap 48 -->
 
-> *The next loaf you bake will rise well.*
+> *Bake by the clock, not by luck.*

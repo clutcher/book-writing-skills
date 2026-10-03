@@ -17,7 +17,7 @@ from check_output import DEFECT, INFORMATIONAL, CheckReport, add_output_argument
 
 DESCRIPTION = """Run every sales-text script against the fixture book in tests/fixtures/book and
 compare the result with what it must be. Uses no real book and no network (the search
-suggestion script is only asked for --help).
+suggestion script is run only without --online, where it must not go online).
 
 The fixture is copied to a temporary folder first, so --fix runs never touch the skill.
 
@@ -60,11 +60,11 @@ COUNT_CASES = (
                                                "--set", "sales_text.back_cover=none.md"], 0,
      {}),
     ("sync, a retired phrase is back", ["sync-check.py", "--set",
-                                        'sales_text.retired_phrases=["two habits"]'], 1,
+                                        'sales_text.retired_phrases=["three stages"]'], 1,
      {"retired-phrase": 3, "quantity-wording": 1, "opening-echo": 2, "opening": 3,
       "bold-path": 2}),
     ("sync, a shared span changed", ["sync-check.py", "--set",
-                                     'sales_text.shared_spans=["from one loaf to every bakery"]'],
+                                     'sales_text.shared_spans=["from the first mix to the hot oven"]'],
      0, {"shared-span-missing": 3, "quantity-wording": 1, "opening-echo": 2, "opening": 3,
          "bold-path": 2}),
 )
@@ -167,6 +167,13 @@ def check_reports(book, report):
         report.add("copy diff", "case-passed", "word-level changes shown")
     else:
         report.add("copy diff", "case-failed", f"exit {diff.returncode}")
+    offline = run(["search-suggestions.py", "sourdough"], book)
+    if offline.returncode == 0 and "SKIPPED" in offline.stdout and "manual way" in offline.stdout:
+        report.add("search suggestions without --online", "case-passed",
+                   "no network; the manual way and SKIPPED are printed")
+    else:
+        report.add("search suggestions without --online", "case-failed",
+                   f"exit {offline.returncode}: {offline.stdout.strip()[:200]}")
 
 
 def build_parser():

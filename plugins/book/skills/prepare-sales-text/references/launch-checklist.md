@@ -40,6 +40,8 @@ reasons, and the answer goes to `decisions.md` either way so reviews stop raisin
       restraint.
 - [ ] Price recorded as a decision, with the category context.
 - [ ] A trademark-style search on the book's coined words before print.
+- [ ] KDP AI-content question answered truthfully (generated vs assisted) for text, cover
+      images and translations; see `store-limits.md`.
 
 ## After launch
 

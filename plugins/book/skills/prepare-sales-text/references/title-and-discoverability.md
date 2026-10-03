@@ -69,9 +69,6 @@ subtitle says what the reader gains; tested with target readers.
   For a coined main title, the subtitle carries the search.
 - **Thumbnail:** stores show covers at about 100-180 px; the title must read at that size (the
   `design-cover` skill checks this).
-- **Sales reality** (practitioner reports, OPINION, gathered for technical books; other fields
-  differ): 1,000 copies is good, 5,000 a big success; most self-published books sell under 250
-  copies in total.
 - **Amazon:** title plus subtitle under the store's combined limit; keywords that the title
   cannot hold go in the slots (`pick-keywords.md`); categories chosen from the live tree. Advice about
   an "A9/A10 algorithm", a "critical first 72 hours" and a "37% boost" for a keyword in the
@@ -82,15 +79,18 @@ subtitle says what the reader gains; tested with target readers.
   categories are BISAC and more than one can be chosen; the full text is indexed and can surface
   in web search, which favours non-fiction. Keep a book on the platform once published; pulling
   and re-listing resets what the store has learned.
-- **Across platforms:** main title short and unique; subtitle keyword-rich and benefit-led;
-  description with natural search words; title under about 60 characters so it shows whole in
-  web results.
+- **Across platforms:** main title short and unique; the subtitle carries the plain words a
+  buyer would search, exactly as printed on the cover, and says the benefit. KDP rejects
+  repeated generic keywords and promotional words ("bestselling", "free") in the title and
+  subtitle fields (`store-limits.md`, Metadata Guidelines). Description with natural search
+  words; title under about 60 characters so it shows whole in web results.
 
 ## What a non-fiction reader looks for
 
 Lasting topics over passing trends; broad principles over details that date quickly; a clear benefit in the
 title or subtitle; a professional cover; a strong table of contents, because the store shows it
-in the sample and structure decides selection (`marketing-evidence.md`, purchase drivers).
+in the sample, and one small study of students choosing library books suggests structure
+decides the choice (`marketing-evidence.md`, purchase drivers, MODERATE).
 
 ## Record the decision
 

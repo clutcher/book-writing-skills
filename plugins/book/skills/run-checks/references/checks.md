@@ -109,7 +109,7 @@ counts file (`rules/accepted-flags.json`, `<work.dir>/baselines/sources.json`) o
 
 ## Adding a check
 
-1. Write the check in the skill that owns its domain, to `lib/check_contract.md` (JSON report,
+1. Write the check in the skill that owns its domain, to `${CLAUDE_PLUGIN_ROOT}/lib/check_contract.md` (JSON report,
    exit codes, SKIPPED when a tool or feature is missing).
 2. Add one line to `CHECKS` in `scripts/check_list.py`, with its group, skill and needs.
 3. Add it to the tables above. `self-check.py` fails when a listed script does not exist.

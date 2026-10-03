@@ -1,15 +1,13 @@
 ---
 name: prepare-sales-text
 description: >-
-  Writes, reviews and keeps in step the words that sell a book - the back cover, the store
-  description (Amazon HTML, 4000 characters), the ebook description and the plain-text copy for
-  other stores - and chooses store keywords, categories and subject codes. Four modes: write
-  (the default), review, pick-keywords and export. Use when the author asks to write or improve
-  back-cover or store copy, a book description or blurb, to review or score the copy, to
-  compare versions, to choose or check keywords or categories, to check that the selling texts
-  agree, or to export a description or table of contents for a store. For the cover image use
-  design-cover; for the book's own prose use write-text. Stance: every claim on a selling
-  surface is one the book states and a fact-check has passed.
+  Writes, reviews and keeps in step the words that sell a book: the back cover, the Amazon store
+  description, the ebook description and the plain-text copy for other stores. Also chooses
+  store keywords, categories and subject codes, and exports store files. Use it when the author
+  asks to write, improve, review or score back-cover or store copy or a blurb, to choose or
+  check keywords or categories, or to export a description. For the cover image use design-
+  cover; for the book's own prose use write-text.
+argument-hint: "[write|review|pick-keywords|export]"
 ---
 
 # Prepare sales text
@@ -110,7 +108,7 @@ For the back cover, the store description or the ebook description.
 3. Choose the job of each surface (`references/listing.md`): the back cover is read by someone
    holding the book; the store description by a stranger comparing books; the ebook description
    is one condensed line. They share the thesis, not the wording, and they must not contradict.
-4. Draft. Apply `references/copy-review.md` cover rules C1-C3 and the decomposition test while
+4. Draft. Apply `references/copy-review.md` cover rules C1-C3 and the split test while
    drafting, and `references/rules-transfer.md` for which writing rules hold. Put the pitch in
    the first two sentences. Make the bold spans full sentences that read as the pitch alone.
 5. Measure the draft (`copy-stats.py DRAFT`) and check it (`store-description-check.py` for
@@ -121,7 +119,7 @@ For the back cover, the store description or the ebook description.
    decisions file (`decisions.py add`, dry run) for every option the author rejected with a reason.
 
 Back cover format: `templates/back-cover.md`; the markdown it may use is set by the `design-cover`
-skill (`skills/design-cover/references/design-file.md`, "The back-cover text"), because the cover design reads the
+skill (`${CLAUDE_PLUGIN_ROOT}/skills/design-cover/references/design-file.md`, "The back-cover text"), because the cover design reads the
 file. Store HTML: `templates/amazon.html`.
 
 ## Mode: review
@@ -132,7 +130,8 @@ Three kinds of review; run the one asked for, or all three in this order.
 
 1. Measure: `copy-stats.py --text` and `sync-check.py`. Their output is the only copy the
    reviewers see.
-2. Run the decomposition test first, then the ten lenses: Stranger, Skeptic, Connector, Buyer,
+2. Run the split test first (does a block split into two halves that each make sense alone?),
+   then the ten lenses: Stranger, Skeptic, Connector, Buyer,
    Marketer, Psychologist, Editor, Consistency Auditor, Non-Native Reader, Typographer of Text.
    One cold subagent per lens with `references/review-prompt.md`.
 3. Match every finding against the decisions (`decisions.py match "<finding>"`); merge
@@ -164,9 +163,9 @@ stopped (`run_folders.py latest prepare-sales-text review`), skipping lenses alr
 `run_folders.py record <run folder> <surface files> --fix`.
 
 **Findings become notes.** The report stays in the run folder. Every finding of a copy review
-or an impression review that needs the author becomes one note in the notes file named after its
-surface (the back cover, the store description, ...; a finding about all surfaces goes to `whole-book.md`),
-in the format of `${CLAUDE_PLUGIN_ROOT}/skills/revise-from-notes/references/note-format.md`, with
+or an impression review that needs the author becomes one note. It goes in the notes file named
+after its surface (the back cover, the store description, ...); a finding about all surfaces goes
+to `whole-book.md`. Each note is in the format of `${CLAUDE_PLUGIN_ROOT}/skills/revise-from-notes/references/note-format.md`, with
 `**From:** prepare-sales-text review, <YYYY-MM-DD HH:MM>`. Get ids with
 `python3 ${CLAUDE_PLUGIN_ROOT}/skills/revise-from-notes/scripts/open-notes.py next-id <file>`.
 
@@ -178,8 +177,11 @@ Reviews propose; the author decides, with revise-from-notes. Apply nothing witho
 
 1. Read the decisions index (`decisions.py index`) and the keywords file (`sales_text.keywords`; template in `templates/`).
 2. Keyword candidates come from what the title and subtitle do not say. Test each with
-   `search-suggestions.py WORD ...` and record the answer with the date line it prints. Count each candidate in
-   the manuscript; the interior is indexed, so agreement compounds.
+   `search-suggestions.py --online WORD ...` and record the answer with the date line it prints.
+   It calls an unofficial Amazon endpoint; you run it at your own discretion. Without `--online`
+   it prints the manual way: type each word into the Amazon search box, Books department, and
+   note the suggestions with the date. Count each candidate in the manuscript; the interior is
+   indexed, so agreement compounds.
 3. Store rules: 7 slots, about 50 characters each (observed, not documented), no title,
    subtitle or category words, no other authors or their books (prohibited, zero tolerance), no
    quotes, no subjective or time-sensitive words. Read both KDP pages.
@@ -230,7 +232,7 @@ Without `--fix` both print to the screen, for a look first.
 | `copy-diff.py OLD NEW` | write, review | word-level diff of two versions; `--markdown` bolds the changes |
 | `store-description-check.py` | write, review | store limit incl. tags, allowed tags, prohibited content |
 | `keyword-check.py` | pick-keywords | slots and categories against the store rules; chars used, new index words |
-| `search-suggestions.py WORD...` | pick-keywords | what the Amazon search box suggests (network) |
+| `search-suggestions.py --online WORD...` | pick-keywords | what the Amazon search box suggests (network, only with --online) |
 | `sync-check.py` | write | the mechanical part of cross-surface agreement |
 | `plain-description.py` | export | plain-text description |
 | `table-of-contents.py` | export | table of contents from the manuscript headings |
@@ -240,13 +242,13 @@ Without `--fix` both print to the screen, for a look first.
 
 | File | Holds |
 |---|---|
-| `references/copy-review.md` | the ten lenses, the decomposition test, cover rules C1-C3, output format |
+| `references/copy-review.md` | the ten lenses, the split test (its heading there: "the decomposition test"), cover rules C1-C3, output format |
 | `references/rules-transfer.md` | which writing rules apply harder, are suspended, or turn around on a cover |
 | `references/impression-review.md` | the six-question impression review |
 | `references/version-comparison.md` | comparing versions and choosing one |
 | `references/review-prompt.md` | the prompt for each cold lens subagent |
 | `references/listing.md` | surface map, buyer profile, reading the category, store description rules |
-| `references/store-limits.md` | store limits and rules with sources; what is folklore |
+| `references/store-limits.md` | store limits and rules with sources; common beliefs with no Amazon source |
 | `references/pick-keywords.md` | the keywords and categories method |
 | `references/title-and-discoverability.md` | choosing a title and subtitle; discoverability |
 | `references/marketing-evidence.md` | graded evidence on copy, purchase, reviews, persuasion, conversion tests |

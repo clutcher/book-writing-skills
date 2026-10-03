@@ -11,18 +11,27 @@ def calling_user_arguments():
     return ["-u", f"{os.getuid()}:{os.getgid()}"]
 
 
-def folder_mount(host_folder, inside_folder, read_only=False):
-    settings = f"type=bind,source={Path(host_folder).resolve()},target={inside_folder}"
+def mount_field(name, value):
+    field = f"{name}={value}"
+    if any(character in field for character in ',"\r\n'):
+        return '"' + field.replace('"', '""') + '"'
+    return field
+
+
+def mount_settings(mount_type, source, inside_folder, read_only):
+    fields = [mount_field("type", mount_type), mount_field("source", source),
+              mount_field("target", inside_folder)]
     if read_only:
-        settings += ",readonly"
-    return ["--mount", settings]
+        fields.append("readonly")
+    return ["--mount", ",".join(fields)]
+
+
+def folder_mount(host_folder, inside_folder, read_only=False):
+    return mount_settings("bind", Path(host_folder).resolve(), inside_folder, read_only)
 
 
 def volume_mount(volume_name, inside_folder, read_only=False):
-    settings = f"type=volume,source={volume_name},target={inside_folder}"
-    if read_only:
-        settings += ",readonly"
-    return ["--mount", settings]
+    return mount_settings("volume", volume_name, inside_folder, read_only)
 
 
 def path_inside(host_path, host_folder, inside_folder):

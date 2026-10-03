@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import os
 import shutil
 import sys
 import tempfile
@@ -8,12 +9,11 @@ from pathlib import Path
 TOOLS = Path(__file__).resolve().parent
 REPOSITORY = TOOLS.parent
 PLUGIN = REPOSITORY / "plugins" / "book"
-LEAK_WORDS = REPOSITORY / ".workspace" / "leak" / "leak-words.txt"
-SELF_CHECKS_TAKING_LEAK_WORDS = {"write-text"}
 sys.dont_write_bytecode = True
+os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 sys.path.insert(0, str(PLUGIN / "lib"))
 
-from command_runs import python_command, run_command
+from command_runs import python_command, quiet_environment, run_command
 
 STEP_TIME_LIMIT = 1800
 HELP_TIME_LIMIT = 60
@@ -24,14 +24,16 @@ repository:
   1. the lib tests
   2. every skill's self-check (a skill with no scripts/ folder needs none)
   3. every script answers --help with exit 0
-  4. the leak scan over every published file (.workspace/leak/leak-words.txt, allowed lines in
-     .workspace/leak/leak-allow.txt; private)
+  4. the leak scan over every published file (leak-words.txt and leak-allow.txt in the folder
+     $BOOK_LEAK_LIST names, else in .workspace/leak/; private; SKIPPED when neither exists)
   5. every file a SKILL.md, a reference or a script names exists (tools/named-files-check.py)
   6. every skill has the same shape: frontmatter, modes, calls through ${CLAUDE_PLUGIN_ROOT}
   7. no __pycache__ folder and no .pyc file inside plugins/
 
 --with-other-book also runs tools/other-book-check.py over every skill (slow).
-A shell script is run with bash; without bash its --help step is SKIPPED."""
+A shell script is run with bash; without bash its --help step is SKIPPED.
+Every command runs with PYTHONDONTWRITEBYTECODE=1, so step 7 never finds bytecode the check
+itself wrote."""
 
 EPILOG = "exit codes: 0 every step passed, 1 a step failed."
 
@@ -42,7 +44,7 @@ class Steps:
         self.failed = []
 
     def run(self, name, command, cwd=None):
-        result = run_command(command, STEP_TIME_LIMIT, cwd=cwd)
+        result = run_command(command, STEP_TIME_LIMIT, cwd=cwd, environment=quiet_environment())
         if result.passed:
             print(f"[OK]   {name}", flush=True)
             return
@@ -62,7 +64,7 @@ class Steps:
 
 def lib_tests(steps):
     print("== 1. lib tests ==")
-    steps.run("lib tests", [sys.executable, "-m", "unittest", "discover", "-s", "tests"],
+    steps.run("lib tests", [sys.executable, "-B", "-m", "unittest", "discover", "-s", "tests"],
               cwd=PLUGIN / "lib")
 
 
@@ -71,18 +73,11 @@ def skill_self_checks(steps):
     for skill in sorted(path for path in (PLUGIN / "skills").iterdir() if path.is_dir()):
         self_check = skill / "scripts" / "self-check.py"
         if self_check.is_file():
-            steps.run(f"{skill.name} self-check",
-                      python_command(self_check, *leak_words_arguments(skill)))
+            steps.run(f"{skill.name} self-check", python_command(self_check))
         elif not (skill / "scripts").is_dir():
             print(f"[OK]   {skill.name} has no scripts, so no self-check")
         else:
             steps.fail(f"{skill.name} has no scripts/self-check.py")
-
-
-def leak_words_arguments(skill):
-    if skill.name in SELF_CHECKS_TAKING_LEAK_WORDS and LEAK_WORDS.is_file():
-        return ["--leak-words", LEAK_WORDS]
-    return []
 
 
 def scripts_with_help():
@@ -113,7 +108,8 @@ def every_script_answers_help(steps):
                 skipped += 1
                 continue
             count += 1
-            if not run_command(command, HELP_TIME_LIMIT, cwd=empty_folder).passed:
+            if not run_command(command, HELP_TIME_LIMIT, cwd=empty_folder,
+                               environment=quiet_environment()).passed:
                 print(f"[FAIL] {script.relative_to(REPOSITORY).as_posix()} --help")
                 failures += 1
     if skipped:

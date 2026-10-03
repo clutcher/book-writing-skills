@@ -1,14 +1,13 @@
 ---
 name: review-text
 description: >-
-  Reviews the prose of a non-fiction book against the book's prose rules and voice, and writes
-  every finding as a note in the notes folder. Five modes, no default: for one chapter
-  common-problems, flow and all-problems; for the whole book consistency and hard-words. Use it
-  when the author asks to review, critique or check the writing of a chapter or of the book:
-  flow, transitions, structure, term drift, voice shifts, or words that block a new reader. To
-  change the text itself, use write-text; to answer the notes, use revise-from-notes; for the
-  argument and evidence, use review-ideas; for facts, quotes and numbers, use check-facts.
-  Stance: a review finds and explains, it never edits the manuscript.
+  Reviews the prose of a chapter or of the whole book against the book's prose rules and voice,
+  and writes every finding as a note. Use it when the author asks to review, critique or check
+  the writing: flow, transitions, structure, term drift, voice shifts, or words that block a new
+  reader. To change the text, use write-text; to answer the notes, use revise-from-notes; for
+  the argument, use review-ideas; for facts and quotes, use check-facts; to run the text scripts
+  only, use run-checks.
+argument-hint: "[common-problems|flow|all-problems|consistency|hard-words] [chapter]"
 ---
 
 # Review text
@@ -24,7 +23,7 @@ There is no default mode. With no mode named, ask which one, and say what each c
 
 | Mode | Reads | File | What it checks |
 |---|---|---|---|
-| `common-problems` | one chapter | `references/common-problems.md` | The six most frequent issues and the four cascades behind them. Start here for any chapter. |
+| `common-problems` | one chapter | `references/common-problems.md` | The six most frequent issues and the four root causes behind them. Start here for any chapter. |
 | `flow` | one chapter | `references/flow.md` | Topic-develop-conclude at every level, sentence and paragraph chains, transitions, openings, summaries, forward disclosure. |
 | `all-problems` | one chapter | `references/all-problems.md` | A full scan over every rule category, the most thorough chapter review. |
 | `consistency` | the whole book | `references/consistency.md` | Term drift, voice shifts, repeated examples, Part boundaries, references between chapters. |

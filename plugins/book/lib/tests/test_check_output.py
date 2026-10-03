@@ -1,9 +1,32 @@
+import io
+import os
+import subprocess
+import sys
 import unittest
 
-from support import NEW_BOOK, run_script
+from support import LIB, NEW_BOOK, TemporaryBook, run_script
 
 from check_output import (ADVISORY, DEFECT, EXIT_CLEAN, EXIT_DEFECTS, INFORMATIONAL,
                           CheckReport)
+
+CRASHING_CHECK = """import sys
+sys.path.insert(0, {lib!r})
+from check_output import run_main
+
+
+def main():
+    print("chapter 1 \u2500 checked")
+    return {{}}["manuscript"]
+
+
+run_main(main)
+"""
+
+
+def run_python_file(path, encoding):
+    return subprocess.run([sys.executable, str(path)], capture_output=True,
+                          env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1",
+                               "PYTHONIOENCODING": encoding})
 
 
 class CheckOutputTest(unittest.TestCase):
@@ -68,6 +91,38 @@ class CheckOutputTest(unittest.TestCase):
         # then
         self.assertFalse(skipped)
         self.assertIsNone(report.skipped_reason)
+
+    def test_should_name_the_skip_on_the_error_stream_when_format_is_tsv(self):
+        # given
+        report = CheckReport("glossary-check", {"undefined-term": DEFECT})
+        report.skip("the book has no glossary (rules/glossary.md not found)")
+        items, errors = io.StringIO(), io.StringIO()
+
+        # when
+        exit_code = report.emit("tsv", items, errors)
+
+        # then
+        self.assertEqual(exit_code, EXIT_CLEAN)
+        self.assertEqual(items.getvalue(), "")
+        self.assertEqual(errors.getvalue(),
+                         "SKIPPED   the book has no glossary (rules/glossary.md not found)\n")
+
+    def test_should_fail_as_a_tool_in_one_line_when_a_check_crashes(self):
+        with TemporaryBook() as folder:
+            # given
+            script = folder / "crashing-check.py"
+            script.write_text(CRASHING_CHECK.format(lib=str(LIB)), encoding="utf-8")
+
+            # when
+            result = run_python_file(script, "cp1252")
+
+        # then
+        errors = result.stderr.decode("utf-8")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("\u2500", result.stdout.decode("utf-8"))
+        self.assertNotIn("Traceback", errors)
+        self.assertEqual(len(errors.strip().splitlines()), 1)
+        self.assertIn("crashing-check: the tool failed: KeyError: 'manuscript'", errors)
 
     def test_should_print_help_when_asked(self):
         # then

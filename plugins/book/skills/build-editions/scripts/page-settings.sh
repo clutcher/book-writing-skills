@@ -44,6 +44,14 @@ validate_pages() {
     exit 1
 }
 
+validate_output_name() {
+    local name="$1" safe_name_pattern='^[A-Za-z0-9][A-Za-z0-9._-]*$'
+    [[ -z "$name" ]] && return 0
+    [[ "$name" =~ $safe_name_pattern ]] && return 0
+    echo "Error: --output must be a plain file name of letters, digits, '.', '_' and '-' (got '$name')"
+    exit 1
+}
+
 validate_font() { fail_unless_known "font" "$1" "$KNOWN_FONTS"; }
 validate_italic_font() { fail_unless_known "italic font" "$1" "$KNOWN_FONTS"; }
 validate_heading_font() { fail_unless_known "heading font" "$1" "$KNOWN_HEADING_FONTS"; }
@@ -123,7 +131,8 @@ get_pdf_pages() {
         qpdf --show-npages "$pdf" 2>/dev/null
     else
         docker run --rm --entrypoint sh -v "$(dirname "$pdf"):/work:ro" "$DOCKER_IMAGE" \
-            -c "apk add --no-cache qpdf >/dev/null 2>&1 && qpdf --show-npages /work/$(basename "$pdf")" 2>/dev/null
+            -c 'apk add --no-cache qpdf >/dev/null 2>&1 && qpdf --show-npages "/work/$1"' \
+            count-pages "$(basename "$pdf")" 2>/dev/null
     fi
 }
 

@@ -11,7 +11,7 @@ from pathlib import Path
 
 from book_config import ConfigError, add_config_arguments, config_from_args
 from check_output import (ADVISORY, DEFECT, INFORMATIONAL, CheckReport,
-                          add_output_arguments, tool_failed)
+                          add_output_arguments, run_main, tool_failed)
 
 DECIDED_NO_CHANGE = "DECIDED / no change"
 DECIDED_CHANGED = "DECIDED / changed"
@@ -44,7 +44,8 @@ STATUS_FROM_SECTION = "section"
 STATUS_FROM_TITLE = "title"
 
 ENTRY_ID = r"(?:[A-Za-z]+-?)?\d+(?:\.\d+)*"
-_ENTRY_HEADING = re.compile(rf"^##\s+({ENTRY_ID})\.?\s+(.*?)\s*$")
+_ENTRY_HEADING = re.compile(rf"^##\s+(?:\[({ENTRY_ID})\]|({ENTRY_ID})[.:]?)(?:\s+(.*?))?\s*$")
+_ID_LIKE_HEADING = re.compile(r"^##\s+\[?[A-Za-z]*-?\d")
 _SECTION_HEADING = re.compile(r"^#\s+(.*?)\s*$")
 _FIELD_LINE = re.compile(r"^-\s+\*\*([^*\n]+?)[:.]\*\*[ \t]*(.*)$")
 _FENCE = re.compile(r"^\s*```")
@@ -166,6 +167,8 @@ class Decisions:
     path: Path
     text: str
     entries: list
+    unread_headings: list = field(default_factory=list)
+    newline: str = "\n"
 
     @property
     def lines(self):
@@ -200,6 +203,7 @@ def parse_decisions(text, path=None):
     current_field = None
     fenced = False
     notes = []
+    unread_headings = []
 
     def close(end_index):
         nonlocal current, current_field, notes
@@ -228,17 +232,20 @@ def parse_decisions(text, path=None):
         heading = _ENTRY_HEADING.match(line)
         if heading:
             close(index)
-            title, title_status = _split_title_status(heading.group(2))
+            entry_id = heading.group(1) or heading.group(2)
+            title, title_status = _split_title_status(heading.group(3) or "")
             if title_status:
                 status, status_from = title_status, STATUS_FROM_TITLE
             elif section_status:
                 status, status_from = section_status, STATUS_FROM_SECTION
             else:
                 status, status_from = None, None
-            current = Decision(heading.group(1), title, status, status_from, number, number)
+            current = Decision(entry_id, title, status, status_from, number, number)
             continue
         if line.startswith("## "):
             close(index)
+            if _ID_LIKE_HEADING.match(line):
+                unread_headings.append((number, line.strip()))
             continue
         if current is None:
             continue
@@ -262,7 +269,7 @@ def parse_decisions(text, path=None):
             continue
         notes.append(line)
     close(len(lines))
-    return Decisions(Path(path) if path else None, text, entries)
+    return Decisions(Path(path) if path else None, text, entries, unread_headings)
 
 
 def _split_title_status(title):
@@ -282,13 +289,23 @@ def _split_title_status(title):
 
 def read_decisions(path):
     path = Path(path)
-    return parse_decisions(path.read_text(encoding="utf-8"), path)
+    with path.open(encoding="utf-8", newline="") as handle:
+        written = handle.read()
+    decisions = parse_decisions(written.replace("\r\n", "\n"), path)
+    decisions.newline = "\r\n" if "\r\n" in written else "\n"
+    return decisions
+
+
+def write_decisions_text(path, text, newline="\n"):
+    with Path(path).open("w", encoding="utf-8", newline="") as handle:
+        handle.write(text.replace("\r\n", "\n").replace("\n", newline))
 
 
 CHECK_CLASSES = {
     "no-status": DEFECT,
     "unknown-status": DEFECT,
     "duplicate-id": DEFECT,
+    "unread-heading": DEFECT,
     "missing-field": DEFECT,
     "empty-field": DEFECT,
     "unknown-field": DEFECT,
@@ -316,6 +333,10 @@ def required_fields(entry):
 def check_decisions(decisions, report):
     seen_ids = {}
     alias_owners = {}
+    for number, heading in decisions.unread_headings:
+        report.add(heading, "unread-heading",
+                   f"line {number}: looks like an entry but is not read as one; write it as "
+                   f"'## D-1 Short title'")
     for entry in decisions.entries:
         if entry.id in seen_ids:
             report.add(entry.id, "duplicate-id",
@@ -606,6 +627,12 @@ is described in the book plugin, `lib/decisions-format.md`.
 """
 
 
+def _default_decided(status):
+    if status.startswith("DECIDED"):
+        return datetime.date.today().isoformat()
+    return "None"
+
+
 def render_template():
     return with_current_index(TEMPLATE)
 
@@ -624,9 +651,9 @@ def _read_input_text(args):
     return " ".join(args.text)
 
 
-def _write_or_show(path, new_text, fix, summary):
+def _write_or_show(path, new_text, fix, summary, newline="\n"):
     if fix:
-        path.write_text(with_current_index(new_text), encoding="utf-8")
+        write_decisions_text(path, with_current_index(new_text), newline)
         print(f"{summary}; wrote {path}")
     else:
         print(f"{summary}; dry run, pass --fix to write {path}")
@@ -649,7 +676,7 @@ def _fix_status_lines_and_index(path, decisions):
     new_text, count = write_missing_status_lines(decisions)
     new_text = with_current_index(new_text)
     if new_text != decisions.text:
-        path.write_text(new_text, encoding="utf-8")
+        write_decisions_text(path, new_text, decisions.newline)
         rebuilt = "" if index_is_current(decisions) else "; rebuilt the index"
         sys.stderr.write(f"wrote {count} Status line(s) to {path}{rebuilt}\n")
     return read_decisions(path)
@@ -698,7 +725,8 @@ def main(argv=None):
     add.add_argument("--decision", required=True)
     add.add_argument("--change")
     add.add_argument("--why", help="required for a DECIDED status")
-    add.add_argument("--decided", help="default: today's date")
+    add.add_argument("--decided", help="default: today's date for a DECIDED status, "
+                                       "'None' for an OPEN one")
     add.add_argument("--refs")
     add.add_argument("--keywords", help="comma-separated words and phrases")
     add.add_argument("--fix", action="store_true", help="write the entry to the file")
@@ -794,13 +822,13 @@ def main(argv=None):
             FIELD_DECISION: args.decision,
             FIELD_CHANGE: args.change,
             FIELD_WHY: args.why,
-            FIELD_DECIDED: args.decided or datetime.date.today().isoformat(),
+            FIELD_DECIDED: args.decided or _default_decided(args.status),
             FIELD_REFS: args.refs,
             FIELD_KEYWORDS: args.keywords,
         })
         print(entry_text)
         return _write_or_show(path, append_entry(decisions.text, entry_text), args.fix,
-                              f"new entry {entry_id}")
+                              f"new entry {entry_id}", decisions.newline)
 
     if args.command == "set-status":
         try:
@@ -809,9 +837,10 @@ def main(argv=None):
             return tool_failed(f"no entry {args.id}", "decisions")
         entry = decisions.entry(args.id)
         return _write_or_show(path, new_text, args.fix,
-                              f"{args.id}: {entry.status or '-'} -> {args.status}")
+                              f"{args.id}: {entry.status or '-'} -> {args.status}",
+                              decisions.newline)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    run_main(main)

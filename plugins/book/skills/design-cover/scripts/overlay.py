@@ -36,7 +36,7 @@ CLASSES = {
 def main():
     parser = argparse.ArgumentParser(
         description='Check the wrap against the KDP cover template for this page count and '
-                    'write an overlay image (template at 55%% over the art). The overlay is for '
+                    'write an overlay image (template at 55% over the art). The overlay is for '
                     'looking only: never upload it. kdp-template.py --fix downloads the '
                     'template into cover.templates; --fetch here does the same first.')
     parser.add_argument('--art', help='the wrap PNG (default: <cover output>/png/wrap.png)')
@@ -52,7 +52,14 @@ def main():
     parser.add_argument('--trim', help='trim size, for example 6x9')
     parser.add_argument('--fetch', action='store_true',
                         help='first download the KDP template for this trim, page count and '
-                             'paper into the templates folder (writes files; needs the network)')
+                             'paper into the templates folder (writes files; needs the network). '
+                             'This calls an unofficial, undocumented Amazon endpoint (the one '
+                             'behind the cover calculator page); it may change or stop at any '
+                             'time. You run it at your own discretion and under Amazon\'s terms. '
+                             'The manual way: open https://kdp.amazon.com/en_US/cover-calculator, '
+                             'choose paperback, the trim size, the page count and the paper, '
+                             'download the template, unzip it and put the PNG and PDF in '
+                             'cover.templates')
     add_config_arguments(parser)
     add_output_arguments(parser)
     args = parser.parse_args()

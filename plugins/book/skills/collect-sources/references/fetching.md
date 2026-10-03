@@ -8,7 +8,7 @@ not confirmed. Every source found is fetched into the cache with `fetch.py`.
 
 1. **The cache.** Grep the list; if `Cached text` exists, read it. Where the extraction is
    ambiguous, open the cached original, not the network.
-2. **The list's URLs.** `fetch.py --keys <Key>` reads them. Skip entries marked `MANUAL FETCH
+2. **The list's URLs.** `fetch.py --keys <Key> --fix` fetches them. Skip entries marked `MANUAL FETCH
    REQUIRED` or `NO OPEN-ACCESS COPY` and report them as not read.
 3. **The bibliography**, to decode the key into authors and title before searching.
 4. **The book's own notes** (`thinking.argument`) and the quotes bank: faster than a web search, and they
@@ -23,28 +23,36 @@ not confirmed. Every source found is fetched into the cache with `fetch.py`.
    book's notes were written with a language model, the same training data may have produced both
    the claim and the "verification": that is circular, not a check.
 
-## When the fetch tool is refused, try curl
+## Download with fetch.py; a refusal is an answer
 
-A browsing tool can refuse a domain for its own safety reasons while a plain shell fetch works.
-`fetch.py` already runs the ladder (plain fetch, then HTTP/1.1 with a browser User-Agent) and
-keeps the bytes. The raw commands, for diagnosing a URL `fetch.py` reports as `failed` or
-`blocked`:
+`fetch.py --key <Key> --url <URL> --fix` is the normal way to download a source: it keeps the
+bytes, records where they came from, names itself in its User-Agent, and tries a plain request
+and then HTTP/1.1. Without `--fix` it only shows what it would fetch.
+
+If a fetch tool or a site refuses a request, respect it. Never work around a refusal, a paywall,
+a login, or a check meant for a person: do not switch tools, change the User-Agent, or retry in
+another way to get past it. Record the outcome `fetch.py` reports (`paywalled`, `blocked`) and
+move on to the open routes below, or hand the source to the author.
+
+To see why `fetch.py` reports a URL as `failed`, one plain request shows what the site answers:
 
 ```bash
-curl -sSL --max-time 45 -o out.pdf -w 'http=%{http_code} bytes=%{size_download} type=%{content_type}\n' <url>
-curl -sSL --http1.1 --max-time 45 -A 'Mozilla/5.0 (X11; Linux x86_64) Chrome/124.0' \
-  -o out.pdf -w 'http=%{http_code} bytes=%{size_download} type=%{content_type}\n' <url>
+curl -sSL --proto =http,https --max-time 45 -o out.pdf \
+  -w 'http=%{http_code} bytes=%{size_download} type=%{content_type}\n' <url>
 ```
 
 Check `bytes` and `type`: a 200 of a few kilobytes of `text/html` is a check page, not the paper.
-Whatever works goes back through `fetch.py --key <Key> --url <URL>` so the bytes are kept.
+A source enters the cache only through `fetch.py --fix` (with `--url`, or `--file` for a file the
+author downloaded), so its origin is recorded.
 
-## When curl is blocked too, look for the site's API
+## A site's own open API
 
-A small 403 titled "Just a moment..." is a bot check. Many sites have an open API that serves the
-same content: Wikipedia and other wikis (the MediaWiki API), the Internet Archive, many museum,
-library and archive collections, and question-and-answer sites (for example Stack Exchange).
-Look for the site's API page before giving up. A Wikipedia article, for example:
+Many sites publish an official, open API for the same content: Wikipedia and other wikis (the
+MediaWiki API), the Internet Archive, many museum, library and archive collections, and
+question-and-answer sites (for example Stack Exchange). When a source lives on such a site, its
+API is often the cleanest way to get the text. Use it only as the site offers it, within its
+published terms and rate limits; if the API also refuses or asks for a login, stop there. A
+Wikipedia article, for example:
 
 ```bash
 curl -sSL --compressed 'https://en.wikipedia.org/w/api.php?action=parse&page=<Title>&prop=wikitext&format=json'
@@ -58,8 +66,8 @@ for a source with no review those are the only quality signals. Note the licence
 ## When every index says closed, list the author's own files
 
 Unpaywall, Semantic Scholar and OpenAlex report only what they index, and none indexes an
-unlinked folder on a lab's web host. Enumerate the host through the Wayback CDX index and match
-file names:
+unlinked folder on a lab's web host. The Wayback Machine's public CDX index lists what it has
+archived from a host; match the file names:
 
 ```bash
 curl -s 'http://web.archive.org/cdx/search/cdx?url=<host>*&fl=original&collapse=urlkey&filter=original:.*\.pdf$&limit=3000'
@@ -73,8 +81,8 @@ ones; say so in the entry).
 
 ## When the wall is a check for a person, stop and hand it over
 
-Some hosts show a checkbox meant for a person; a real browser does not help. **Do not engineer
-around it**: no stealth plugins, no borrowed browser profiles. A pipeline that defeats checks for
+Some hosts show a checkbox meant for a person. **Do not engineer around it**: no stealth
+plugins, no borrowed browser profiles, no other tool tried to get past it. A pipeline that defeats checks for
 people is not one whose provenance anyone should trust. Free and fetchable are different things:
 a large open archive can still answer every script with a 403. Record which wall it is:
 

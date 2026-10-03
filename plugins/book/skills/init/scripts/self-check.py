@@ -5,8 +5,8 @@ new:      a dry run writes nothing; --fix writes the standard layout with no REA
           file, a CLAUDE.md that names every folder and all eleven skills, and a book that
           book_config.py check accepts with no unknown key; every skill's main checks run on
           it, and run-checks.py all runs with no FAIL and finds only the starter's open work
-          (the cover names generic fonts, the one-line description is not written), with
-          every facts check SKIPPED while the source banks are empty; build-book.sh --show-settings lists the starter files in order; a
+          (the one-line description is not written), with every facts check SKIPPED while
+          the source banks are empty except the two that read only the book's own text; build-book.sh --show-settings lists the starter files in order; a
           second --fix changes nothing; a book in an older layout is refused; the author's
           name is safe in LaTeX; .gitignore follows the book's own paths.
 old:      a copy of fixtures/old-book (settings in CLAUDE.md only) is drafted, dry-run moved
@@ -22,6 +22,8 @@ previous: a copy of fixtures/previous-book (book.yaml with author/, reasons/, vo
           moved the same way; book.yaml keeps its comments, uses only new key names, names
           the moved cover files, and gives the same metadata and coined terms; the book reads
           as the new layout; the same plan again does nothing.
+vale:     new.py --fix on a machine with no Docker copies the Vale style into the book,
+          says SKIPPED for `vale sync`, and still makes the book.
 tools:    toolchain-check.py answers in the check contract's shape.
 
 Everything runs in a temporary folder; no real book, no network, no Docker call except the
@@ -142,7 +144,9 @@ PREVIOUS_MOVES = {
     ".book/inbox/incoming/mill-ledgers.pdf": ".book/sources-to-add/mill-ledgers.pdf",
     ".book/baselines/sources.json": ".book/runs/<init run>/sources.json",
 }
-STARTER_OPEN_WORK = {"font-check.py", "sync-check.py"}
+STARTER_OPEN_WORK = {"sync-check.py"}
+STARTER_FONT_FAMILIES = ("DejaVu Serif", "DejaVu Sans")
+FACTS_CHECKS_WITHOUT_SOURCES = ("uncited-claim-check.py", "stale-argument-pointer-check.py")
 PREVIOUS_YAML_KEEPS = ("toc: false  # the manuscript carries its own contents page",
                        "  backup: ~/fixture-sources-backup",
                        "  cover_front: publishing/cover/final/front.png",
@@ -221,6 +225,12 @@ def new_cases(cases, work):
     index_files = [path.relative_to(book).as_posix() for path in book.rglob("*")
                    if path.name.lower() in ("readme.md", "index.md")]
     cases.expect("new: no folder gets a README or index file", not index_files, f"{index_files}")
+    allowed_tools = json.loads((book / ".claude" / "settings.json").read_text(
+        encoding="utf-8"))["permissions"]["allow"]
+    reads_outside_the_book = [rule for rule in allowed_tools
+                              if rule in ("Read", "Bash(cat:*)") or rule.startswith("Read(/")]
+    cases.expect("new: .claude/settings.json does not allow reading files outside the book",
+                 not reads_outside_the_book, f"{reads_outside_the_book}")
     claude_md = (book / "CLAUDE.md").read_text(encoding="utf-8")
     unnamed_skills = [name for name in SKILL_NAMES if f"`/book:{name}`" not in claude_md]
     cases.expect("new: CLAUDE.md names all eleven skills as /book: methods",
@@ -298,15 +308,29 @@ def run_checks_cases(cases, book):
     facts = run([sys.executable, str(RUN_CHECKS), "facts", "--no-report"], cwd=book)
     check_lines = [line for line in facts.stdout.splitlines() if line.strip().startswith("[")]
     not_skipped = [line.strip() for line in check_lines if not line.strip().startswith("[SKIP]")]
-    cases.expect("new: every facts check says SKIPPED while the source banks are empty",
-                 facts.returncode == 0 and check_lines and not not_skipped,
+    unexpected = [line for line in not_skipped
+                  if not line.startswith(tuple(f"[OK  ] {name}"
+                                               for name in FACTS_CHECKS_WITHOUT_SOURCES))]
+    cases.expect("new: every facts check that needs sources says SKIPPED while the source "
+                 "banks are empty, and the checks of the book's own text pass",
+                 facts.returncode == 0 and check_lines and not unexpected
+                 and len(not_skipped) == len(FACTS_CHECKS_WITHOUT_SOURCES),
                  "\n".join(not_skipped) + facts.stderr[-300:])
     every = run([sys.executable, str(RUN_CHECKS), "all", "--no-report", "--quiet"], cwd=book)
     found = [line.split("]", 1)[1].split()[0] for line in every.stdout.splitlines()
              if line.strip().startswith(("[FIND]", "[FAIL]"))]
+    open_work = STARTER_OPEN_WORK if starter_fonts_installed() else STARTER_OPEN_WORK | {
+        "font-check.py"}
     cases.expect("new: run-checks.py all finds only the starter's open work on the new book",
-                 every.returncode in (0, 1) and set(found) <= STARTER_OPEN_WORK,
+                 every.returncode in (0, 1) and set(found) <= open_work,
                  every.stdout[-600:] + every.stderr[-300:])
+
+
+def starter_fonts_installed():
+    if not shutil.which("fc-match"):
+        return False
+    return all(family in run(["fc-match", "-f", "%{family}", family]).stdout
+               for family in STARTER_FONT_FAMILIES)
 
 
 def new_path_cases(cases, work):
@@ -613,9 +637,9 @@ def previous_cases(cases, work):
     counts = json.loads(check.stdout or "{}").get("counts", {}) if check.stdout.startswith("{") else {}
     shown = json.loads(python(LIB / "book_config.py", "show", "--json", cwd=book).stdout or "{}")
     cases.expect("previous: the moved book reads as the new layout with no old or unknown key",
-                 check.returncode == 0 and shown.get("layout") == "new"
+                 check.returncode == 0 and shown.get("folder_layout") == "new"
                  and not {"old-key-name", "retired-key", "unknown-key"} & set(counts),
-                 f"{counts} layout {shown.get('layout')}")
+                 f"{counts} layout {shown.get('folder_layout')}")
     new_metadata, new_terms = metadata_and_terms(book)
     expected_metadata = old_metadata.replace("cover/final/", "publishing/cover/final/")
     cases.expect("previous: book.yaml gives the old metadata, with the moved cover paths",
@@ -645,6 +669,20 @@ def previous_cases(cases, work):
                  filled.stdout[-300:] + filled.stderr[-300:])
 
 
+def vale_cases(cases, work):
+    book = work / "no-docker-book"
+    folder_with_no_tools = work / "no-tools-on-path"
+    folder_with_no_tools.mkdir()
+    environment = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PATH=str(folder_with_no_tools))
+    made = subprocess.run([sys.executable, str(SCRIPTS / "new.py"), str(book), "--fix"],
+                          capture_output=True, encoding="utf-8", errors="replace",
+                          env=environment, timeout=300)
+    cases.expect("vale: new.py --fix copies the Vale style and says SKIPPED without Docker",
+                 made.returncode == 0 and (book / "rules" / "vale" / "PlainBook").is_dir()
+                 and "SKIPPED   docker not found" in made.stdout,
+                 made.stdout[-400:] + made.stderr[-300:])
+
+
 def tool_cases(cases, work):
     result = python(SCRIPTS / "toolchain-check.py", "--book", work, "--format", "json")
     try:
@@ -667,6 +705,7 @@ def main(argv=None):
         new_cases(cases, work)
         old_book_cases(cases, work)
         previous_cases(cases, work)
+        vale_cases(cases, work)
         tool_cases(cases, work)
     return report.emit(args.format)
 

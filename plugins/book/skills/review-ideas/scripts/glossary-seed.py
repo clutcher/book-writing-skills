@@ -256,6 +256,10 @@ def main(argv=None):
         return tool_failed(f"no section '{arguments.section}' in the glossary {glossary_path}", TOOL)
     forms = known_forms(parse_glossary(glossary_text, notation))
     manuscript = [item for item in config.manuscript_files() if item.kind != KIND_REFERENCES]
+    report = CheckReport(TOOL, CLASSES)
+    if not manuscript:
+        report.skip(f"no manuscript files at {config.manuscript.dir}")
+        return report.emit(arguments.format)
     missing = []
     if arguments.definitions_index:
         if not arguments.definitions_index.is_file():
@@ -264,7 +268,6 @@ def main(argv=None):
                                          arguments.term_column, arguments.location_column)
         missing = not_in_glossary(indexed, forms)
     unregistered = not_in_glossary(definition_sentences(manuscript), forms)
-    report = CheckReport(TOOL, CLASSES)
     for item in missing:
         report.add(item.term, "new-term", f"at {item.location or 'unknown location'}; "
                                           + ("added" if arguments.fix else "--fix adds it"))

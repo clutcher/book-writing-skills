@@ -192,7 +192,17 @@ def resolve_room(config, requested):
         raise RoomError(f"the room must be outside the book folder, not {room}")
     if room in book_root.parents:
         raise RoomError(f"the room must not contain the book folder: {room}")
+    if room.exists() and not room.is_dir():
+        raise RoomError(f"the room path is a file, not a folder: {room}")
+    if is_other_folder(room):
+        raise RoomError(f"{room} holds files but no {ROOM_STATE_FILE}, so clean-room.py setup "
+                        f"did not make it; choose an empty or new folder with --room")
     return room
+
+
+def is_other_folder(room):
+    return (room.is_dir() and not (room / ROOM_STATE_FILE).is_file()
+            and any(room.iterdir()))
 
 
 def resolve_sources_for_reviewer(config, args):

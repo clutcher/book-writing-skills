@@ -1,19 +1,13 @@
 ---
 name: init
 description: >-
-  Sets up a book for the book plugin. Mode `new` (the default) writes the standard layout:
-  book.yaml, CLAUDE.md, the starter manuscript, thinking/, rules/ (decisions, glossary, voice,
-  Vale), empty source banks, the starter cover and sales-text files, notes/ and
-  .book/, then checks which outside tools (Docker, Vale, tesseract, poppler, Java) are missing
-  and what each one turns off. Mode `existing` drafts a move plan for a book in an older layout
-  (settings in CLAUDE.md only, or the previous book.yaml layout with author/, reasons/,
-  vocabulary/, style/, marketing/), the author edits it, then every file moves byte for byte,
-  book.yaml is written or its keys renamed, and a report is written.
-  Use it to start a new book, set up a book folder, or move an older book repository into the
-  standard layout; to check the tools of a machine for a book already set up, use run-checks
-  setup. For the text, sources, editions and cover of a
-  book that is already set up, use the skill for that job. Stance: never overwrite, and move
-  first, change later.
+  Sets up a book for the book plugin: in a new folder it writes book.yaml, CLAUDE.md, the
+  folders and the starter files, then checks which outside tools are missing (Docker, tesseract,
+  poppler, Java and others) and what each one turns off. It also moves a book made with an
+  earlier version of these skills into the layout, after the author agrees to a plan. Use it to
+  start a new book or set up a book folder. To check the tools later, use run-checks; for text,
+  sources, editions or cover, use the skill for that job.
+argument-hint: "[new|existing] [folder]"
 ---
 
 # Init
@@ -41,14 +35,14 @@ writes only with `--fix`; each answers `--help`.
 
 | Mode | Say | What happens |
 |---|---|---|
-| `new` (default) | "start a new book", "set up a book in this folder", `/book:init new [folder]` | `new.py`: the starter book, then the tool check |
+| `new` (default) | "start a new book", "set up a book in this folder", `/book:init new [folder]` | `new.py`: the starter book, the Vale style, then the tool check |
 | `existing` | "move my book into the layout", "set up this existing repo", `/book:init existing [folder]` | `existing.py draft`, the author edits the plan, then `existing.py move` |
 
-With no mode: a folder with a `CLAUDE.md` holding `## Book Metadata` or with
-`review/*-registry.md` (the old layout), or a `book.yaml` beside `author/`, `reasons/`,
-`vocabulary/`, `style/`, `marketing/`, `reading-notes/` or `sources/files/` and no `thinking/`,
-`rules/`, `notes/` or `publishing/` (the previous layout), is an older book, so use `existing`;
-`new.py` refuses both. An empty or new folder uses `new`. Ask when unsure.
+With no mode, look at the folder. A folder with a `CLAUDE.md` holding `## Book Metadata` or
+with `review/*-registry.md` is in the old layout. A folder with a `book.yaml` beside `author/`,
+`reasons/`, `vocabulary/`, `style/`, `marketing/`, `reading-notes/` or `sources/files/` and no
+`thinking/`, `rules/`, `notes/` or `publishing/` is in the previous layout. Both are older
+books, so use `existing`; `new.py` refuses both. An empty or new folder uses `new`. Ask when unsure.
 
 `new` runs the tool check as its last step. For "check my tools" on a book already set up, use
 the run-checks skill (`run-checks.py setup`), which runs `toolchain-check.py` with the other setup
@@ -63,12 +57,13 @@ checks.
    python3 ${CLAUDE_PLUGIN_ROOT}/skills/init/scripts/new.py FOLDER --title "..." --author "..."
    ```
 3. **On approval, write:** the same command with `--fix`. Add `--pull-images` to pull the pinned
-   Docker images now instead of on first use.
-4. **Report** what was written and the tool check's `missing` lines with what each turns off.
+   Docker images now instead of on first use. After the files, `--fix` runs the write-text
+   skill's `vale-sync.py --fix`: it copies the Vale style into the book and runs `vale sync` in
+   Docker. Without Docker it says SKIPPED and the book is still made.
+4. **Report** what was written, the Vale sync result, and the tool check's `missing` lines with
+   what each turns off.
 5. **Point to the next steps:** fill in "What the book is" in `CLAUDE.md`, the author files in
-   `thinking/author/`, `book.description`; copy the Vale style into the book once with the write-text
-   skill's `vale-sync.py --fix` (until then its Vale check says SKIPPED); then the write-text
-   skill for the first chapter. `rules/voice.md` starts as a copy of the write-text skill's
+   `thinking/author/`, `book.description`; then the write-text skill for the first chapter. `rules/voice.md` starts as a copy of the write-text skill's
    default voice profile; the author edits it into their own voice. The starter cover
    (`publishing/cover/design.py`) and the sales-text files hold placeholders for the
    design-cover and prepare-sales-text skills to replace.
@@ -77,12 +72,13 @@ What it writes, and what each file is for: [references/book-layout.md](reference
 Every book.yaml key: [references/book-yaml.md](references/book-yaml.md). Only the keys a new
 author sets are in the new file; every path keeps its default.
 
-The new book passes `book_config.py check` with no unknown key, `build-book.sh
---show-settings`, and `run-checks.py all`. A check with nothing to read yet says `SKIPPED`
-with the reason and exits 0: every facts check while the source banks hold only their
-`## Entry format` headers and no file cites a `[Key]`; `definition-check.py` until the glossary
-has an entry; `term-density-check.py` until `terms.families` is set; Vale until
-`vale-sync.py --fix`; the cover checks that need a page count until the first build.
+The new book passes `book_config.py check` with no unknown key and `build-book.sh
+--show-settings`. `run-checks.py all` on a new book shows one expected `FIND`: the sync check
+of the selling texts reports `surface-missing` until the author writes `book.description`.
+A check with nothing to read yet says `SKIPPED` with the reason and exits 0: every facts check that needs sources while the source banks hold
+only their `## Entry format` headers and no file cites a `[Key]` (`uncited-claim-check.py` and
+`stale-argument-pointer-check.py` read only the book's own text, so they run); `definition-check.py` until the glossary
+has an entry; `term-density-check.py` until `terms.families` is set; Vale when Docker is missing; the cover checks that need a page count until the first build.
 
 Run in a folder that already has some of these files, `new.py` adds only what is missing (and
 the missing `.gitignore` lines, written for the paths this book's `book.yaml` sets). The
@@ -104,10 +100,10 @@ Full procedure, the plan format and the rules for moving text: [references/exist
    python3 $S/existing.py draft BOOK           # show
    python3 $S/existing.py draft BOOK --fix     # write BOOK/move-plan.tsv
    ```
-   The draft finds the older layout, old (settings in `CLAUDE.md`, `review/*-registry.md`,
+   The draft finds the older layout: old (settings in `CLAUDE.md`, `review/*-registry.md`,
    `review/sources/`, `research/`, `personal-review/`) or previous (`book.yaml` with `author/`,
    `reasons/`, `vocabulary/`, `style/`, `sources/files/`, `sources/origin/`, `cover/`,
-   `marketing/`, `reading-notes/`, `.book/inbox/`), and proposes a row for every path, with
+   `marketing/`, `reading-notes/`, `.book/inbox/`). It proposes a row for every path, with
    rules taken from the shared config reader. Walk the author through the rows that move or
    drop; the author edits the file.
 3. **Dry run the move and show it:** `python3 $S/existing.py move BOOK`. It prints the moves, the
@@ -161,8 +157,8 @@ The files `new.py` copies live in `${CLAUDE_PLUGIN_ROOT}/skills/init/templates/`
 `sources-list.md`, `sources-quotes.md`, `glossary.md` and `cover/design.py`. No folder gets a
 README or index file: the book's `CLAUDE.md` describes every folder and lists the eleven skills.
 The sales-text files come straight from the prepare-sales-text skill's `templates/`, and
-`rules/voice.md` from `skills/write-text/profiles/default.md`. Three templates copy text
+`rules/voice.md` from `${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/default.md`. Three templates copy text
 owned by another skill: the two bank
 headers copy the entry formats in the check-facts skill's references, and `templates/cover/design.py`
-follows "The smallest design" in `skills/design-cover/references/design-file.md`. When one changes,
+follows "The smallest design" in `${CLAUDE_PLUGIN_ROOT}/skills/design-cover/references/design-file.md`. When one changes,
 change the other with it.

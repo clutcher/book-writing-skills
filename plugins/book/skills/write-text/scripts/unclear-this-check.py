@@ -375,6 +375,10 @@ def run(argv):
         return tool_failed(str(error), "unclear-this-check")
     if not is_english_book(config):
         return skipped_for_language(config, "unclear-this-check")
+    if not files:
+        print(f"SKIPPED   no manuscript files at "
+              f"{', '.join(options.paths) or config.manuscript.dir}")
+        return 0
     return report(files, options.verbose, options.stats)
 
 
@@ -448,6 +452,12 @@ def self_test():
                            str(SAMPLE_BOOK / "manuscript" / "110-chapter-1.md")])
     if french_exit != 0 or not french.getvalue().startswith("SKIPPED"):
         failures.append("a French book was checked with English rules instead of SKIPPED")
+    mistyped = io.StringIO()
+    with contextlib.redirect_stdout(mistyped):
+        mistyped_exit = run(["--config", str(SAMPLE_BOOK / "book.yaml"),
+                             "--set", "manuscript.dir=manuscrpt"])
+    if mistyped_exit != 0 or not mistyped.getvalue().startswith("SKIPPED   no manuscript files"):
+        failures.append("a mistyped manuscript folder passed as clean instead of SKIPPED")
     for line in failures:
         print(f"FAIL  {line}")
     print(f"self-test: {'PASS' if not failures else str(len(failures)) + ' failure(s)'}")

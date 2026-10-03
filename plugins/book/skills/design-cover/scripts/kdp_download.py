@@ -1,5 +1,6 @@
 import io
 import json
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -7,10 +8,11 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'lib'))
+from user_agent import USER_AGENT
+
 CALCULATOR_PAGE = 'https://kdp.amazon.com/en_US/cover-calculator'
 DOWNLOAD_ADDRESS = 'https://kdp.amazon.com/en_US/cover-calculator/template-download'
-BROWSER_AGENT = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                 'Chrome/126.0 Safari/537.36')
 SUCCESS_EVENT = 'cover-template-download:success'
 WAIT_SECONDS = 60
 DEFAULT_PRINT_LOCALE = 'en_US'
@@ -112,7 +114,7 @@ def read_address(request):
 def ask_download_address(template_request):
     body = urllib.parse.urlencode(template_request.form()).encode('ascii')
     request = urllib.request.Request(DOWNLOAD_ADDRESS, data=body, method='POST', headers={
-        'User-Agent': BROWSER_AGENT,
+        'User-Agent': USER_AGENT,
         'X-Requested-With': 'XMLHttpRequest',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
     })
@@ -120,7 +122,7 @@ def ask_download_address(template_request):
 
 
 def download_archive(address):
-    return read_address(urllib.request.Request(address, headers={'User-Agent': BROWSER_AGENT}))
+    return read_address(urllib.request.Request(address, headers={'User-Agent': USER_AGENT}))
 
 
 def templates_in_archive(archive):

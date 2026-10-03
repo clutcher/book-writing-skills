@@ -1,16 +1,12 @@
 ---
 name: build-editions
 description: >-
-  Builds a book from its markdown manuscript into three editions: a print-ready PDF for an
-  Amazon KDP paperback, a digital PDF for screens, and a checked EPUB 3 for ebook stores and
-  Kindle. Handles fonts, page size and margins, chapter and section styles, draft marks,
-  protected reviewer copies, copies that highlight what changed since a git commit, and ebook
-  metadata. Modes all (the default), print, digital and epub; flags --final, --reviewer-copy NAME
-  and --changes-since COMMIT. Use it when the author asks to build, make or export the book, a
-  PDF, an EPUB or a Kindle file, a draft or reviewer copy, one chapter as PDF, or a copy that
-  shows the changes since the last review. For the cover files use design-cover; for the store
-  texts use prepare-sales-text. Stance: drafts while working, the final files only when asked,
-  and a step that did not run says so.
+  Builds the book from its Markdown manuscript into a print PDF for a KDP paperback, a PDF for
+  screens and a checked EPUB 3 for ebook stores and Kindle. Use it when the author asks to
+  build, make or export the book, a PDF, an EPUB or a Kindle file, a draft or a reviewer copy,
+  one chapter as PDF, or a copy that shows what changed since the last review. For the cover
+  files use design-cover; for the store texts use prepare-sales-text.
+argument-hint: "[all|print|digital|epub] [--final|--reviewer-copy NAME|--changes-since COMMIT]"
 ---
 
 # Build editions
@@ -76,10 +72,10 @@ and an old layout (`output/`) both work without options.
 ## Editions
 
 The editions share nothing but their inputs, so `--edition all` builds them in parallel; the
-total time is the time of the slowest one, not the sum. Two things make this safe: the TeX Live
-volume is filled once **before** the parallel builds start (two installs into one volume at the
-same time would break it), and each edition's output goes to its own log, printed whole in a fixed order
-(three LaTeX logs mixed together cannot be read exactly when something fails). `--sequential`
+total time is the time of the slowest one, not the sum. Two things make this safe. First, the TeX
+Live volume is filled once **before** the parallel builds start: two installs into one volume at
+the same time would break it. Second, each edition's output goes to its own log, printed whole
+in a fixed order: three LaTeX logs mixed together cannot be read when something fails. `--sequential`
 builds one at a time and shows each log live, which helps when you debug a failure. One
 edition failing never stops the others; failures are listed again at the very end.
 
@@ -112,8 +108,8 @@ ID) and the copyright notice.
 
 Text such as `TO BE ASSIGNED` (for example an ISBN on the copyright page) never stops a build.
 The build always writes its file, then lists every place the placeholder still appears, as
-`file:line` with the line itself, **after** the last `Done!` line, because a warning in the
-middle of hundreds of build lines is a warning nobody reads. A final build is told plainly that
+`file:line` with the line itself, **after** the last `Done!` line. A warning in the middle of
+hundreds of build lines is a warning nobody reads. A final build is told plainly that
 the file is not fit to publish; a draft gets the same list. An all-editions run prints one list
 at the end for all three files. The text searched for is `book.placeholder_text`
 (default `TO BE ASSIGNED`).
@@ -183,7 +179,7 @@ handling and limits: [changes-since.md](references/changes-since.md).
 | `epub-check.py` | runs epubcheck; SKIPPED without java |
 | `diff-preprocess.py` | marks changed text for a `--changes-since` copy |
 | `code-font-check.py` | lists characters in the manuscript's code that the bundled EPUB code font lacks |
-| `key-pattern-check.py` | checks that the citation-link filter reads keys the same way `lib/citation_key.py` does |
+| `key-pattern-check.py` | checks that the citation-link filter reads keys the same way `${CLAUDE_PLUGIN_ROOT}/lib/citation_key.py` does |
 | `self-check.py` | runs every script's self-test on the fixtures in `scripts/fixtures/`; needs no Docker (the steps that read settings through `build-book.sh` need bash) |
 
 Every Python script has `--help` and `--self-test`; those that read the book take

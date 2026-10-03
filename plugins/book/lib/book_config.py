@@ -10,6 +10,8 @@ sys.dont_write_bytecode = True
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from check_output import CheckReport, run_main
+
 CONFIG_FILE_NAMES = ("book.yaml", "book.yml", "book.json")
 FALLBACK_FILE_NAME = "CLAUDE.md"
 METADATA_HEADING = "## Book Metadata"
@@ -22,7 +24,7 @@ LAYOUT_NEW = "new"
 LAYOUT_PREVIOUS = "previous"
 LAYOUT_OLD = "old"
 LAYOUTS = (LAYOUT_NEW, LAYOUT_PREVIOUS, LAYOUT_OLD)
-LAYOUT_KEY = "layout"
+LAYOUT_KEY = "folder_layout"
 NEW_LAYOUT_SIGNS = ("thinking", "rules", "notes", "publishing")
 PREVIOUS_LAYOUT_SIGNS = ("decisions.md", "vocabulary", "reading-notes", "reasons", "author",
                          "style", "marketing", "sources/files", "sources/origin")
@@ -360,6 +362,10 @@ class ConfigError(Exception):
 _NUMBER_INT = re.compile(r"^[-+]?\d+$")
 _NUMBER_FLOAT = re.compile(r"^[-+]?(\d+\.\d*|\.\d+|\d+)([eE][-+]?\d+)?$")
 _BLOCK_STRING = re.compile(r"^([|>])([-+]?)$")
+_DOCUMENT_MARKERS = ("---", "...")
+_UNSET_TEXT = ("", "~", "null")
+_TEXT_KEYS = frozenset(("title", "subtitle", "author", "publisher", "epub_identifier",
+                        "description", "accessibility_summary"))
 _ESCAPES = {"n": "\n", "t": "\t", '"': '"', "\\": "\\", "/": "/", "0": "\0", "r": "\r"}
 
 
@@ -388,9 +394,6 @@ class _YamlReader:
                 continue
             if content.strip() == "---" and not self.lines:
                 continue
-            if content.strip() in ("---", "..."):
-                raise ConfigError(f"line {number}: several documents in one file "
-                                  f"are not supported")
             self.lines.append(_Line(number, len(content) - len(content.lstrip()),
                                     content.strip()))
         self.position = 0
@@ -401,6 +404,7 @@ class _YamlReader:
         value = self.block(self.lines[0].indent)
         if self.position < len(self.lines):
             line = self.lines[self.position]
+            _refuse_document_marker(line)
             raise ConfigError(f"line {line.number}: unexpected indentation")
         return value
 
@@ -416,6 +420,7 @@ class _YamlReader:
             line = self.lines[self.position]
             if line.indent < indent:
                 break
+            _refuse_document_marker(line)
             if line.indent > indent:
                 raise ConfigError(f"line {line.number}: unexpected indentation")
             if _is_list_item(line.text):
@@ -424,7 +429,7 @@ class _YamlReader:
             if key in result:
                 raise ConfigError(f"line {line.number}: key {key!r} appears twice")
             self.position += 1
-            result[key] = self.value_after_key(rest, indent, line)
+            result[key] = self.value_after_key(rest, indent, line, key in _TEXT_KEYS)
         return result
 
     def sequence(self, indent):
@@ -452,9 +457,9 @@ class _YamlReader:
                 result.append(self.scalar_or_block_string(item_text, indent, line))
         return result
 
-    def value_after_key(self, rest, indent, line):
+    def value_after_key(self, rest, indent, line, keep_plain_text=False):
         if rest:
-            return self.scalar_or_block_string(rest, indent, line)
+            return self.scalar_or_block_string(rest, indent, line, keep_plain_text)
         return self.nested_or_none(indent, line, allow_same_indent_list=True)
 
     def nested_or_none(self, indent, line, allow_same_indent_list):
@@ -468,11 +473,11 @@ class _YamlReader:
             return self.sequence(indent)
         return None
 
-    def scalar_or_block_string(self, text, indent, line):
+    def scalar_or_block_string(self, text, indent, line, keep_plain_text=False):
         block = _BLOCK_STRING.match(text)
         if block:
             return self.block_string(block.group(1), block.group(2), indent, line)
-        return parse_scalar(text, line.number)
+        return parse_scalar(text, line.number, keep_plain_text)
 
     def block_string(self, style, chomping, indent, line):
         start = line.number
@@ -504,6 +509,12 @@ class _YamlReader:
         if chomping == "+":
             return joined + "\n" * (1 + trailing_blank)
         return joined + "\n"
+
+
+def _refuse_document_marker(line):
+    if line.text in _DOCUMENT_MARKERS:
+        raise ConfigError(f"line {line.number}: several documents in one file "
+                          f"are not supported")
 
 
 def _fold(lines):
@@ -566,21 +577,39 @@ def _closing_quote(text, start):
 
 def _strip_comment(raw):
     index = 0
+    flow_depth = 0
     while index < len(raw):
         character = raw[index]
-        if character in ("'", '"') and (index == 0 or raw[index - 1] in " \t[{,:-"):
+        before = raw[:index]
+        if character in ("'", '"') and _opens_quoted_scalar(before, flow_depth):
             end = _closing_quote(raw, index)
             if end is None:
                 return raw
             index = end + 1
             continue
-        if character == "#" and (index == 0 or raw[index - 1] in " \t"):
+        if character in "[{" and (flow_depth or _starts_value(before)):
+            flow_depth += 1
+        elif character in "]}" and flow_depth:
+            flow_depth -= 1
+        elif character == "#" and (index == 0 or raw[index - 1] in " \t"):
             return raw[:index]
         index += 1
     return raw
 
 
-def parse_scalar(text, line_number=0):
+def _starts_value(before):
+    before = before.rstrip()
+    return (not before or before.endswith(":")
+            or re.fullmatch(r"\s*-(?:\s+-)*", before) is not None)
+
+
+def _opens_quoted_scalar(before, flow_depth):
+    if _starts_value(before):
+        return True
+    return flow_depth > 0 and before.rstrip().endswith(("[", "{", ","))
+
+
+def parse_scalar(text, line_number=0, keep_plain_text=False):
     text = text.strip()
     if text.startswith(("[", "{")):
         value, end = _parse_flow(text, 0, line_number)
@@ -596,6 +625,8 @@ def parse_scalar(text, line_number=0):
     if text[:1] in ("&", "*", "!", "%", "@", "`"):
         raise ConfigError(f"line {line_number}: {text[:1]!r} starts an anchor, alias, tag "
                           f"or reserved form, which this reader does not support; quote it")
+    if keep_plain_text and text not in _UNSET_TEXT:
+        return text
     return _plain_scalar(text)
 
 
@@ -712,7 +743,7 @@ def read_metadata_section(text):
         if not found:
             continue
         key = normalise_metadata_key(found.group(1))
-        value = re.sub(r"\s+#.*$", "", found.group(2)).strip().rstrip("\r")
+        value = re.sub(r"\s+#(?:\s.*)?$", "", found.group(2)).strip().rstrip("\r")
         metadata.setdefault(key, value)
     return metadata
 
@@ -763,7 +794,7 @@ def read_terms_section(text):
 
 
 def settings_from_fallback_file(path):
-    text = Path(path).read_text(encoding="utf-8")
+    text = Path(path).read_text(encoding="utf-8-sig")
     settings = {}
     metadata = read_metadata_section(text)
     for metadata_key, dotted_key in METADATA_KEYS_WITH_OWN_HOME.items():
@@ -780,7 +811,7 @@ def settings_from_fallback_file(path):
 
 def has_fallback_sections(path):
     try:
-        lines = Path(path).read_text(encoding="utf-8").split("\n")
+        lines = Path(path).read_text(encoding="utf-8-sig").split("\n")
     except OSError:
         return False
     stripped = {line.rstrip() for line in lines}
@@ -815,9 +846,11 @@ def _folders_upwards(start):
 def read_config_file(path):
     path = Path(path)
     try:
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8-sig")
     except OSError as error:
         raise ConfigError(f"{path}: {error.strerror}") from error
+    except UnicodeDecodeError as error:
+        raise ConfigError(f"{path}: not UTF-8 text ({error.reason})") from error
     try:
         if path.suffix == ".json":
             data = json.loads(text) if text.strip() else {}
@@ -832,6 +865,33 @@ def read_config_file(path):
     if not isinstance(data, dict):
         raise ConfigError(f"{path}: the top level must be a mapping")
     return data
+
+
+def sections_as_mappings(settings, defaults=None, prefix=""):
+    defaults = _merge(SHARED_DEFAULTS, _all_layout_defaults()) if defaults is None else defaults
+    shaped = {}
+    for key, value in settings.items():
+        default = defaults.get(key)
+        dotted = f"{prefix}{key}"
+        if not isinstance(default, dict) or dotted == "work" and isinstance(value, str):
+            shaped[key] = value
+        elif value is None:
+            continue
+        elif not isinstance(value, dict):
+            raise ConfigError(f"'{dotted}' must hold keys (one per line below it), "
+                              f"not {value!r}")
+        elif key in ("book", "watch_words"):
+            shaped[key] = value
+        else:
+            shaped[key] = sections_as_mappings(value, default, dotted + ".")
+    return shaped
+
+
+def _all_layout_defaults():
+    combined = {}
+    for defaults in LAYOUT_DEFAULTS.values():
+        combined = _merge(combined, defaults)
+    return combined
 
 
 def _merge(base, layer):
@@ -940,7 +1000,15 @@ def parse_override(text):
     key = key.strip()
     if key.startswith("book."):
         key = "book." + normalise_metadata_key(key[len("book."):])
-    return canonical_key(key), parse_scalar(value) if value.strip() else None
+    if not value.strip():
+        return canonical_key(key), None
+    keep_plain_text = key.rsplit(".", 1)[-1] in _TEXT_KEYS
+    try:
+        return canonical_key(key), parse_scalar(value, keep_plain_text=keep_plain_text)
+    except ConfigError as error:
+        reason = re.sub(r"^line \d+: ", "", str(error))
+        raise ConfigError(f"--set {key}: {reason}; to pass it as plain text, quote the value, "
+                          f"e.g. --set '{key}=\"{value.strip()}\"'") from error
 
 
 def _known_keys(tree, prefix=""):
@@ -1336,7 +1404,7 @@ def _build(settings, root, config_file, fallback_file, source, layout, key_origi
         manuscript=ManuscriptSettings(
             dir=path("manuscript.dir"),
             order=manuscript.get("order") or "natural",
-            files=list(manuscript.get("files") or []),
+            files=_as_list(manuscript.get("files")),
             chapter_pattern=manuscript.get("chapter_pattern") or CHAPTER_PATTERN,
             part_pattern=manuscript.get("part_pattern") or PART_PATTERN,
             front_matter=_as_list(manuscript.get("front_matter")),
@@ -1344,7 +1412,7 @@ def _build(settings, root, config_file, fallback_file, source, layout, key_origi
             references=path("manuscript.references"),
             summary_heading=manuscript.get("summary_heading") or "Summary",
         ),
-        terms=Terms(families, [str(c).lower() for c in terms.get("compounds") or []],
+        terms=Terms(families, [str(c).lower() for c in _as_list(terms.get("compounds"))],
                     dict(terms.get("watch_words") or {})),
         thinking=ThinkingSettings(**{name: path(f"thinking.{name}") for name in THINKING_FILES}),
         rules=RulesSettings(**{name: path(f"rules.{name}") for name in RULES_FILES}),
@@ -1370,7 +1438,7 @@ def _build(settings, root, config_file, fallback_file, source, layout, key_origi
             output=path("cover.output") or work.output / COVER_OUTPUT_FOLDER,
             templates=path("cover.templates") or work.caches / COVER_TEMPLATES_FOLDER,
             shelf_screenshots=path("cover.shelf_screenshots") or work.caches / COVER_SHELF_FOLDER,
-            cmyk_limit=float(cover.get("cmyk_limit") or SHARED_DEFAULTS["cover"]["cmyk_limit"]),
+            cmyk_limit=_cmyk_limit(cover.get("cmyk_limit")),
             icc=path("cover.icc"),
             srgb_profile=path("cover.srgb_profile"),
         ),
@@ -1392,6 +1460,19 @@ def _build(settings, root, config_file, fallback_file, source, layout, key_origi
         settings=settings,
         key_origins=key_origins,
     )
+
+
+def _cmyk_limit(value):
+    if value is None or value == "":
+        return float(SHARED_DEFAULTS["cover"]["cmyk_limit"])
+    try:
+        limit = float(str(value).strip().rstrip("%").strip())
+    except ValueError:
+        limit = None
+    if limit is None or not 0 < limit <= 100:
+        raise ConfigError(f"cover.cmyk_limit must be a percent above 0 and at most 100, "
+                          f"such as 88, not {value!r}")
+    return limit
 
 
 def _cover_default(folder, layout, name):
@@ -1475,7 +1556,7 @@ def load_config(config=None, start=None, overrides=None):
     else:
         root = Path(start or Path.cwd()).resolve()
 
-    file_layer = with_new_key_names(read_config_file(config_file)) if config_file else {}
+    file_layer = _config_file_layer(config_file) if config_file else {}
     layout = detect_layout(root, config_file, fallback_file, file_layer.get(LAYOUT_KEY))
     settings = _merge(SHARED_DEFAULTS, LAYOUT_DEFAULTS[layout])
     origins = {}
@@ -1499,6 +1580,15 @@ def load_config(config=None, start=None, overrides=None):
     settings = _normalise_shapes(settings)
 
     return _build(settings, root, config_file, fallback_file, source, layout, origins)
+
+
+def _config_file_layer(config_file):
+    try:
+        return sections_as_mappings(with_new_key_names(read_config_file(config_file)))
+    except ConfigError as error:
+        if str(error).startswith(str(config_file)):
+            raise
+        raise ConfigError(f"{config_file}: {error}") from error
 
 
 def detect_layout(root, config_file, fallback_file, chosen=None):
@@ -1626,7 +1716,7 @@ def shell_paths(config):
         f"BOOK_CONFIG_FILE={shlex.quote(_plain(config.config_file))}",
         f"BOOK_FALLBACK_FILE={shlex.quote(_plain(config.fallback_file))}",
         f"BOOK_CONFIG_SOURCE={shlex.quote(config.source)}",
-        f"BOOK_LAYOUT={shlex.quote(config.layout)}",
+        f"BOOK_FOLDER_LAYOUT={shlex.quote(config.layout)}",
     ]
     for key, value in config.resolved_paths().items():
         lines.append(f"{_shell_name('BOOK_', key)}={shlex.quote(_plain(value))}")
@@ -1636,8 +1726,14 @@ def shell_paths(config):
 
 
 def shell_metadata(config):
-    return "\n".join(f"{_shell_name('BOOK_META_', key)}={shlex.quote(_plain(value))}"
+    return "\n".join(f"{_shell_name('BOOK_META_', key)}={shlex.quote(_metadata_text(value))}"
                      for key, value in sorted(config.book.values.items()))
+
+
+def _metadata_text(value):
+    if isinstance(value, list):
+        return ", ".join(_plain(item) for item in value if _plain(item))
+    return _plain(value)
 
 
 def as_dict(config):
@@ -1646,7 +1742,7 @@ def as_dict(config):
         "config_file": _plain(config.config_file) or None,
         "fallback_file": _plain(config.fallback_file) or None,
         "source": config.source,
-        "layout": config.layout,
+        "folder_layout": config.layout,
         "version": config.version,
         "book": config.book.values,
         "paths": {key: _plain(value) or None for key, value in config.resolved_paths().items()},
@@ -1676,7 +1772,7 @@ def _show(config):
     print(f"read from       {config.source}"
           + (f"  ({config.config_file})" if config.config_file else "")
           + (f"  (fallback {config.fallback_file})" if config.fallback_file else ""))
-    print(f"layout          {config.layout}")
+    print(f"folder layout   {config.layout}")
     print("\npaths")
     for key, value in config.resolved_paths().items():
         state = "" if value is None else ("" if value.exists() else "   (missing)")
@@ -1722,8 +1818,6 @@ def unused_files(config, written):
 
 
 def _check(config, output_format):
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from check_output import CheckReport
     report = CheckReport("book-config", CHECK_CLASSES)
     written = {}
     if config.config_file:
@@ -1805,7 +1899,7 @@ def main(argv=None):
                 print(shell_metadata(config))
             else:
                 for key, value in sorted(config.book.values.items()):
-                    print(f"{key}\t{_plain(value)}")
+                    print(f"{key}\t{_metadata_text(value)}")
         elif args.command == "files":
             for item in manuscript_files(config, args.kind):
                 print(f"{item.path}\t{item.kind}\t{_plain(item.chapter)}")
@@ -1818,4 +1912,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    run_main(main)

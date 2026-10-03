@@ -100,7 +100,7 @@ All of this is Nielsen Norman Group, and none of it is peer reviewed or reports 
 - **F-pattern**, Nielsen, 17 Apr 2006: "232 users" across "thousands of Web pages", heatmaps only. The
   2017 restatement is candid about the shape: "The F viewing pattern is a rough, general shape rather
   than a uniform, pixel-perfect behavior", sometimes an E, sometimes an inverted L.
-- **Pernice, 12 Nov 2017 and 25 Aug 2019**: five named patterns (F, spotted, layer-cake, marking,
+- **Pernice, 12 Nov 2017 and 25 Aug 2019**: six named patterns (F, spotted, layer-cake, marking,
   bypassing, commitment). The F-pattern is said to occur when "a page or a section of a page includes
   text that has little or no formatting for the web", and to be **bad** for the reader: "users may skip
   important content simply because it appears on the right side of the page." Individual heatmaps cite

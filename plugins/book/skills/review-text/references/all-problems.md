@@ -432,7 +432,7 @@ At the end, provide:
 
 ### Most Systemic Issues
 
-Which 3-5 categories appear most frequently? These indicate systemic patterns that may have a single root cause (see cascade patterns in the common review workflow).
+Which 3-5 categories appear most frequently? These indicate systemic patterns that may have a single root cause (see Root Causes in common-problems.md).
 
 ### Strongest Sections
 

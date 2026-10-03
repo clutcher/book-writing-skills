@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Find non-ASCII characters in markdown files and replace them with ASCII (rule 9.1).
 
+Letters with accents in Latin scripts (the letters of Latin-1 Supplement, Latin Extended-A
+and Latin Extended-B, as in German, French or Polish names) are allowed and left as they
+are. Typographic punctuation and symbols are still replaced.
+
 With no path, every manuscript file of the book is checked. The default is a dry run that
 reports what would change; --fix writes the files. Characters with no mapping are listed with
 file, line and hex code; add a mapping to REPLACEMENTS when one turns up.
@@ -9,7 +13,7 @@ Mapped: box-drawing characters, arrows, curly quotes and guillemets, dashes, the
 bullets, maths symbols, fractions, super- and subscripts, Greek letters, currency and legal
 signs, check marks and the no-break space.
 
-Exit codes: 0 all ASCII, 1 a file needs changes or holds unmapped characters, 2 the check
+Exit codes: 0 all ASCII or allowed letters, 1 a file needs changes or holds unmapped characters, 2 the check
 could not run.
 """
 
@@ -17,6 +21,7 @@ import argparse
 import contextlib
 import io
 import sys
+import unicodedata
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -62,6 +67,13 @@ GROUPS = (
     ("Other symbols", OTHER_SYMBOLS, "ASCII words and signs"),
 )
 REPLACEMENTS = {char: text for _, table, _ in GROUPS for char, text in table.items()}
+ACCENTED_LATIN_LETTERS = range(0x00C0, 0x0250)
+
+
+def is_allowed(char):
+    if ord(char) < 128:
+        return True
+    return ord(char) in ACCENTED_LATIN_LETTERS and unicodedata.category(char).startswith("L")
 
 
 def normalise(text):
@@ -72,19 +84,19 @@ def unmapped_characters(text):
     found = []
     for number, line in enumerate(normalise(text).splitlines(), start=1):
         for char in line:
-            if ord(char) > 127:
+            if not is_allowed(char):
                 found.append((number, char))
     return found
 
 
 def check_file(path, fix):
     text = path.read_text(encoding="utf-8")
-    non_ascii = sum(1 for char in text if ord(char) > 127)
+    not_allowed = sum(1 for char in text if not is_allowed(char))
     print(f"Processing: {GREEN}{path}{NC}")
-    if not non_ascii:
-        print(f"  {GREEN}No non-ASCII characters found{NC}")
+    if not not_allowed:
+        print(f"  {GREEN}No characters to replace{NC}")
         return True
-    print(f"  Found {YELLOW}{non_ascii}{NC} non-ASCII characters")
+    print(f"  Found {YELLOW}{not_allowed}{NC} characters that are not ASCII or letters with accents")
     print("  Replacements:")
     for name, table, target in GROUPS:
         if any(char in text for char in table):
@@ -132,6 +144,10 @@ def run(argv):
         return tool_failed(str(error), "ascii-normalize")
     if not is_english_book(config):
         return skipped_for_language(config, "ascii-normalize")
+    if not files:
+        print(f"SKIPPED   no manuscript files at "
+              f"{', '.join(options.paths) or config.manuscript.dir}")
+        return 0
     fix = options.fix and not options.check
     needing_work = [path for path in files if not check_file(Path(path), fix)]
     print("=" * 40)
@@ -149,6 +165,11 @@ def self_test():
         failures.append(f"normalise gave {normalise(sample)!r}")
     if unmapped_characters(sample) != [(1, "\u2603")]:
         failures.append("the snowman was not reported as unmapped")
+    accented_names = "Kurt G\u00f6del met a caf\u00e9 owner in M\u00fcnchen and \u0141\u00f3d\u017a"
+    if unmapped_characters(accented_names) or normalise(accented_names) != accented_names:
+        failures.append("letters with accents in names were reported or changed")
+    if unmapped_characters("3 \u00d7 4") != [] or normalise("3 \u00d7 4") != "3 x 4":
+        failures.append("the multiplication sign was not replaced like other symbols")
     if any(ord(char) > 127 for char in Path(__file__).read_text(encoding="utf-8")):
         failures.append("this script itself must stay ASCII, so it cannot normalise its table")
     output = io.StringIO()
@@ -161,6 +182,12 @@ def self_test():
         failures.append("folder run did not process every file of the fixture manuscript")
     if "Curly quotes" not in text or "Would modify" not in text:
         failures.append("folder run did not report the planted curly quotes")
+    mistyped = io.StringIO()
+    with contextlib.redirect_stdout(mistyped):
+        mistyped_exit = run(["--config", str(SAMPLE_BOOK / "book.yaml"),
+                             "--set", "manuscript.dir=manuscrpt"])
+    if mistyped_exit != 0 or not mistyped.getvalue().startswith("SKIPPED   no manuscript files"):
+        failures.append("a mistyped manuscript folder passed as clean instead of SKIPPED")
     for line in failures:
         print(f"FAIL  {line}")
     print(f"self-test: {'PASS' if not failures else str(len(failures)) + ' failure(s)'}")

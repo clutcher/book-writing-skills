@@ -14,6 +14,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 import grading
 from book_config import ConfigError, load_config, start_folder
+from check_output import run_main
 from check_list import ALL, GROUPS, MODES, ON_PATHS, checks_of
 from command_runs import python_command, run_command
 from run_folders import changed_files, record_checksums, start_run
@@ -64,6 +65,7 @@ FIND = "FIND"
 FAIL = "FAIL"
 STATES = (FAIL, FIND, OK, SKIP)
 TERMINAL_WIDTH = 100
+PYTHON_CRASH_MARK = "Traceback (most recent call last)"
 
 
 def time_limit(name, default):
@@ -175,15 +177,23 @@ def run_one(check, book, arguments, paths):
                              *(("--format", "json") if check.graded else ()),
                              *(paths if check.reach == ON_PATHS else ()))
     run = run_command(command, limit, cwd=book.root, keep_error_output=not check.graded)
+    return result_of_run(check, run, limit)
+
+
+def result_of_run(check, run, limit):
     if run.timed_out:
         return Result(check, FAIL, f"TIMED OUT after {limit}s; empty output is not a pass")
-    if run.exit_code not in (0, 1):
+    if run.exit_code not in (0, 1) or crashed(run):
         reason = last_line_with_words(run.error_output or run.output)
         return Result(check, FAIL, f"the tool failed (exit {run.exit_code}): {reason}",
                       output=run.output + run.error_output)
     if check.graded:
         return graded_result(check, run)
     return exit_code_result(check, run)
+
+
+def crashed(run):
+    return run.exit_code != 0 and PYTHON_CRASH_MARK in run.output + run.error_output
 
 
 class Printer:
@@ -300,4 +310,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    run_main(main)

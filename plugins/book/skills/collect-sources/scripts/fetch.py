@@ -29,8 +29,12 @@ These are attempt outcomes about one request, in lower case. The list's `Access 
 is a durable judgment in upper case, reached after the free routes were tried; an
 outcome is evidence toward a status and is never copied into the list as one.
 
-Filing the cache lines. Without --fix the script prints the change it would make to
-the sources list (a diff). With --fix it replaces an existing `**Cached ...:**` pair
+Dry run by default. Without --fix the script fetches nothing and writes nothing: it
+lists, for each key, whether it is cached and which URL it would try first. With --fix
+it downloads, writes the cache files and the origin record, and files the cache lines
+in the sources list. --dry-run is still accepted and wins over --fix.
+
+Filing the cache lines. With --fix the script replaces an existing `**Cached ...:**` pair
 rather than adding a second one, inserts a missing pair among the metadata fields
 (always above the entry's `---` and above Verified quotes / Key findings), and moves a
 misplaced pair back inside the entry. It refuses to write a line for a file that is not
@@ -41,30 +45,35 @@ A key holding both files is skipped; --force refetches. A key holding only <Key>
 (a hand-made extraction) is `incomplete` and left alone unless --complete-partial is
 passed, because overwriting a hand-curated extraction with a machine one is a loss.
 
-What could not be fetched. After every run that fetched (not --dry-run, not --file),
+Keys that are not plain file names. A key becomes a file name in the cache, so a key
+must be letters, digits and + _ . - only, starting with a letter or digit. Any other key
+(one with a slash, or `..`) is refused and nothing is written for it.
+
+What could not be fetched. After every run with --fix that fetched (not --file),
 `needed.txt` in the sources-to-add folder is made again from the list and the fetch
 records: one line per source still to download by hand (title, authors, year, link).
 match-added-files.py files what the author saves there.
 
-Politeness: --delay seconds between requests, a browser User-Agent, and --max as a hard
-per-run cap so a bulk run cannot stampede a publisher.
+Politeness: --delay seconds between requests, a User-Agent that names this project, and
+--max as a hard per-run cap so a bulk run cannot stampede a publisher. curl is told to
+use only http and https, also after a redirect, and to stop at --max-bytes, so a list
+entry cannot make it read a local file or fill the disk. If a site refuses the request,
+that is an answer: record it, do not work around it.
 
 Needs `curl` and `pdftotext` on PATH (SKIPPED when missing). BeautifulSoup is used for
 HTML when it can be imported; a standard-library parser is used otherwise.
 
 Usage:
-  fetch.py --key Smi99 --url https://example.org/paper.pdf
-  fetch.py --key Smi99 --file ~/Downloads/paper.pdf       a file a person downloaded
-  fetch.py --all --max 25                                 every key in the list
-  fetch.py --keys Smi99,Jon01                             some keys from the list
-  fetch.py --all --dry-run                                what would be fetched
-  fetch.py --keys Smi99 --fix                             fetch and file the cache lines
+  fetch.py --all                                          what would be fetched (dry run)
+  fetch.py --key Smi99 --url https://example.org/paper.pdf --fix
+  fetch.py --key Smi99 --file ~/Downloads/paper.pdf --fix a file a person downloaded
+  fetch.py --all --max 25 --fix                           every key in the list
+  fetch.py --keys Smi99,Jon01 --fix                       some keys from the list
   fetch.py --self-test
 """
 
 import argparse
 import datetime
-import difflib
 import hashlib
 import html
 import re
@@ -82,20 +91,18 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 from source_files import (FETCH, SourceFolders, add_config_arguments, cache_references,
                           folders_from_config, load_book, tool_failed)
-from citation_key import ENTRY_HEADING, FENCE_LINE, is_placeholder
+from citation_key import ENTRY_HEADING, FENCE_LINE, is_placeholder, is_safe_file_key
+from user_agent import USER_AGENT
 import sources_to_add
 
 TOOL = "fetch"
-
-USER_AGENT = (
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-)
 
 DEFAULT_MIN_CHARS = 2000
 DEFAULT_MAX = 25
 DEFAULT_DELAY = 2.0
 DEFAULT_TIMEOUT = 60
+DEFAULT_MAX_BYTES = 200 * 1024 * 1024
+PDFTOTEXT_TIMEOUT = 300
 
 URL_FIELDS = ("DOI/URL", "Access URLs", "DOI", "URL", "Access note")
 
@@ -322,15 +329,17 @@ def parse_list(path):
     return entries
 
 
-def curl(url, out_path, timeout, force_http11):
+def curl(url, out_path, timeout, force_http11, max_bytes=DEFAULT_MAX_BYTES):
     cmd = [
         "curl", "-sSL", "--compressed", "--max-time", str(timeout), "-A", USER_AGENT,
+        "--proto", "=http,https", "--proto-redir", "=http,https",
+        "--max-filesize", str(max_bytes),
         "-o", out_path, "-w",
         "%{http_code}\t%{content_type}\t%{size_download}\t%{url_effective}",
     ]
     if force_http11:
         cmd.insert(1, "--http1.1")
-    cmd.append(url)
+    cmd.extend(["--url", url])
     result = subprocess.run(cmd, capture_output=True, encoding="utf-8", errors="replace", check=False)
     if result.returncode != 0:
         return None, (result.stderr or "curl exited %d" % result.returncode).strip()
@@ -345,11 +354,11 @@ def curl(url, out_path, timeout, force_http11):
     }, None
 
 
-def download(url, out_path, timeout):
-    meta, error = curl(url, out_path, timeout, force_http11=False)
+def download(url, out_path, timeout, max_bytes=DEFAULT_MAX_BYTES):
+    meta, error = curl(url, out_path, timeout, False, max_bytes)
     if meta is None or meta["http_code"] >= 400 or meta["bytes"] == 0:
         retry_path = f"{out_path}.retry"
-        retry_meta, retry_error = curl(url, retry_path, timeout, force_http11=True)
+        retry_meta, retry_error = curl(url, retry_path, timeout, True, max_bytes)
         try:
             if retry_meta is not None:
                 better = meta is None or (
@@ -383,8 +392,13 @@ def sniff_kind(path, content_type):
 
 def extract_pdf(path):
     txt_path = f"{path}.extract.txt"
-    result = subprocess.run(["pdftotext", "-layout", path, txt_path],
-                            capture_output=True, encoding="utf-8", errors="replace", check=False)
+    try:
+        result = subprocess.run(["pdftotext", "-layout", path, txt_path], capture_output=True,
+                                encoding="utf-8", errors="replace", check=False,
+                                timeout=PDFTOTEXT_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        Path(txt_path).unlink(missing_ok=True)
+        raise Rejected("failed", "pdftotext took longer than %d s" % PDFTOTEXT_TIMEOUT)
     if result.returncode != 0 or not Path(txt_path).exists():
         raise Rejected("failed", "pdftotext failed: " + (result.stderr or "").strip()[:200])
     text = Path(txt_path).read_text(encoding="utf-8", errors="replace")
@@ -574,13 +588,7 @@ def apply_list_lines(text, updates, folders):
     return "\n".join(lines), outcomes
 
 
-def list_diff(before, after, path):
-    return "".join(difflib.unified_diff(
-        before.splitlines(keepends=True), after.splitlines(keepends=True),
-        fromfile=str(path), tofile=str(path) + " (proposed)", n=2))
-
-
-def file_into_list(results, list_path, folders, write):
+def file_into_list(results, list_path, folders):
     updates = [
         (item["key"], item["text_line"], item["original_line"])
         for item in results
@@ -598,15 +606,10 @@ def file_into_list(results, list_path, folders, write):
     after, outcomes = apply_list_lines(before, updates, folders)
 
     print()
-    if write:
-        if after != before:
-            with open(list_path, "w", encoding="utf-8") as handle:
-                handle.write(after)
-        print("List updated: %s" % list_path)
-    else:
-        diff = list_diff(before, after, list_path)
-        print("List diff (dry run; pass --fix to write it):\n")
-        print(diff if diff else "(no change)")
+    if after != before:
+        with open(list_path, "w", encoding="utf-8") as handle:
+            handle.write(after)
+    print("List updated: %s" % list_path)
 
     print()
     width = max([len(key) for key, _, _ in outcomes] + [3])
@@ -643,7 +646,7 @@ def process(key, urls, folders, options):
         result.update(status="no-url", reason="no fetchable URL in the list")
         return result
 
-    if options.dry_run:
+    if not options.write:
         result.update(status="would-fetch", url=urls[0],
                       reason="%d URL(s), first: %s" % (len(urls), urls[0]))
         return result
@@ -652,7 +655,7 @@ def process(key, urls, folders, options):
     with tempfile.TemporaryDirectory() as workdir:
         for url in urls[: options.tries]:
             target = Path(workdir, "download")
-            meta, error = download(url, target, options.timeout)
+            meta, error = download(url, target, options.timeout, options.max_bytes)
             if meta is None:
                 attempts.append("%s -> %s" % (host_of(url), (error or "curl failed")[:80]))
                 time.sleep(options.delay)
@@ -729,6 +732,11 @@ def accept(key, url, meta, downloaded, folders, options):
 
 
 def ingest_file(key, path, url, folders, options):
+    if not options.write:
+        result = empty_result(key)
+        result.update(status="would-fetch", url=url or "",
+                      reason="would cache %s (pass --fix)" % Path(path).name)
+        return result
     meta = {"http_code": 200, "content_type": "", "final_url": url or "manual download",
             "bytes": Path(path).stat().st_size}
     try:
@@ -741,11 +749,20 @@ def ingest_file(key, path, url, folders, options):
 
 STATUS_ORDER = [
     "cached", "skipped", "incomplete", "would-fetch", "paywalled", "blocked",
-    "abstract-only", "too-short", "no-url", "failed",
+    "abstract-only", "too-short", "no-url", "unsafe-key", "failed",
 ]
 
+UNSAFE_KEY_REASON = ("not a plain file name: use letters, digits and + _ . - only, "
+                     "starting with a letter or digit")
 
-def report(results, dry_run):
+
+def unsafe_key_result(key):
+    result = empty_result(key)
+    result.update(status="unsafe-key", reason=UNSAFE_KEY_REASON)
+    return result
+
+
+def report(results, write):
     width = max([len(r["key"]) for r in results] + [3])
     print()
     print("%-*s  %-13s  %10s  %s" % (width, "KEY", "STATUS", "BYTES", "DETAIL"))
@@ -762,8 +779,8 @@ def report(results, dry_run):
     print()
     print("total %d: " % len(results) + ", ".join(
         "%s %d" % (status, counts[status]) for status in STATUS_ORDER if status in counts))
-    if dry_run:
-        print("(dry run: nothing was fetched)")
+    if not write:
+        print("(dry run: nothing was fetched or written; pass --fix to fetch)")
 
 
 FIXTURE_LIST = """# Sources List
@@ -806,8 +823,8 @@ def self_test():
             failures.append(message)
 
     options = argparse.Namespace(min_chars=DEFAULT_MIN_CHARS, allow_short=False, force=False,
-                                 complete_partial=False, dry_run=False, tries=3,
-                                 timeout=DEFAULT_TIMEOUT, delay=0)
+                                 complete_partial=False, write=True, tries=3,
+                                 timeout=DEFAULT_TIMEOUT, delay=0, max_bytes=DEFAULT_MAX_BYTES)
     require(url_rank("https://arxiv.org/abs/1") < url_rank("https://doi.org/10.1/x"),
             "an open repository ranks before a DOI")
     require(url_rank("https://example.org/a.pdf") == 0, "a direct PDF ranks first")
@@ -826,6 +843,24 @@ def self_test():
         require(rejection.status == "paywalled", "HTTP 403 is paywalled")
 
     with tempfile.TemporaryDirectory() as folder:
+        local_file = Path(folder) / "private.txt"
+        local_file.write_text("a private file on this machine\n" * 200, encoding="utf-8")
+        if shutil.which("curl"):
+            meta, _error = curl(local_file.as_uri(), str(Path(folder) / "copy"), 10, False)
+            require(meta is None and not (Path(folder) / "copy").exists(),
+                    "curl must refuse a file:// URL")
+        dry_folders = SourceFolders(root=Path(folder), files=Path(folder) / "files",
+                                    origin=Path(folder) / "files")
+        dry_run = ingest_file("Smi99", local_file, "", dry_folders,
+                              argparse.Namespace(**{**vars(options), "write": False}))
+        require(dry_run["status"] == "would-fetch" and not dry_folders.files.exists(),
+                "without --fix a file is not cached")
+        unsafe_keys = ["../../../../outside/notes", "sub/Smi99", ".hidden"]
+        refused, _capped = fetch_work([(key, ["https://example.org/a.pdf"]) for key in unsafe_keys],
+                                      dry_folders, argparse.Namespace(**{**vars(options), "max": 0}))
+        require([item["status"] for item in refused] == ["unsafe-key"] * len(unsafe_keys)
+                and not dry_folders.files.exists(),
+                "a key that is not a plain file name is refused before any download")
         listed = Path(folder) / "list.md"
         listed.write_text("```\n### [Abc99] Example in the format block\n**Access URLs:** "
                           "https://example.org/a\n```\n\n### [<Key>] Placeholder\n"
@@ -909,6 +944,22 @@ def work_from_list(list_path, keys):
     return work
 
 
+def fetch_work(work, folders, options):
+    results, fetched, capped = [], 0, 0
+    for key, urls in work:
+        if not is_safe_file_key(key):
+            results.append(unsafe_key_result(key))
+            continue
+        if options.max and fetched >= options.max and options.write:
+            capped += 1
+            continue
+        outcome = process(key, urls, folders, options)
+        results.append(outcome)
+        if outcome["status"] not in ("skipped", "incomplete", "no-url", "would-fetch"):
+            fetched += 1
+    return results, capped
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -923,14 +974,17 @@ def main():
     parser.add_argument("--force", action="store_true", help="refetch keys already cached")
     parser.add_argument("--complete-partial", action="store_true",
                         help="fetch originals for keys that have only an extraction")
-    parser.add_argument("--dry-run", action="store_true", help="list what would be fetched")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="list what would be fetched (the default; wins over --fix)")
     parser.add_argument("--fix", action="store_true",
-                        help="write the cache lines into the sources list (default: show the diff)")
+                        help="fetch, write the cache files and file the cache lines in the list")
     parser.add_argument("--max", type=int, default=DEFAULT_MAX,
                         help="per-run fetch cap (default %d; 0 means no cap)" % DEFAULT_MAX)
     parser.add_argument("--tries", type=int, default=3, help="candidate URLs per key (default 3)")
     parser.add_argument("--delay", type=float, default=DEFAULT_DELAY, help="seconds between requests")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="curl --max-time")
+    parser.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES,
+                        help="largest download accepted (default %d)" % DEFAULT_MAX_BYTES)
     parser.add_argument("--min-chars", type=int, default=DEFAULT_MIN_CHARS,
                         help="reject extractions shorter than this (default %d)" % DEFAULT_MIN_CHARS)
     parser.add_argument("--allow-short", action="store_true",
@@ -938,6 +992,7 @@ def main():
     parser.add_argument("--self-test", action="store_true",
                         help="test parsing, judging, caching and filing on built-in examples")
     options = parser.parse_args()
+    options.write = options.fix and not options.dry_run
     if options.self_test:
         return self_test()
 
@@ -948,13 +1003,17 @@ def main():
                                 origin=Path(options.files_dir))
     list_path = options.sources_list or config.sources.list
 
+    if options.key and not is_safe_file_key(options.key):
+        return tool_failed("--key %r is %s" % (options.key, UNSAFE_KEY_REASON), TOOL)
+
     if options.key and options.file:
         results = [ingest_file(options.key, options.file, options.url, folders, options)]
-        report(results, False)
-        file_into_list(results, list_path, folders, options.fix)
+        report(results, options.write)
+        if options.write:
+            file_into_list(results, list_path, folders)
         return 0
 
-    if not options.dry_run:
+    if options.write:
         missing = missing_external_tools()
         if missing:
             print("SKIPPED   %s not on PATH (curl: any distribution package; "
@@ -973,19 +1032,10 @@ def main():
     else:
         return tool_failed("need --key with --url or --file, or --all, or --keys", TOOL)
 
-    results, fetched, capped = [], 0, 0
-    for key, urls in work:
-        if options.max and fetched >= options.max and not options.dry_run:
-            capped += 1
-            continue
-        outcome = process(key, urls, folders, options)
-        results.append(outcome)
-        if outcome["status"] not in ("skipped", "incomplete", "no-url", "would-fetch"):
-            fetched += 1
-
-    report(results, options.dry_run)
-    if not options.dry_run:
-        file_into_list(results, list_path, folders, options.fix)
+    results, capped = fetch_work(work, folders, options)
+    report(results, options.write)
+    if options.write:
+        file_into_list(results, list_path, folders)
         write_needed_list(config, list_path, folders)
     if capped:
         print("%d key(s) not attempted: --max %d reached. Run again to continue."

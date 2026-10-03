@@ -538,6 +538,9 @@ def main():
     files = prose_files(manuscript_paths(config, TOOL, args.target), str(references_path))
 
     report = CheckReport(TOOL + "-completeness" if args.completeness else TOOL, CLASSES)
+    if not files:
+        report.skip("no manuscript files at %s" % (args.target or config.manuscript.dir))
+        return report.emit(args.format)
     if args.completeness:
         cited, bibliography_keys, violations = completeness(files, str(references_path))
         for key in sorted(set(cited) - bibliography_keys):

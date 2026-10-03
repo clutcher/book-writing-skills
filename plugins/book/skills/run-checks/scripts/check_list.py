@@ -138,6 +138,10 @@ def facts_check(script, *options, skill="check-facts", graded=True, slow=False, 
                  needs=(SOURCES_LIST, sources_in_use, *needs))
 
 
+def manuscript_facts_check(script, needs=()):
+    return Check(FACTS, "check-facts", script, needs=needs)
+
+
 CHECKS = (
     text_check("sentence-and-paragraph-check.py"),
     text_check("sentence-and-paragraph-check.py", "--connectors"),
@@ -170,8 +174,8 @@ CHECKS = (
     facts_check("reference-sort.py", needs=(BIBLIOGRAPHY,)),
     facts_check("edition-duplicate-check.py", needs=(BIBLIOGRAPHY,)),
     facts_check("guardrail-prose-check.py", needs=(QUOTES,)),
-    facts_check("uncited-claim-check.py"),
-    facts_check("stale-argument-pointer-check.py", needs=(thinking_files,)),
+    manuscript_facts_check("uncited-claim-check.py"),
+    manuscript_facts_check("stale-argument-pointer-check.py", needs=(thinking_files,)),
     facts_check("argument-key-check.py", needs=(BIBLIOGRAPHY, thinking_files)),
     facts_check("files-hash-check.py", skill="collect-sources"),
     facts_check("ocr-marker-check.py", skill="collect-sources", needs=(QUOTES,)),

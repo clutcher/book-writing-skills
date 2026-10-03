@@ -19,11 +19,12 @@ as `<Key>.<ext>` with its extraction `<Key>.txt` and its library-index record, t
 lines go into the sources list, the file leaves the sources-to-add folder, and its line
 leaves `needed.txt`. Anything else is ASK: the candidates are printed and the file stays
 where it is. A file is never moved on a guess, and a key already in the library is never
-overwritten.
+overwritten. A key that is not a plain file name (letters, digits and + _ . - only,
+starting with a letter or digit) is never filed: it is an ASK.
 
 After an ASK, the author names the entry: `--file NAME --key KEY` files that one file under
 that key exactly as a MATCH is filed. The key must be in the sources list and not yet in
-the library.
+the library. NAME is a file name in the folder, not a path.
 
 Dry run by default. Exit 0 when the run finished (ASK lines need a person, they do not
 fail the run), 2 when it could not run.
@@ -51,6 +52,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 import fetch
 import ocr
 import script_tests
+from citation_key import is_safe_file_key
 from quote_match import (ALL_WINDOWS, ELLIPSIS_PIECES, ELSEVIER, FULL, has_surname, locate_in,
                          quotes_in, squash, title_share, title_words)
 from source_files import (FETCH, OCR, add_config_arguments, folders_from_config, load_book,
@@ -231,6 +233,9 @@ def in_library(folders, key):
 
 def decide(candidates, folders):
     confirmed = [candidate for candidate in candidates if candidate.confirmed]
+    if len(confirmed) == 1 and not is_safe_file_key(confirmed[0].key):
+        return ASK, confirmed[0], "%r is not a plain file name; fix the key in the list first" % (
+            confirmed[0].key)
     if len(confirmed) == 1 and in_library(folders, confirmed[0].key):
         return ASK, confirmed[0], "%s is already in the library; compare the two by hand" % (
             confirmed[0].key)
@@ -269,7 +274,7 @@ def file_in_library(added, key, folders, list_path, to_add):
                          LIBRARY_SUFFIXES[added.kind], len(text.strip()), folders)
     if added.ocr_run:
         mark_as_ocr(added, key, folders)
-    fetch.file_into_list([result], list_path, folders, True)
+    fetch.file_into_list([result], list_path, folders)
     added.path.unlink()
     drop_needed_line(to_add, key)
     if added.ocr_run:
@@ -299,6 +304,12 @@ def report(outcome, name, detail):
 def file_under_chosen_key(options, config, folder):
     folders = folders_from_config(config)
     list_path = config.sources.list
+    if Path(options.file).name != options.file or options.file in (".", ".."):
+        return tool_failed("--file takes a file name in %s, not a path"
+                           % shown_path(config.root, folder), TOOL)
+    if not is_safe_file_key(options.key):
+        return tool_failed("--key %r is not a plain file name: use letters, digits and + _ . - "
+                           "only, starting with a letter or digit" % options.key, TOOL)
     path = folder / options.file
     if not path.is_file():
         return tool_failed("no file %s in %s" % (options.file, shown_path(config.root, folder)),

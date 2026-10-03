@@ -12,6 +12,7 @@ if str(LIB) not in sys.path:
 from book_config import (LAYOUT_OLD, LAYOUTS, ConfigError, add_config_arguments,
                          config_from_args, layout_default, load_config, natural_sort_key)
 from check_output import tool_failed
+from citation_key import is_safe_file_key
 
 FETCH = "fetch"
 OCR = "ocr"
@@ -22,6 +23,13 @@ LAYOUT_CACHE_FOLDERS = tuple(dict.fromkeys(layout_default(layout, "sources.libra
 
 CACHE_FILE_NAME = r"[A-Za-z0-9][A-Za-z0-9+_.-]*"
 CACHE_REFERENCE = re.compile(r"`((?:[^`\s]+/)?)(" + CACHE_FILE_NAME + r")`")
+
+
+class UnsafeFileKey(ValueError):
+    def __init__(self, key):
+        super().__init__(f"the key {key!r} is not a plain file name: use letters, digits and "
+                         f"+ _ . - only, starting with a letter or digit")
+        self.key = key
 
 
 @dataclass
@@ -53,6 +61,8 @@ class SourceFolders:
         return shown_path(self.root, self.origin_record_path(key, kind))
 
     def read_origin_record(self, key, kind):
+        if not is_safe_file_key(key):
+            return None
         path = self.origin_record_path(key, kind)
         if not path.is_file():
             return None
@@ -70,6 +80,8 @@ class SourceFolders:
         return self.read_origin_record(key, kind) is not None
 
     def write_origin_record(self, key, kind, record):
+        if not is_safe_file_key(key):
+            raise UnsafeFileKey(key)
         path = self.origin_record_path(key, kind)
         path.parent.mkdir(parents=True, exist_ok=True)
         if self.merged_origin:
@@ -205,7 +217,7 @@ def run_from_book_root(config):
 
 __all__ = [
     "ConfigError", "add_config_arguments", "config_from_args", "load_config", "tool_failed",
-    "FETCH", "OCR", "ORIGIN_KINDS", "LAYOUT_CACHE_FOLDERS", "CACHE_REFERENCE",
+    "FETCH", "OCR", "ORIGIN_KINDS", "UnsafeFileKey", "LAYOUT_CACHE_FOLDERS", "CACHE_REFERENCE",
     "SourceFolders", "shown_path", "folders_from_config", "folders_for_directory",
     "cache_folder_prefixes", "cache_references", "is_configured_prefix", "load_book",
     "manuscript_paths", "markdown_files_under", "visible_markdown_files_under", "thinking_paths",

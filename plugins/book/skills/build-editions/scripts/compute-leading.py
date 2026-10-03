@@ -199,15 +199,17 @@ def size_from_config(args):
 def self_test():
     fixture_font = Path(__file__).resolve().parents[1] / "assets" / "fonts" / "JetBrainsMono-Regular.subset.ttf"
     metrics = read_font_metrics(fixture_font)
-    garamond_like = FontMetrics(x_height=0.400, average_lowercase_advance=0.437)
+    small_x_height_serif = FontMetrics(x_height=0.410, average_lowercase_advance=0.450)
     checks = [
         ("x-height read from the fixture font", round(metrics.x_height, 3), 0.55),
         ("lowercase advance read from the fixture font", round(metrics.average_lowercase_advance, 3), 0.6),
         ("standard size uses the class baselineskip", default_baselineskip(11), 13.6),
-        ("half-point size uses the fontsize package default", round(default_baselineskip(11.5), 2), 13.8),
+        ("half-point size uses the fontsize package default", round(default_baselineskip(10.5), 2), 12.6),
         ("short measure takes the lowest coefficient", leading_coefficient(30), 1.20),
         ("ideal measure takes the middle coefficient", leading_coefficient(66), 1.35),
-        ("small x-height at 11.5pt on a 4.61in block", round(compute_stretch(garamond_like, 11.5, 4.61).stretch, 3), 1.065),
+        ("measure of a small x-height face at 11pt on a 4.51in block", round(compute_stretch(small_x_height_serif, 11, 4.51).characters_per_line), 66),
+        ("small x-height at 11pt on a 4.51in block", round(compute_stretch(small_x_height_serif, 11, 4.51).stretch, 3), 1.044),
+        ("small x-height at 10pt on a 4.51in block", round(compute_stretch(small_x_height_serif, 10, 4.51).stretch, 2), 1.10),
     ]
     failures = [(name, got, expected) for name, got, expected in checks if got != expected]
     for name, got, expected in failures:

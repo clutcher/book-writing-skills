@@ -28,6 +28,6 @@ length, not the width each column needs, which is exactly how this happens.
    and `grep Overfull` in its log, not by eye: a 1pt overhang is real but invisible in a
    thumbnail.
 
-Worked example: a 6.14 x 9.21 in trim at 11.5pt has a text width of about 333pt; a 4-column table
-then has 333 - 2 x 3 x 6 = 297pt to share, a 3-column table 309pt. A dash row of `32/57/39/50`
-gives the first column 32/178 x 297 = 53pt.
+Worked example: a 6 x 9 in trim at 11pt has a text width of about 324pt; a 4-column table
+then has 324 - 2 x 3 x 6 = 288pt to share, a 3-column table 300pt. A dash row of `32/57/39/50`
+gives the first column 32/178 x 288 = 52pt.

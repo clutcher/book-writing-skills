@@ -33,7 +33,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 
 import script_tests
 from book_config import KIND_REFERENCES, ConfigError, add_config_arguments, config_from_args
-from check_output import ADVISORY, INFORMATIONAL, CheckReport, add_output_arguments, tool_failed
+from check_output import (ADVISORY, INFORMATIONAL, CheckReport, add_output_arguments, run_main,
+                          tool_failed)
 from glossary import locate_definition, notation_from_config, parse_glossary
 from manuscript_text import prose_lines
 
@@ -243,6 +244,8 @@ def main(argv=None):
         config = config_from_args(arguments, targets=arguments.files)
     except ConfigError as error:
         return tool_failed(str(error), TOOL)
+    if arguments.glossary and not arguments.glossary.is_file():
+        return tool_failed(f"glossary file not found: {arguments.glossary}", TOOL)
     glossary_path = arguments.glossary or config.rules.glossary
     if glossary_path is None or not Path(glossary_path).is_file():
         report = CheckReport(TOOL, CLASSES)
@@ -266,4 +269,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    run_main(main)

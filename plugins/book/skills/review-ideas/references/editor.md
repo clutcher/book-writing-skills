@@ -191,7 +191,7 @@ review. A note may suggest a decision in its Note text ("Suggested decision: ...
 
 ## Scripts
 
-All follow the plugin's check contract (`lib/check_contract.md`): one `KEY<TAB>class<TAB>message`
+All follow the plugin's check contract (`${CLAUDE_PLUGIN_ROOT}/lib/check_contract.md`): one `KEY<TAB>class<TAB>message`
 line per finding, a summary, exit 0 clean / 1 defects / 2 the tool failed. All take `--config`,
 `--set KEY=VALUE`, `--format text|tsv|json` and `--self-test`, and work on all three book layouts.
 

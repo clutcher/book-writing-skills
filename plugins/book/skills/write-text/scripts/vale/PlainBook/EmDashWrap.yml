@@ -1,5 +1,5 @@
 extends: existence
-message: "Avoid wrapping a phrase in a pair of dashes: '%s'. Use commas, a colon or a separate sentence instead (rule 9.1)."
+message: "Avoid wrapping a phrase in a pair of dashes: '%s'. Use commas, a colon or a separate sentence instead (rule 4.16 and the Punctuation part of the voice profile)."
 level: warning
 nonword: true
 tokens:

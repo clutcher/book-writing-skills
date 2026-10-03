@@ -578,6 +578,9 @@ def main():
 
     exempt = (config.terms.watch_words or {}).get("notes_about_the_book") or []
     book = book_files(config, args.manuscript)
+    if not book.lines_by_name:
+        report.skip("no manuscript files at %s" % (args.manuscript or config.manuscript.dir))
+        return report.emit(args.format)
     findings = assess(paths, book, config.root, exempt if isinstance(exempt, list) else [exempt])
     if args.file:
         wanted = shown_path(config.root, args.file)

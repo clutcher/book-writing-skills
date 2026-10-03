@@ -96,6 +96,15 @@ class GlossaryCheckTest(unittest.TestCase):
             self.assertIn("SKIPPED", run.stdout)
             self.assertIn("no glossary yet", run.stdout)
 
+    def test_shouldFailAsAToolWhenTheGlossaryNamedOnTheCommandLineIsMissing(self):
+        # when
+        run = run_script(SCRIPT, "--glossary", "rules/glosary.md")
+
+        # then
+        self.assertEqual(run.exit_code, 2)
+        self.assertIn("glossary file not found", run.stderr)
+        self.assertNotIn("SKIPPED", run.stdout + run.stderr)
+
     def test_shouldNotReportNeverFoundWhenOnlySomeFilesAreChecked(self):
         # when
         run = run_script(SCRIPT, "manuscript/110-chapter-1.md")

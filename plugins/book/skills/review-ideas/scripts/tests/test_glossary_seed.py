@@ -117,6 +117,16 @@ class GlossarySeedTest(unittest.TestCase):
             self.assertIn("### hydration -- Ch2 S2.2\n**Canonical definition:** [TO CURATE]", created)
             self.assertNotRegex(created, r"20\d\d-\d\d-\d\d")
 
+    def test_shouldSaySkippedWhenTheManuscriptFolderHoldsNoFile(self):
+        # when
+        run = run_script(SCRIPT, INDEX, "--set", "manuscript.dir=manuscrpt")
+
+        # then
+        self.assertEqual(run.exit_code, 0)
+        self.assertIn("SKIPPED   no manuscript files at", run.stdout)
+        self.assertIn("manuscrpt", run.stdout)
+        self.assertEqual(run.keys_of("new-term"), [])
+
 
 if __name__ == "__main__":
     unittest.main()

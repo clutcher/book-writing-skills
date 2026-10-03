@@ -2,7 +2,7 @@
 
 `book.yaml` is the one config of a book. Every script of every skill of the book plugin finds it by
 walking up from the folder it works in (`--config FILE` names it), through
-`lib/book_config.py`. It is data, not prose: a malformed value gives a confident wrong report
+`${CLAUDE_PLUGIN_ROOT}/lib/book_config.py`. It is data, not prose: a malformed value gives a confident wrong report
 somewhere else rather than an error, so check it after every edit:
 
 ```bash
@@ -160,7 +160,7 @@ rules:                                 # what the book has settled
   dir: rules
   decisions: rules/decisions.md        # ## Index (generated) + ## Details
   glossary: rules/glossary.md
-  voice: rules/voice.md                # voice profile; skills/write-text/profiles/default.md when missing
+  voice: rules/voice.md                # voice profile; ${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/default.md when missing
   vale: rules/vale                     # the Vale styles folder
   vale_ini: rules/vale/vale.ini
 
@@ -260,8 +260,9 @@ tools:                                 # docker images pinned to a tag or digest
 ## Older layouts and old key names
 
 Two older layouts are still read, so a book keeps working until `existing.py` moves it
-([existing.md](existing.md)). `layout: new`, `layout: previous` or `layout: old` at the top of
-`book.yaml` chooses one by hand; otherwise the folders decide.
+([existing.md](existing.md)). `folder_layout: new`, `folder_layout: previous` or
+`folder_layout: old` at the top of `book.yaml` chooses one by hand; otherwise the folders
+decide.
 
 - **previous**: a `book.yaml` book with `decisions.md`, `vocabulary/`, `reading-notes/`,
   `reasons/`, `author/`, `style/`, `marketing/` or `sources/files/`, and none of `thinking/`,

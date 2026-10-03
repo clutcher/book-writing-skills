@@ -271,9 +271,13 @@ def main():
     if skipped_for_missing(TOOL, sources_list, "sources list", args.format):
         return 0
 
-    entries = parse(sources_list)
-    cites = citation_counts(entries, manuscript_paths(config, TOOL, args.manuscript_dir))
     report = CheckReport(TOOL, CLASSES)
+    manuscript = manuscript_paths(config, TOOL, args.manuscript_dir)
+    if not manuscript:
+        report.skip("no manuscript files at %s" % (args.manuscript_dir or config.manuscript.dir))
+        return report.emit(args.format)
+    entries = parse(sources_list)
+    cites = citation_counts(entries, manuscript)
     for name, label, value, keys in find_groups(entries, cites, folders_from_config(config)):
         counted = ", ".join("%s (%d cites)" % (k, cites.get(k, 0)) for k in keys)
         report.add(",".join(keys), name, "%s: %s -- %s -- %s"

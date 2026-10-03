@@ -21,9 +21,10 @@ proposing any change.
    (irradiation), so a title can look too big when it is not. Measure before changing.
 5. **Fix the thing that was named.** If the author says an element is in the wrong place, change
    its position, not its size or color.
-6. **Diagnose with evidence.** Top-selling covers win with large central imagery, high color
-   energy or brand recognition, not with small corner details. Say what the shelf shows, not
-   what a detail might add.
+6. **Diagnose with evidence.** A hypothesis to check against the shelf screenshots, not a
+   finding: top-selling covers may win with large central imagery, high color energy or brand
+   recognition rather than with small corner details. Count it on the shelf (rule 11) before
+   saying it, and say what the shelf shows, not what a detail might add.
 
 ## Changing the design
 

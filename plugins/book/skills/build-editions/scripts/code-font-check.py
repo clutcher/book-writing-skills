@@ -93,6 +93,9 @@ def main():
     except ConfigError as problem:
         return tool_failed(str(problem), TOOL)
     report = CheckReport(TOOL, CLASSES)
+    if not files:
+        report.skip(f"no manuscript files at {config.manuscript.dir}")
+        return report.emit(args.format)
     for item in files:
         check_file(item.path, config.root, report)
     return report.emit(args.format)

@@ -66,7 +66,7 @@ Options:
   --title <title>        Book title
   --subtitle <text>      Book subtitle
   --author <name>        Author name
-  --output <file>        Output file name (placed in the output folder)
+  --output <file>        Output file name in the output folder (letters, digits, . _ -)
   --manuscript <dir>     Manuscript folder (default: manuscript.dir from the config)
   --output-dir <dir>     Output folder (default: work.output from the config)
   --template <file>      Custom LaTeX template file
@@ -256,6 +256,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 validate_edition "$EDITION"
+validate_output_name "$OUTPUT_FILE_OVERRIDE"
 [[ "$SHOW_SETTINGS" == true && "$EDITION" == "all" ]] && EDITION="print"
 
 if [[ -n "$POSITIONAL_PATH" && ! -d "$POSITIONAL_PATH" ]]; then
@@ -285,7 +286,7 @@ default_setting() {
 
 show_settings() {
     local name fallback
-    for name in BOOK_ROOT BOOK_LAYOUT BOOK_CONFIG_SOURCE MANUSCRIPT_DIR FULL_OUTPUT_DIR OUTPUT_FILE \
+    for name in BOOK_ROOT BOOK_FOLDER_LAYOUT BOOK_CONFIG_SOURCE MANUSCRIPT_DIR FULL_OUTPUT_DIR OUTPUT_FILE \
                 DOCKER_IMAGE TEXLIVE_VOLUME EDITION DRAFT_MODE BOOK_TITLE BOOK_SUBTITLE BOOK_AUTHOR \
                 PAGE_FORMAT TWOSIDE_MODE FONT_CHOICE ITALIC_FONT_CHOICE HEADING_FONT FONT_SIZE \
                 PROPORTIONAL_HEADINGS CODE_SCALE INLINE_CODE_SCALE CHAPTER_STYLE SECTION_STYLE ORNAMENT \
@@ -520,7 +521,7 @@ echo "Found $(grep -c . <<< "$MANUSCRIPT_FILES") manuscript files."
 mkdir -p "$FULL_OUTPUT_DIR"
 FULL_OUTPUT_DIR="$(cd "$FULL_OUTPUT_DIR" && pwd)"
 OUTPUT_FILE="$FULL_OUTPUT_DIR/$(basename "$OUTPUT_FILE")"
-TEMP_PDF="$FULL_OUTPUT_DIR/.book-temp-${TIMESTAMP}.pdf"
+TEMP_PDF="$FULL_OUTPUT_DIR/.book-temp-${EDITION}-${TIMESTAMP}-${RANDOM_SUFFIX}.pdf"
 OUTPUT_FILE_IN_CONTAINER="/output/$(basename "$OUTPUT_FILE")"
 TEMP_PDF_IN_CONTAINER="/output/$(basename "$TEMP_PDF")"
 
@@ -580,16 +581,19 @@ stage_diff_files() {
     fi
 
     MANUSCRIPT_PATHS_IN_CONTAINER=()
-    local file absolute_new relative_to_git old_relative old_copy new_source staged_name
+    local file absolute_new relative_to_git old_relative old_copy new_source marked_copy
     while IFS= read -r file; do
         [[ -z "$file" ]] && continue
         absolute_new="$PROJECT_ROOT/$file"
         relative_to_git="${absolute_new#"$GIT_ROOT"/}"
         old_relative="$(path_before_rename "$relative_to_git" "$renamed_files")"
-        old_copy="$staging_dir/$(basename "$file").old"
+        old_copy="$staging_dir/before/$file"
+        marked_copy="$staging_dir/marked/$file"
+        mkdir -p "$(dirname "$old_copy")" "$(dirname "$marked_copy")"
         git -C "$GIT_ROOT" show "$DIFF_FROM:$old_relative" > "$old_copy" 2>/dev/null || : > "$old_copy"
         if [[ -n "$DIFF_TO" ]]; then
-            new_source="$staging_dir/$(basename "$file").new"
+            new_source="$staging_dir/after/$file"
+            mkdir -p "$(dirname "$new_source")"
             if ! git -C "$GIT_ROOT" show "$DIFF_TO:$relative_to_git" > "$new_source" 2>/dev/null; then
                 echo "  - $file: not present in $DIFF_TO (skipping)"
                 continue
@@ -598,9 +602,8 @@ stage_diff_files() {
             [[ -f "$absolute_new" ]] || { echo "  - $file: not present on disk (skipping)"; continue; }
             new_source="$absolute_new"
         fi
-        staged_name="$(basename "$file")"
-        python3 "$diff_preprocessor" "$old_copy" "$new_source" > "$staging_dir/$staged_name"
-        MANUSCRIPT_PATHS_IN_CONTAINER+=("/settings/diff/$staged_name")
+        python3 "$diff_preprocessor" "$old_copy" "$new_source" > "$marked_copy"
+        MANUSCRIPT_PATHS_IN_CONTAINER+=("/settings/diff/marked/$file")
     done <<< "$MANUSCRIPT_FILES"
 
     [[ ${#MANUSCRIPT_PATHS_IN_CONTAINER[@]} -gt 0 ]] || { echo "Error: no files survived diff staging"; exit 1; }
@@ -611,7 +614,17 @@ stage_diff_files() {
 echo "Files to process:"
 printf '  - %s\n' "${MANUSCRIPT_PATHS_IN_CONTAINER[@]#/data/}"
 
-PLACEHOLDER_HITS=$(cd "$PROJECT_ROOT" && grep -H -n -F "$PLACEHOLDER_TOKEN" $MANUSCRIPT_FILES 2>/dev/null || true)
+MANUSCRIPT_FILE_LIST=()
+while IFS= read -r file; do
+    if [[ -n "$file" ]]; then MANUSCRIPT_FILE_LIST+=("$file"); fi
+done <<< "$MANUSCRIPT_FILES"
+PLACEHOLDER_SCAN_STATUS=0
+PLACEHOLDER_HITS=$(cd "$PROJECT_ROOT" && grep -H -n -F -e "$PLACEHOLDER_TOKEN" -- "${MANUSCRIPT_FILE_LIST[@]}") \
+    || PLACEHOLDER_SCAN_STATUS=$?
+if [[ "$PLACEHOLDER_SCAN_STATUS" -gt 1 ]]; then
+    echo "Error: could not scan the manuscript for '$PLACEHOLDER_TOKEN' (see the message above)"
+    exit 1
+fi
 
 report_placeholders() {
     [[ -z "$PLACEHOLDER_HITS" ]] && return 0
@@ -691,7 +704,9 @@ write_epub_metadata() {
         if [[ -n "$BOOK_SUBJECTS" ]]; then
             echo "$BOOK_SUBJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
             while read -r subject; do
-                [[ -n "$subject" ]] && echo "<dc:subject>$(xml_escape "$subject")</dc:subject>"
+                if [[ -n "$subject" ]]; then
+                    echo "<dc:subject>$(xml_escape "$subject")</dc:subject>"
+                fi
             done
         fi
         echo "<dc:rights>Copyright (c) $copyright_year $(xml_escape "${BOOK_AUTHOR:-the author}"). All rights reserved.</dc:rights>"
@@ -988,14 +1003,16 @@ if [[ "$PAGES_MODE" == "auto" ]]; then
 fi
 
 protect_pdf() {
-    local owner_password give_back_to_user=""
+    local owner_password
     owner_password=$(printf '%04x%04x%04x%04x' $RANDOM $RANDOM $RANDOM $RANDOM)
-    [[ -n "$DOCKER_OWNER" ]] && give_back_to_user=" && chown $DOCKER_OWNER '$OUTPUT_FILE_IN_CONTAINER'"
     if command -v qpdf >/dev/null 2>&1; then
         qpdf --encrypt '' "$owner_password" 256 --extract=n --print=none --modify=none -- "$TEMP_PDF" "$OUTPUT_FILE"
     else
         docker run --rm --entrypoint sh -v "$FULL_OUTPUT_DIR:/output" "$DOCKER_IMAGE" \
-            -c "apk add --no-cache qpdf >/dev/null 2>&1 && qpdf --encrypt '' '$owner_password' 256 --extract=n --print=none --modify=none -- '$TEMP_PDF_IN_CONTAINER' '$OUTPUT_FILE_IN_CONTAINER'$give_back_to_user"
+            -c 'apk add --no-cache qpdf >/dev/null 2>&1 \
+                && qpdf --encrypt "" "$1" 256 --extract=n --print=none --modify=none -- "$2" "$3" \
+                && if [ -n "$4" ]; then chown "$4" "$3"; fi' \
+            protect-pdf "$owner_password" "$TEMP_PDF_IN_CONTAINER" "$OUTPUT_FILE_IN_CONTAINER" "$DOCKER_OWNER"
     fi
     rm -f "$TEMP_PDF"
 }

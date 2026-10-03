@@ -114,8 +114,11 @@ Rules the parser relies on:
   `## Details` heading, before the first entry, when the file has none); `add --fix` and
   `set-status --fix` rebuild it on every write.
 - **An entry starts with `## <id> <title>`.** The id is letters, an optional `-`, then numbers
-  with optional dots: `D-1`, `D12`, `4.2`. New entries get the next `D-<n>`. A `##` heading
-  whose first word is not an id is free text and ends the entry above it.
+  with optional dots: `D-1`, `D12`, `4.2`. New entries get the next `D-<n>`. These heading forms
+  are read as an entry: `## D-1 Title`, `## D-1: Title`, `## D-1. Title`, `## [D-1] Title` and
+  `## D-1` (no title). A `##` heading whose first word is not an id is free text and ends the
+  entry above it. A `##` heading that starts like an id but is none of these forms is reported
+  (`unread-heading`).
 - **A field is a bullet line `- **Name:** value`.** `- **Name.** value` is read the same way.
   A value continues on the following lines until a blank line or the next field. Text in an
   entry that is not a field is kept as a note.
@@ -126,7 +129,9 @@ Rules the parser relies on:
   every DECIDED entry. `Decided` says `None` on an entry that is not decided yet, and says so
   when the date is not known. The other fields (`Aliases`, `Change`, `Keywords`, `Refs`,
   `Merged`, and `Why` on an OPEN entry) are left out when they would be empty: write no
-  `None` line for them. A field that is written must have a value.
+  `None` line for them. A field that is written must have a value. `decisions.py add` writes
+  `Decided: None` for an OPEN status and today's date for a DECIDED one, unless `--decided`
+  gives a value.
 - **Merged** lists the ids of older entries this entry absorbed, comma-separated. Their ids are
   never reused, and the index does not list them.
 - **Aliases** are written in backticks, separated by ` - `: `` `R2-4` (readers review 2) -
@@ -164,6 +169,7 @@ exits 0.
 | `empty-field` | defect | a field has no value |
 | `unknown-field` | defect | a field name outside the list |
 | `duplicate-field` | defect | a field written twice in one entry |
+| `unread-heading` | defect | a `##` heading that looks like an entry id but is not read as one |
 | `index-missing` | defect | no `## Index`; `--fix` builds it |
 | `index-stale` | defect | the index does not match the entries; `--fix` rebuilds it |
 | `status-not-written` | informational | the status is inferred; `--fix` writes it |

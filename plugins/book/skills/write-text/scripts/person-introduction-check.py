@@ -42,6 +42,7 @@ sys.dont_write_bytecode = True
 from book_files import (ConfigError, SAMPLE_BOOK, add_config_arguments, config_for_targets,
                         is_english_book, natural_sort_key, skipped_for_language, tool_failed,
                         watch_words)
+from check_output import run_main
 from citation_key import bib_blocks
 from terminal_colors import BOLD, CYAN, GREEN, NC, RED, YELLOW
 
@@ -858,8 +859,8 @@ def self_test() -> int:
 
 
 def main():
-    sys.exit(run(sys.argv[1:]))
+    return run(sys.argv[1:])
 
 
 if __name__ == '__main__':
-    main()
+    run_main(main)

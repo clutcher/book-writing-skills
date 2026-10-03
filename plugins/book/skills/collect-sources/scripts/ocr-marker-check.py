@@ -148,14 +148,14 @@ DISK = {
     "Cro91": (True, True, True),
     "Yat83": (True, True, True),
     "Yat83.second-scan": (True, True, True),
-    "Bro95": (True, True, True),
+    "Bro96": (True, True, True),
     "Pen97": (True, True, True),
     "Ree74": (True, True, True),
     "Smi01": (True, False, False),
     "Wes02": (True, False, False),
     "KL00": (False, False, False),
 }
-DECLARED = {"SAB11", "TWC88", "Cro91", "Yat83", "Bro95", "Pen97", "Ree74", "KL00"}
+DECLARED = {"SAB11", "TWC88", "Cro91", "Yat83", "Bro96", "Pen97", "Ree74", "KL00"}
 
 FIXTURE_LIST_HEADER = '''# Sources List
 
@@ -208,7 +208,7 @@ FIXTURE_QUOTES = '''# Quotes Bank
 
 ---
 
-### [Bro95] Brook, "Names for hedgerow plants" (1995)
+### [Bro96] Brook, "Names for hedgerow plants" (1996)
 
 **Verified quotes:**
 - p. 19: "a field guide to the hedgerow plants of one county"
@@ -271,7 +271,7 @@ FIXTURE_EXPECTED = {
     ("Pen97", "unconfirmed-digits"),
     ("Ree74", "unconfirmed-digits"),
 }
-FIXTURE_SILENT = ("Yat83", "Smi01", "Wes02", "Bro95")
+FIXTURE_SILENT = ("Yat83", "Smi01", "Wes02", "Bro96")
 
 
 def run_fixture(root, merged):

@@ -50,6 +50,17 @@ FIXTURE_CHECKS = (
     "fetch.py --all --dry-run",
 )
 LIB_SELF_TESTS = ("check_output.py", "citation_key.py")
+MISSING_MANUSCRIPT_FOLDER = "manuscrpt"
+MANUSCRIPT_READING_CHECKS = (
+    "cited-source-check.py",
+    "reference-format-check.py",
+    "reference-format-check.py --completeness",
+    "edition-duplicate-check.py",
+    "guardrail-prose-check.py",
+    "stale-argument-pointer-check.py",
+    "uncited-claim-check.py",
+    "duplicate-source-check.py",
+)
 
 HELP = """Maintainer check of the check-facts and collect-sources scripts; no book needed.
 
@@ -63,6 +74,9 @@ HELP = """Maintainer check of the check-facts and collect-sources scripts; no bo
                          check over its manuscript and thinking files
   C. a book with no sources: only book.yaml and one chapter; every check must say SKIPPED
                          or find nothing, and exit 0
+  D. no manuscript file: the standard book with manuscript.dir set to a folder that does
+                         not exist; every check that reads the manuscript must say SKIPPED
+                         with "no manuscript files at", and exit 0
 
 To check a book, use the run-checks skill (run-checks.py facts).
 
@@ -242,12 +256,36 @@ def book_with_no_sources(tally, chosen_skill):
         shutil.rmtree(work, ignore_errors=True)
 
 
+def book_with_no_manuscript_file(tally, chosen_skill):
+    tally.section("== D. A book whose manuscript folder holds no file ==")
+    work = Path(tempfile.mkdtemp(prefix="self-check-no-manuscript-"))
+    try:
+        shutil.copytree(FIXTURES, work, dirs_exist_ok=True)
+        for check in MANUSCRIPT_READING_CHECKS:
+            name, *options = check.split()
+            if not in_chosen_skill(name, chosen_skill):
+                continue
+            result = run_command(python_command(script_path(name), *options, "--config",
+                                                work / STANDARD_BOOK, "--set",
+                                                f"manuscript.dir={MISSING_MANUSCRIPT_FOLDER}"),
+                                 CHECK_TIME_LIMIT, cwd=work)
+            text = f"{'no files':<12} {check:<34}"
+            last_line = result.last_line(200)
+            if result.exit_code == 0 and last_line.startswith("SKIPPED   no manuscript files at"):
+                tally.ok(f"{text} {result.last_line(60)}")
+            else:
+                tally.bad(f"{text} exit {result.exit_code} :: {last_line}")
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
 def main(argv=None):
     arguments = parse_arguments(argv)
     tally = Tally(arguments.quiet)
     script_self_tests(tally, arguments.skill)
     fixture_books(tally, arguments.skill)
     book_with_no_sources(tally, arguments.skill)
+    book_with_no_manuscript_file(tally, arguments.skill)
     return tally.exit_code()
 
 

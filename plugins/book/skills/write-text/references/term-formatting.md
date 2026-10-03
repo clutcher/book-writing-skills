@@ -103,6 +103,10 @@ Source: [O'Reilly Style Guide](https://oreillymedia.github.io/production-resourc
 
 ## 5. Popular Science / Non-Fiction Bestsellers
 
+**This section is an impression from reading these books, not a survey.** No edition was
+checked page by page, and editions differ. Before copying a house style from it, open the
+book and look.
+
 ### Daniel Kahneman -- "Thinking, Fast and Slow" (2011)
 - System 1 / System 2 **capitalized as proper names**, NOT italicized
 - Key concepts (anchoring, availability heuristic, WYSIATI) introduced in regular text
@@ -195,7 +199,7 @@ The key rule: **context determines format**. When discussing the abstract concep
 2. **Do not use quotation marks to introduce new terms being defined** -- use italics instead (APA, Google, Microsoft explicit)
 3. **Do not italicize after first use** -- the term reverts to roman
 4. **Do not combine bold and italic** on the same element
-5. **Do not over-format** -- "if everything is emphasized, nothing is" (CMOS, Butterick)
+5. **Do not over-format** -- "if everything is emphasized, then nothing is emphasized" (Butterick)
 
 ---
 

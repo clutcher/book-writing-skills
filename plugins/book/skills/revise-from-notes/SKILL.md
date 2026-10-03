@@ -1,22 +1,19 @@
 ---
 name: revise-from-notes
 description: >-
-  Answers the open notes on a book's text, one decision at a time: the author's own reading
-  notes and the notes the reviews and checks write (review-text, review-ideas, check-facts, the
-  cover and sales-text reviews). Each note is checked against the text as it is now, then
-  answered with a few small, true fixes shown in full context; the chosen fix goes into the
-  text, the decision into decisions.md, and the note is deleted. Three modes - one-by-one
-  (default), all-at-once, right-now (a thought said in the chat). Use when the author says they
-  have notes, reading notes, comments on a chapter, review findings to go through, or a list of
-  problems pasted from a reading app, also for notes on the back cover or store copy. For new
-  text or a rewrite with no notes, use write-text; to produce new findings, use review-text or
-  review-ideas. Stance: the smallest true fix wins, and the author picks it.
+  Answers the open notes on a book, one decision at a time: the author's own reading notes and
+  the notes the reviews write. Each note is checked against the text as it is now and answered
+  with a few small, true fixes; the chosen fix goes into the text, the decision into
+  decisions.md, and the note is deleted. Use it when the author has notes, comments on a chapter
+  or review findings to go through, also for the back cover or store copy. For new text use
+  write-text; for new findings use review-text or review-ideas.
+argument-hint: "[one-by-one|all-at-once|right-now]"
 ---
 
 # Revise from notes
 
 Notes sit next to the text: the author's thoughts from reading the book, and the findings that
-review-text, review-ideas, check-facts and the cover and sales-text reviews write. You work
+review-text, review-ideas, check-facts and the cover and sales-text reviews write as notes. You work
 through them with the author, one decision at a time. A note says what a reader or a reviewer
 met. Your job is to find what the text really needs, offer a few correct fixes, and apply the
 one the author picks.
@@ -53,7 +50,8 @@ file starts from `templates/notes-file.md`.
    author wants to reopen it.
 2. **Load the rules of the `write-text` skill, and open the `common-problems` and `flow` reviews
    of the `review-text` skill** (`${CLAUDE_PLUGIN_ROOT}/skills/review-text/references/`; the flow
-   review holds topic-development-conclusion, the adjacency chain and the seam check). They are
+   review holds topic-development-conclusion, the chain of neighbouring sentences and the seam
+   check). They are
    how you analyse every note, not background. Every Analysis names the rule it applies, by rule name.
    Without them you cannot tell whether a rule applies or whether a fix breaks another rule.
 3. **Read the author's stance and voice files** (`thinking.stance`, `rules.voice` in the config).
@@ -93,16 +91,17 @@ root-cause labels and the method are in `references/analysis-method.md`.
 | **Content** | claims, citations, cause and mechanism, the book's defined terms, contradictions with the book's own definitions | yes | the paragraph, plus what the change rests on |
 
 When in doubt, move the note up a tier. A Surface or Flow note becomes Content when the fix
-touches a term an earlier chapter defined or banned, a claim that needs its source, the author's
-stance, something an earlier chapter must own first, or a term the same chapter introduces later.
+touches one of these: a term an earlier chapter defined or banned, a claim that needs its source,
+the author's stance, something an earlier chapter must own first, or a term the same chapter
+introduces later.
 
 **Do not research a Surface note.** Over-researching a one-word swap is as wrong as not
 researching a claim.
 
-**What to read, when research runs.** Everything comes from the config, never from a fixed list:
-the `thinking.argument` folder (pick the file for the topic by its name; cite file and section),
-the quotes file `sources.quotes` for each citation key the paragraph uses, the glossary
-`rules.glossary`, and the coined terms in `book.yaml`. Look in these before the web.
+**What to read, when research runs.** Everything comes from the config, never from a fixed list.
+Read the `thinking.argument` folder (pick the file for the topic by its name; cite file and
+section). Read the quotes file `sources.quotes` for each citation key the paragraph uses. Read the
+glossary `rules.glossary` and the coined terms in `book.yaml`. Look in these before the web.
 
 ## Step 2: work the note
 
@@ -218,8 +217,8 @@ Details in `references/chapter-checks.md`.
 
 ## Sales texts
 
-Notes on the back cover or store copy work the same way, with two changes: the `prepare-sales-text`
-skill's rules decide which writing rules hold for copy, and every copy of the same text (back cover,
+Notes on the back cover or store copy work the same way, with two changes. The `prepare-sales-text`
+skill's rules decide which writing rules hold for copy. Every copy of the same text (back cover,
 store description, ebook description) must stay in step.
 
 ## The script

@@ -6,14 +6,13 @@ The scripts live in two skills: the checks of the banks and the book in
 `sources-for-reviewer.py` in `${CLAUDE_PLUGIN_ROOT}/skills/review-ideas/scripts/`. Every one reads the book's
 config (`book.yaml`, or an older book's `CLAUDE.md`), takes `--config FILE` and `--set KEY=VALUE`,
 answers `--help`, and has a `--self-test` on built-in examples. Checks follow
-`lib/check_contract.md`: one `KEY<TAB>class<TAB>message` line per item, a summary with a `TOTAL`
+`${CLAUDE_PLUGIN_ROOT}/lib/check_contract.md`: one `KEY<TAB>class<TAB>message` line per item, a summary with a `TOTAL`
 line last, `--format text|tsv|json`, and exit 0 (no defects), 1 (defects), 2 (the tool failed). A
 check that needs a missing tool prints `SKIPPED <reason>` and exits 0; say it was skipped.
 
-**What writes without `--fix`.** Every write to a bank or to the manuscript needs `--fix`. Three
-scripts write elsewhere without it, because writing is their job: `fetch.py` downloads into the
-cache (`sources.library`, kept out of git; `--fix` is only for filing the cache lines in the list),
-`ocr.py` writes `<Key>.txt` into the cache and the OCR origin record, and
+**What writes without `--fix`.** Every write to a bank, to the manuscript or to the cache needs
+`--fix`: `fetch.py` and `ocr.py` write into the cache (`sources.library`, kept out of git) only
+with `--fix`. One script writes without it, because writing is its job:
 `sources-for-reviewer.py draft --out` writes the file named by `--out`. `manual-downloads.py`
 only prints the download list; with `--fix` it also writes it to `<sources.to_add>/needed.txt`.
 
@@ -70,8 +69,8 @@ In `${CLAUDE_PLUGIN_ROOT}/skills/collect-sources/scripts/`, except the rows mark
 
 | Script | What it does |
 |---|---|
-| `fetch.py` | the only way a source enters the cache; `--fix` files the cache lines |
-| `ocr.py` | makes a scan searchable and marks it as OCR in all three places |
+| `fetch.py` | the only way a source enters the cache; `--fix` fetches, caches and files the cache lines |
+| `ocr.py` | makes a scan searchable and marks it as OCR in all three places (with `--fix`) |
 | `restore.py` | rebuilds missing cached files from the backup and the network, verifying hashes |
 | `backup.py` | copies what cannot be downloaded again into `sources.backup` |
 | `files-hash-check.py` | recorded sha256 and `from <URL>` against the bytes and the fetch record; `--fix` copies the on-disk truth into the list |
@@ -82,7 +81,7 @@ In `${CLAUDE_PLUGIN_ROOT}/skills/collect-sources/scripts/`, except the rows mark
 | `quote-in-file-check.py` (check-facts) | every verified quote against the cached file it claims to come from; wrong-document, stub and landing-page caches |
 | `unread-sources.py` (check-facts) | cached sources with no quotes entry, grouped for sharing out (a worklist) |
 | `manual-downloads.py` | sources a person must download by hand (a worklist) |
-| `lib/proposed_entries.py --run <run folder>` | fold the entries a run proposed into the banks, never overwriting |
+| `${CLAUDE_PLUGIN_ROOT}/lib/proposed_entries.py --run <run folder>` | fold the entries a run proposed into the banks, never overwriting |
 | `link-check.py` | every URL against what it resolves to today (network; not in the suite) |
 | `metadata-check.py` (check-facts) | bibliography metadata against two independent registries (network; not in the suite) |
 | `sources-for-reviewer.py` (review-ideas) | drafts a list of neutral sources for the reviewer and checks one for bias |

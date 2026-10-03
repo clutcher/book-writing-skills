@@ -26,12 +26,18 @@ which matters for two-column papers. A non-English scan needs the matching tesse
 language pack (--language); if it is not installed, say so rather than calling the scan
 unreadable.
 
+Dry run by default: without --fix it says what it would read and write, and runs no
+OCR. With --fix it writes. It replaces an existing <Key>.txt, or an existing <Key>.pdf
+with the file given by --pdf, only with --force. The key must be a plain file name
+(letters, digits and + _ . -, starting with a letter or digit).
+
 Needs tesseract, pdftoppm and pdfinfo (SKIPPED when missing).
 
 Usage:
-  ocr.py --key Smi93
-  ocr.py --key Smi93 --pdf ~/Downloads/scan.pdf
-  ocr.py --key Smi93 --dpi 400 --force
+  ocr.py --key Smi93                                  what it would do (dry run)
+  ocr.py --key Smi93 --fix
+  ocr.py --key Smi93 --pdf ~/Downloads/scan.pdf --fix
+  ocr.py --key Smi93 --dpi 400 --force --fix
   ocr.py --self-test
 """
 
@@ -47,6 +53,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 from source_files import (OCR, SourceFolders, add_config_arguments, folders_from_config,
                           load_book, tool_failed)
+from citation_key import is_safe_file_key
 
 TOOL = "ocr"
 MIN_CHARS = 2000
@@ -115,6 +122,24 @@ def write_result(folders, key, text, engine, dpi, pages, total):
     return out_txt
 
 
+def planned_problem(folders, key, given_pdf, force):
+    if not is_safe_file_key(key):
+        return ("--key %r is not a plain file name: use letters, digits and + _ . - only, "
+                "starting with a letter or digit" % key)
+    dest_pdf = folders.file(key + ".pdf")
+    pdf = Path(given_pdf) if given_pdf else dest_pdf
+    if not pdf.exists():
+        return "no PDF at %s" % pdf
+    out_txt = folders.file(key + ".txt")
+    if out_txt.exists() and not force:
+        return "%s already exists; pass --force to replace it" % out_txt
+    copies_over_cached_pdf = dest_pdf.exists() and pdf.resolve() != dest_pdf.resolve()
+    if copies_over_cached_pdf and not force:
+        return ("%s already exists and --pdf names another file; pass --force to replace it"
+                % dest_pdf)
+    return None
+
+
 def access_status_line(key, dpi):
     return ("**Access status:** READABLE VIA OCR. The cached PDF is a scan with no text layer; "
             "`%s.txt` is tesseract output at %d dpi and carries character-level errors, so it "
@@ -144,6 +169,23 @@ def self_test():
             record = folders.read_origin_record("Smi93", OCR)
             if not record or record.get("dpi") != 300:
                 failures.append("the OCR origin record is missing (merged=%s)" % merged)
+    with tempfile.TemporaryDirectory() as root:
+        files = Path(root) / "files"
+        files.mkdir()
+        folders = SourceFolders(root=Path(root), files=files, origin=files)
+        cached_scan = folders.file("Smi93.pdf")
+        cached_scan.write_bytes(b"%PDF-1.4 the scan of record")
+        other_scan = Path(root) / "other-scan.pdf"
+        other_scan.write_bytes(b"%PDF-1.4 a different scan")
+        if not planned_problem(folders, "Smi93", other_scan, force=False):
+            failures.append("--pdf over an existing cached PDF was not refused without --force")
+        if planned_problem(folders, "Smi93", other_scan, force=True):
+            failures.append("--pdf over an existing cached PDF was refused with --force")
+        if planned_problem(folders, "Smi93", None, force=False):
+            failures.append("OCR of the cached PDF itself was refused")
+        for unsafe in ("../../../../outside/notes", "sub/Smi93"):
+            if not planned_problem(folders, unsafe, other_scan, force=True):
+                failures.append("the key %r was not refused" % unsafe)
     if "READABLE VIA OCR" not in access_status_line("Smi93", 300):
         failures.append("the status line lacks READABLE VIA OCR")
     for line in failures:
@@ -160,7 +202,10 @@ def main():
     parser.add_argument("--dpi", type=int, default=300)
     parser.add_argument("--max-pages", type=int, default=0, help="0 = all pages")
     parser.add_argument("--language", default="eng", help="tesseract language pack (default eng)")
-    parser.add_argument("--force", action="store_true", help="overwrite an existing extraction")
+    parser.add_argument("--force", action="store_true",
+                        help="replace an existing extraction, or a cached PDF with --pdf")
+    parser.add_argument("--fix", action="store_true",
+                        help="run OCR and write the files (default: say what would be done)")
     parser.add_argument("--self-test", action="store_true",
                         help="test the writing and refusal rules without running tesseract")
     args = parser.parse_args()
@@ -176,14 +221,17 @@ def main():
 
     config = load_book(args, TOOL)
     folders = folders_from_config(config)
-    Path(folders.files).mkdir(parents=True, exist_ok=True)
+    problem = planned_problem(folders, args.key, args.pdf, args.force)
+    if problem:
+        return tool_failed(problem, TOOL)
     dest_pdf = folders.file(args.key + ".pdf")
     pdf = Path(args.pdf) if args.pdf else dest_pdf
-    if not pdf.exists():
-        return tool_failed("no PDF at %s" % pdf, TOOL)
     out_txt = folders.file(args.key + ".txt")
-    if out_txt.exists() and not args.force:
-        return tool_failed("%s already exists; pass --force to replace it" % out_txt, TOOL)
+    if not args.fix:
+        print("dry run: would OCR %s at %d dpi and write %s and the OCR origin record; "
+              "pass --fix to do it" % (pdf, args.dpi, out_txt))
+        return 0
+    Path(folders.files).mkdir(parents=True, exist_ok=True)
     if pdf.resolve() != dest_pdf.resolve():
         shutil.copy(pdf, dest_pdf)
 

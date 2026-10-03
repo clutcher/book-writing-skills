@@ -9,7 +9,6 @@
     {
       "name": "book",
       "description": "Write, check, review and publish a non-fiction book: one config file, one layout, one workflow for findings",
-      "version": "0.3.0",
       "author": {
         "name": "Igor Zarvanskyi"
       },

@@ -597,6 +597,10 @@ def main():
 
     report = CheckReport(TOOL, CLASSES)
     files = book_files(config, args.paths)
+    if not files:
+        report.skip("no manuscript files at %s"
+                    % (", ".join(args.paths) or config.manuscript.dir))
+        return report.emit(args.format)
     total = 0
     for path in files:
         claims = find_claims(path, active)

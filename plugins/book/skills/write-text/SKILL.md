@@ -1,13 +1,13 @@
 ---
 name: write-text
 description: >-
-  Writes and rewrites the author's prose, in the manuscript and in the thinking files, with one
-  loop: plan, draft, show, apply, then the text checks. Holds the prose rules, the voice profile
-  and the text check scripts that the other skills use. Use it when the author asks to write,
-  draft, rewrite, polish, fix, tighten or edit book text, or pastes a paragraph of the book with
-  no instruction. To run the text checks on the book, use run-checks; to review prose and get
-  findings as notes, use review-text; for the argument and evidence, use review-ideas; to answer
-  open notes, use revise-from-notes. Stance: draft, show, then apply, and a minimal change stays minimal.
+  Writes and rewrites the author's prose, in the manuscript and in the thinking files: plan,
+  draft, show, apply, then the text checks. Holds the prose rules, the voice profile and the
+  text check scripts the other skills use. Use it when the author asks to write, draft, rewrite,
+  polish, fix, tighten or edit book text, or pastes a paragraph of the book with no instruction.
+  To run the text checks on the book, use run-checks; to review prose, use review-text; to
+  answer open notes, use revise-from-notes.
+argument-hint: "[what to write or change]"
 ---
 
 # Write text
@@ -54,10 +54,10 @@ watch lists) and its own decisions. Nothing in this skill is about one particula
 
 ## Modes
 
-This skill has no modes. Every writing or change verb (write, rewrite, rework, rephrase,
-redraft, draft, polish, fix, improve, edit, tighten, refine, clean up, smooth out, sharpen),
-"apply the style guide", and a pasted paragraph with no instruction (treat it as a rewrite) run
-the same loop: read and follow `references/write.md`. It sizes the work itself, from a
+This skill has no modes. Every writing or change verb runs the same loop: write, rewrite,
+rework, rephrase, redraft, draft, polish, fix, improve, edit, tighten, refine, clean up, smooth
+out, sharpen. So do "apply the style guide" and a pasted paragraph with no instruction (treat it
+as a rewrite). Read and follow `references/write.md`. It sizes the work itself, from a
 micro-edit of one word to a new chapter. In the thinking files the length and shape rules of a
 chapter do not hold (`references/write.md`, "Writing in the thinking files").
 
@@ -175,7 +175,7 @@ a person's name (2.7), naming before evidence (1.3).
 
 ### 9. Format
 
-9.1. ASCII only (codes 32-126).
+9.1. ASCII only (codes 32-126), except letters with accents (an e with an acute accent, an o with an umlaut) in names and words.
 9.2. Prose for logical sequences.
 9.3. Lists only for reference and scanning.
 9.4. Turn three or more short bold-headed paragraphs in a row into connected prose.
@@ -201,7 +201,7 @@ a person's name (2.7), naming before evidence (1.3).
 
 12.1. When the book defines a hierarchy of ideas, keep it in every sentence that names two levels.
 12.2. Refer back only to a named concept in the glossary; otherwise restate the idea.
-12.3. Keep the thesis direction (the root produces the result, never the reverse).
+12.3. Keep the cause-and-effect direction the thesis states.
 
 ## The text checks
 
@@ -222,7 +222,7 @@ columns. For a book in another language, the English-only checks (`ascii-normali
 | `sentence-and-paragraph-check.py --connectors` | 4.2 | "because" that describes, circular "because", "while" across two measures. |
 | `sentence-and-paragraph-check.py --meta` | 4.12 | Sentences that describe the text instead of arguing ("This chapter shows how"). |
 | `sentence-and-paragraph-check.py --inversions` | 4.5 | Gaps, proximity and variety of fronted inversions. Run on the whole manuscript. |
-| `ascii-normalize.py` | 9.1 | Non-ASCII characters; `--fix` replaces them. |
+| `ascii-normalize.py` | 9.1 | Non-ASCII characters other than letters with accents; `--fix` replaces them. |
 | `unclear-this-check.py` | 2.2, 12.2 | A paragraph opening "This/That/These/Those/The + noun" whose noun is not in the sentence before. |
 | `word-for-two-things-check.py` | 2.4 | One noun ("framework", "system") used both for named outside things and the book's own ideas; SKIPPED with no `outside_names`. |
 | `word-sense-check.py` | 2.4 | Words used in a sense the book avoids (`terms.watch_words.word_sense`). |
@@ -231,7 +231,7 @@ columns. For a book in another language, the English-only checks (`ascii-normali
 | `term-density-check.py` | 3.9-3.14 | Coined-term density, phases (`--phases`), gaps, antonym pairs, compound drift; `--first-use`. |
 | `glossary-check.py` | 2.4, 12.2 | Every glossary term in the manuscript: first use against the definition's file, uses per file; `--report FILE` writes the report review-ideas reads. Format of the glossary: `${CLAUDE_PLUGIN_ROOT}/lib/glossary-format.md`. |
 | `vale-run.py`, `vale-sync.py` | several | Vale in Docker (pinned image, files written as you). `vale-run.py` never writes; `vale-sync.py --fix` copies PlainBook into the book. See `references/vale-check.md`. |
-| `self-check.py` | - | Maintainer check, not for book work: every self-test, rule numbers, file references, leak words (`--leak-words FILE`). |
+| `self-check.py` | - | Maintainer check, not for book work: every self-test, rule numbers, file references, leak words (from `$BOOK_LEAK_LIST`, or `--leak-words FILE`). |
 
 **For the whole book** run the run-checks skill once:
 `python3 ${CLAUDE_PLUGIN_ROOT}/skills/run-checks/scripts/run-checks.py text` (a file or folder
@@ -251,7 +251,7 @@ content of claims belongs to the **review-ideas** skill.
 | `writing.<setting>` | Overrides one voice number, e.g. `writing.sentence_min_words`; also `writing.term_phases`, `writing.words_per_page`, `writing.paragraph_length_exempt` |
 | `terms.families`, `terms.compounds` | Coined terms and accepted compounds |
 | `terms.watch_words.container_terms` | `book_terms` (the book's own words), `outside_names` (named outside things), `watchlist` (container nouns) |
-| `terms.watch_words.people` | `aliases` (other names of a cited author), `eponyms` (named laws or tests to skip) |
+| `terms.watch_words.people` | `aliases` (other names of a cited author), `eponyms` (laws or tests named after a person, to skip) |
 | `terms.watch_words.word_sense` | `name`, `reason`, `words` of the avoided sense, `scope_targets` |
 | `rules.glossary`, `rules.decisions` (the index), `thinking.stance`, `thinking.audience` | Read before writing |
 | `rules.vale_ini`, `tools.vale_image` | Vale config and pinned image |

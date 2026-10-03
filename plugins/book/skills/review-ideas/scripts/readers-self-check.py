@@ -253,6 +253,19 @@ def check_collect_and_next_round(check, book, room):
                  code == 0 and not room.exists(), output)
 
 
+def check_folder_that_is_not_a_room(check, book, work):
+    other_folder = work / "home-notes"
+    other_folder.mkdir()
+    (other_folder / "private.md").write_text("notes kept outside any book\n", encoding="utf-8")
+    code, output = run(CLEAN_ROOM, "remove", "--room", str(other_folder), "--fix", cwd=book)
+    check.expect("remove refuses a folder that setup did not make",
+                 code == 2 and (other_folder / "private.md").is_file(), output)
+    code, output = run(CLEAN_ROOM, "setup", "--room", str(other_folder), "--fix", cwd=book)
+    check.expect("setup refuses a folder that holds other files",
+                 code == 2 and sorted(path.name for path in other_folder.iterdir()) == ["private.md"],
+                 output)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Self-check of the readers mode of the review-ideas skill. Uses only the fixture book in "
@@ -272,6 +285,7 @@ def main(argv=None):
         checks_file.write_text("citation checks: clean\n", encoding="utf-8")
         check_setup(check, book, room, checks_file)
         check_default_lenses(check, work)
+        check_folder_that_is_not_a_room(check, book, work)
         if room.is_dir():
             check_refresh_without_results(check, book, room, checks_file)
             check_state_progress(check, room)

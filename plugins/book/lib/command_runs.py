@@ -5,6 +5,8 @@ import subprocess
 import sys
 from dataclasses import dataclass
 
+from check_output import run_main
+
 TIMED_OUT_EXIT = 124
 
 
@@ -70,4 +72,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    run_main(main)

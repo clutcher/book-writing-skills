@@ -41,7 +41,7 @@ This fractal application extends to book-level structure: Parts follow the patte
 
 **Section transitions end with insight.** The last sentence of a section ends with an insight that makes the reader curious about what comes next. "Every hot day now has a second job: telling the gardener the barrel is empty" leads naturally into a section about watering by hand. "The next subsection shows how watering by hand adds another cost" describes the next section's content mechanically.
 
-**Evidence earns the naming.** When a section builds a new concept (Rule 2.5), the evidence that demonstrates the concept must precede the naming. Evidence includes worked examples, reasoning chains, analogies, or historical examples. The reader encounters the puzzle first: something varies, something feels different, something doesn't work as expected. Then the evidence shows the phenomenon. Only after the evidence does the text name the cause, mechanism, or structural property. This prevents Cascade A (front-loading -> restatement), because the development has somewhere to go: toward the naming that the evidence earns.
+**Evidence earns the naming.** When a section builds a new concept (Rule 2.5), the evidence that demonstrates the concept must precede the naming. Evidence includes worked examples, reasoning chains, analogies, or historical examples. The reader encounters the puzzle first: something varies, something feels different, something doesn't work as expected. Then the evidence shows the phenomenon. Only after the evidence does the text name the cause, mechanism, or structural property. This prevents Root Cause A (front-loading -> restatement), because the development has somewhere to go: toward the naming that the evidence earns.
 
 When the concept is already known to the reader (Rule 2.6), the section can name it upfront and develop implications instead. The distinction follows Rules 2.5 and 2.6: new concepts need evidence before naming, known concepts can be named as context for a new question.
 
@@ -327,7 +327,7 @@ A clause placed inside another clause ("The plan [that the council [that runs th
 
 **3.9. Each coined word family needs 10-15 learning encounters in the first 2-3 chapters, then ~1 per 10,000 words for maintenance.**
 
-A word family is a base word plus its inflected and derived forms (Bauer & Nation 1993). A coined adjective and its noun form are one family; a coined term and its antonym are two separate families, each needing its own threshold. Transparent collocations (the coined adjective plus an ordinary noun) count toward the base term, not as separate terms to learn (Nation 2001).
+A word family is a base word plus its inflected and derived forms (Bauer & Nation 1993). A coined adjective and its noun form are one family; a coined term and its antonym are two separate families, each needing its own threshold. This skill counts transparent collocations (the coined adjective plus an ordinary noun) toward the base term, not as separate terms to learn.
 
 The distribution follows **front-loading with expanding intervals** (Mace 1932, Bloom & Shuell 1981): dense at introduction, increasingly spaced afterward. This is not even distribution. Learning-phase chapters (where the term is defined and reinforced) should be dense; maintenance chapters (where the term is applied to other material) should be sparse.
 
@@ -345,11 +345,11 @@ Presenting semantically related words together hinders retention (Tinkham 1993, 
 
 **3.12. No chapter should have 0 mentions of any coined term. Every chapter should include at least one mention in its intro paragraph.**
 
-If the span between encounters is too long, learners restart from zero (Nation 2001). Every chapter should contain at least one natural mention of each coined term. Within a chapter, avoid gaps larger than ~3,000 words (~8 pages) between mentions. The intro mention serves as an advance organizer that primes the reader's schema (Lorch & Lorch 1996): when most chapters signal the term in the intro but some do not, the unsignaled chapters receive weaker encoding than if no chapters signaled at all. Consistent intro placement across all chapters avoids this penalty.
+If the span between encounters is too long, the reader forgets much of the word and must partly learn it again. Every chapter should contain at least one natural mention of each coined term. Within a chapter, avoid gaps larger than ~3,000 words (~8 pages) between mentions. The intro mention serves as an advance organizer that primes the reader's schema (Lorch & Lorch 1996): when most chapters signal the term in the intro but some do not, the unsignaled chapters receive weaker encoding than if no chapters signaled at all. Consistent intro placement across all chapters avoids this penalty.
 
 **3.13. Distribution should be front-loaded with expanding intervals, not even across chapters.**
 
-Research supports dense introduction followed by expanding spacing (Ebbinghaus 1885, Mace 1932, Nation 2001). The correct shape for term distribution is asymmetric: dense at the start (learning), sparse in the middle (maintenance), and denser again where new meaning layers are introduced (polysemy deepening). Attempting even distribution would either overwhelm maintenance chapters with forced mentions or starve learning chapters of needed repetitions.
+Teaching guides recommend dense introduction followed by expanding spacing (Ebbinghaus 1885, Mace 1932, Pimsleur 1967). Later studies find that equal spacing works as well or better for long-term memory (Karpicke & Roediger 2007), so treat the expanding shape as a guide, not a law. The correct shape for term distribution is asymmetric: dense at the start (learning), sparse in the middle (maintenance), and denser again where new meaning layers are introduced (polysemy deepening). Attempting even distribution would either overwhelm maintenance chapters with forced mentions or starve learning chapters of needed repetitions.
 
 **3.14. Coined terms benefit from body-integrated placement in learning/deepening chapters, but intro+summary-only is acceptable in maintenance chapters.**
 
@@ -768,9 +768,9 @@ Headings state what is there. "The Critical Distinction" names a distinction the
 
 ### 9. Format
 
-**9.1. ASCII only (codes 32-126); use standard alternatives for special characters.**
+**9.1. ASCII only (codes 32-126), except letters with accents; use standard alternatives for special characters.**
 
-Use standard ASCII characters (codes 32-126) throughout for consistent rendering across all systems and build tools. The substitution table is in the Word-Level Lookup Tables at the end of this file; `scripts/ascii-normalize.py` finds and (with `--fix`) replaces them.
+Use standard ASCII characters (codes 32-126) throughout for consistent rendering across all systems and build tools. Letters with accents are allowed: a name or word keeps its own spelling, with its own accents (the o with an umlaut in a German surname, the e with an acute accent in a French word). The check allows the letters of Latin-1 Supplement, Latin Extended-A and Latin Extended-B; punctuation and symbols outside ASCII are still replaced. The substitution table is in the Word-Level Lookup Tables at the end of this file; `scripts/ascii-normalize.py` finds and (with `--fix`) replaces them.
 
 When tempted to use a dash for inline clarification, restructure the sentence instead. Place the clarifying information before the main point, after a colon, or in a separate sentence.
 
@@ -972,7 +972,7 @@ specific concepts keep their precise form per Rule 5.4. The base Vale package
 A replacement word must itself meet the plain-English bar: "obscure", "conceal", "mask" and
 "bury" are harder than the figurative "hide" they would replace.
 
-**ASCII (Rule 9.1).** Use only codes 32-126. `scripts/ascii-normalize.py` maps these.
+**ASCII (Rule 9.1).** Use only codes 32-126; letters with accents are allowed. `scripts/ascii-normalize.py` maps these.
 
 | Instead of... | Write... |
 |---------------|----------|

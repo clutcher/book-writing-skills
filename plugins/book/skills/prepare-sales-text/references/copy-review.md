@@ -177,8 +177,11 @@ Does the copy win on the real shelf? Read the category evidence in the book's
 
 ### 6. The Psychologist
 
-The text side of a five-theory frame, plus four mechanisms that act only in prose. An unknown
-author has no borrowed authority, so every mechanism here is carried by wording alone.
+The text side of a five-theory frame, plus four ideas that apply only to prose. Use them as
+questions to ask, not as laws: they are lenses for looking at the copy, and only the items that
+name a measured finding are evidence. Freud and Jung in particular are labels for a way of
+reading, not tested causes of sales. An unknown author has no borrowed authority, so everything
+here is carried by wording alone.
 
 - **Freud, tension then resolution.** The copy opens a tension and closes it. The chaos must
   feel solvable, never hopeless.
@@ -207,8 +210,14 @@ author has no borrowed authority, so every mechanism here is carried by wording 
   replacing it.
 - **Zeigarnik, the open loop.** When the book coins a term, the unexplained word opens a loop
   the reader wants closed; that is why it works as a hook. A loop never closed anywhere on the page reads as evasion.
-- **Prospect theory, loss framing, once.** The cost of the problem is the stronger frame. Use it
-  once, then aspiration; a page built on loss reads as fear-selling.
+- **Gain or loss framing.** Does the copy name the cost of the problem, the gain of the
+  solution, or both? Neither frame is generally more persuasive: meta-analyses of gain-framed
+  against loss-framed messages found no overall advantage for loss frames (O'Keefe & Jensen 2006,
+  *Communication Yearbook* 30, 1-43, DOI [10.1080/23808985.2006.11679054](https://doi.org/10.1080/23808985.2006.11679054);
+  2007, *J. Health Communication* 12(7) 623-644, DOI [10.1080/10810730701615198](https://doi.org/10.1080/10810730701615198);
+  2009, *J. Communication* 59(2) 296-316, DOI [10.1111/j.1460-2466.2009.01417.x](https://doi.org/10.1111/j.1460-2466.2009.01417.x)).
+  These studies measured health and compliance messages, not book copy.
+  Choose by tone: a page built on loss reads as fear-selling.
 
 ### 7. The Editor
 

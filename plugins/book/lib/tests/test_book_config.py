@@ -238,7 +238,7 @@ class PreviousLayoutBookTest(unittest.TestCase):
     def test_should_follow_the_layout_key_when_the_book_names_its_layout(self):
         # given
         with TemporaryBook() as folder:
-            (folder / "book.yaml").write_text("layout: previous\n", encoding="utf-8")
+            (folder / "book.yaml").write_text("folder_layout: previous\n", encoding="utf-8")
 
             # when
             config = load_config(start=folder)
@@ -250,7 +250,7 @@ class PreviousLayoutBookTest(unittest.TestCase):
     def test_should_fail_when_the_layout_key_names_no_layout(self):
         # given
         with TemporaryBook() as folder:
-            (folder / "book.yaml").write_text("layout: newest\n", encoding="utf-8")
+            (folder / "book.yaml").write_text("folder_layout: newest\n", encoding="utf-8")
 
             # when / then
             with self.assertRaisesRegex(ConfigError, "layout must be one of"):
@@ -423,6 +423,147 @@ class ConfigPrecedenceTest(unittest.TestCase):
         self.assertEqual(names, ["110-chapter-1.md", "000-copyright.md"])
 
 
+class HandWrittenConfigTest(unittest.TestCase):
+    def test_should_use_defaults_when_a_section_has_only_commented_keys(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "book.yaml").write_text(
+                "book:\n  title: Field Notes\nsources:\n  # backup: ~/book-backup\n"
+                "manuscript:\ncover:\ntools:\n", encoding="utf-8")
+
+            # when
+            config = load_config(start=folder)
+
+        # then
+        self.assertEqual(config.book.title, "Field Notes")
+        self.assertEqual(config.sources.citation_style, "alpha")
+        self.assertEqual(config.manuscript.dir, folder / "manuscript")
+        self.assertEqual(config.cover.cmyk_limit, 88)
+
+    def test_should_fail_as_a_tool_when_a_section_is_not_a_set_of_keys(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "book.yaml").write_text("work: 5\n", encoding="utf-8")
+
+            # when
+            result = run_script("book_config.py", "show", cwd=folder)
+
+        # then
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("'work' must hold keys", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_should_read_the_first_key_when_the_file_starts_with_a_byte_order_mark(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "book.yaml").write_text("\ufeffbook:\n  title: Field Notes\n",
+                                              encoding="utf-8")
+
+            # when
+            config = load_config(start=folder)
+
+        # then
+        self.assertEqual(config.book.title, "Field Notes")
+
+    def test_should_strip_comments_when_a_plain_value_holds_an_apostrophe(self):
+        # given
+        text = ("title: Rock 'n roll # working title\n"
+                "subtitle: The '90s # decade\n"
+                "author: 'Ann O''Neil' # quoted\n")
+
+        # when
+        data = read_yaml_subset(text)
+
+        # then
+        self.assertEqual(data, {"title": "Rock 'n roll", "subtitle": "The '90s",
+                                "author": "Ann O'Neil"})
+
+    def test_should_read_one_item_list_when_a_list_key_holds_one_text(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "book.yaml").write_text(
+                "manuscript:\n  order: list\n  files: 110-chapter-1.md\n"
+                "terms:\n  compounds: Rule-Based\n", encoding="utf-8")
+
+            # when
+            config = load_config(start=folder)
+
+        # then
+        self.assertEqual(config.manuscript.files, ["110-chapter-1.md"])
+        self.assertEqual(config.terms.compounds, ["rule-based"])
+
+    def test_should_fail_as_a_config_error_when_the_cmyk_limit_is_not_a_usable_percent(self):
+        for written in ("0", "300%", "high"):
+            with self.subTest(written), TemporaryBook() as folder:
+                # given
+                (folder / "book.yaml").write_text(f"cover:\n  cmyk_limit: {written}\n",
+                                                  encoding="utf-8")
+
+                # when / then
+                with self.assertRaisesRegex(ConfigError, "cover.cmyk_limit"):
+                    load_config(start=folder)
+
+    def test_should_keep_text_when_a_text_key_looks_like_a_number_or_a_capital_null(self):
+        # given
+        text = ("book:\n  title: Null\n  subtitle: 1984\n  epub_identifier: 0306406152\n"
+                "  description: null\n")
+
+        # when
+        data = read_yaml_subset(text)
+
+        # then
+        self.assertEqual(data["book"], {"title": "Null", "subtitle": "1984",
+                                        "epub_identifier": "0306406152", "description": None})
+
+    def test_should_keep_three_dashes_when_they_are_inside_a_literal_block(self):
+        # given
+        text = "description: |\n  Part one\n  ---\n  Part two\nlanguage: en-GB\n"
+
+        # when
+        data = read_yaml_subset(text)
+
+        # then
+        self.assertEqual(data, {"description": "Part one\n---\nPart two\n",
+                                "language": "en-GB"})
+
+    def test_should_keep_a_hash_sign_when_an_old_metadata_value_uses_it_in_a_title(self):
+        # given
+        text = "## Book Metadata\n\nTitle: We Are #1\nSubtitle: Notes  # working\n"
+
+        # when
+        metadata = book_config.read_metadata_section(text)
+
+        # then
+        self.assertEqual(metadata, {"title": "We Are #1", "subtitle": "Notes"})
+
+    def test_should_explain_the_value_when_an_override_is_not_valid(self):
+        # given
+        with TemporaryBook() as folder:
+            # when
+            result = run_script("book_config.py", "--set", "book.title=[Draft] Field Notes",
+                                "get", "book.title", cwd=folder)
+
+        # then
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--set book.title", result.stderr)
+        self.assertNotIn("line 0", result.stderr)
+
+    def test_should_join_subjects_with_commas_when_metadata_is_printed_for_the_shell(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "book.yaml").write_text(
+                "book:\n  subjects:\n    - Software Testing\n    - Quality\n",
+                encoding="utf-8")
+
+            # when
+            result = run_script("book_config.py", "metadata", "--shell", cwd=folder)
+
+        # then
+        values = dict(line.split("=", 1) for line in result.stdout.splitlines())
+        self.assertEqual(shlex.split(values["BOOK_META_SUBJECTS"])[0],
+                         "Software Testing, Quality")
+
+
 class YamlSubsetTest(unittest.TestCase):
     def test_should_parse_nested_lists_and_mappings(self):
         # given
@@ -472,7 +613,7 @@ class CommandLineTest(unittest.TestCase):
         values = dict(line.split("=", 1) for line in result.stdout.splitlines())
         self.assertEqual(shlex.split(values["BOOK_SOURCES_LIST"])[0],
                          str(OLD_BOOK / "review" / "sources-registry.md"))
-        self.assertEqual(shlex.split(values["BOOK_LAYOUT"])[0], "old")
+        self.assertEqual(shlex.split(values["BOOK_FOLDER_LAYOUT"])[0], "old")
 
     def test_should_print_one_value_when_getting_a_dotted_key(self):
         # when

@@ -45,13 +45,13 @@ circulates on author-service blogs: no method, no baseline. OPINION.
 
 | Finding | Source | Method | Grade |
 |---|---|---|---|
-| **Structure decides.** Table of contents, organisation and content structure dominated selection; **author credentials, publisher, date and authoritativeness did NOT affect it** | Stieve & Schoen (2006), *J. Academic Librarianship* 32(6) 599-608, [link](https://www.sciencedirect.com/science/article/abs/pii/S0099133306001819) | Forced choice, 11 matched book pairs, 20 candidate factors, behavioural | **STRONG** |
+| **Structure may decide.** Table of contents, organisation and content structure dominated selection; **author credentials, publisher, date and authoritativeness did NOT affect it** | Stieve & Schoen (2006), "Undergraduate Students' Book Selection: A Study of Factors in the Decision-Making Process", *J. Academic Librarianship* 32(6) 599-608, DOI [10.1016/j.acalib.2006.09.001](https://doi.org/10.1016/j.acalib.2006.09.001) | Forced choice between 11 matched book pairs by undergraduates choosing **library** books, 20 candidate factors, behavioural. Small, one population, selection without payment, not purchase | MODERATE |
 | Author reputation, publisher reputation and cover attractiveness all significant; **author reputation significant only for technical books** | d'Astous, Colbert & Mbarek (2006), *Poetics* 34(2) 134-147, [link](https://www.semanticscholar.org/paper/b62a4c55db0a23991bb1709d756be8fab07b469d) | Experimental manipulation of five variables; sample size not retrievable | STRONG design, incompletely retrieved |
 | Most valued: title, synopsis, subject, recommendation, discount | Leitao et al. (2018), *J. Retailing & Consumer Services* 42, 88-97, DOI 10.1016/j.jretconser.2018.01.015 | Questionnaire, n=487, fiction buyers only | MODERATE |
 | Purchase drivers: subject interest 29%, description 20%, series 16%, recommendation 16% | [BookNet Canada, Canadian Book Consumer 2024](https://www.booknetcanada.ca/canadian-book-consumer-2024) | n=4,212, self-report | MODERATE |
 
 **Stieve & Schoen against d'Astous is a real tension**, not a resolved question. The plausible
-reconciliation (reputation counts when already known; structure decides when it is not) is an
+reconciliation (reputation counts when already known; structure counts more when it is not) is an
 untested inference.
 
 ## 3. Reviews and social proof
@@ -111,6 +111,7 @@ which is separately evidenced.
 | **No conversion test isolating reading level exists** | -- |
 | Best causal plain-language evidence: Bhargava & Manoli (2015), *AER*, DOI [10.1257/aer.20121493](https://doi.org/10.1257/aer.20121493); randomised, N=35,050; bundled treatment | STRONG, bundled |
 | NN/g lower-literacy study, N=50, double-blind: rewriting for lower-literacy readers raised their task success 46% -> 82% **and** higher-literacy readers' 68% -> 93% | MODERATE |
+| NN/g "How Users Read on the Web" (Nielsen, 30 Sep 1997, [link](https://www.nngroup.com/articles/how-users-read-on-the-web/)): 79% of test users scanned a new page, 16% read word by word. Rewritten versions of one web site measured better usability than the original: concise 58%, scannable 47%, objective 27%, all three combined 124%. The article gives no sample size; the scannable version bundled highlighted keywords with lists, subheads and fewer words | WEAK |
 
 The assumed trade-off between serving A2 readers and serving experts is not visible in the one
 study that measured both (small N, task success, not sales; sentences can still be too short).

@@ -77,10 +77,20 @@ def load_entries(refs_path):
         year2 = ym.group(1)[-2:] if ym else '--'
         author_text = rest[:(ym or nd).start()]
         surnames, flags = surnames_from_author_text(author_text)
-        expected = derive(surnames, year2) if surnames else None
+        expected = expected_key(surnames, year2, flags)
         entries.append({'key': key, 'line': lineno, 'year': year2,
                         'surnames': surnames, 'flags': flags, 'expected': expected})
     return entries
+
+
+def expected_key(surnames, year, flags):
+    if not surnames:
+        return None
+    try:
+        return derive(surnames, year)
+    except ValueError:
+        flags.append("org-or-unparsed")
+        return None
 
 
 def build_rename_map(entries):
@@ -105,13 +115,15 @@ def build_rename_map(entries):
 def apply_fix(rename, refs_path, manuscript_files):
     files = [Path(refs_path)] + [Path(path) for path in manuscript_files]
     files = list(dict.fromkeys(path.resolve() for path in files))
+    if not rename:
+        return 0
     ordered = sorted(rename, key=len, reverse=True)
+    old_key = re.compile(r'(?<=[\[,\s])(' + '|'.join(re.escape(old) for old in ordered)
+                         + r')(?=[\],\s])')
     changed = 0
     for path in files:
-        text = path.read_text(encoding='utf-8')
-        original = text
-        for old in ordered:
-            text = re.sub(r'(?<=[\[,\s])' + re.escape(old) + r'(?=[\],\s])', rename[old], text)
+        original = path.read_text(encoding='utf-8')
+        text = old_key.sub(lambda found: rename[found.group(1)], original)
         if text != original:
             path.write_text(text, encoding='utf-8')
             changed += 1
@@ -184,6 +196,12 @@ def self_test():
             failures.append("a key inside a multi-key bracket was not renamed: %r" % chapter)
         if not verify_integrity(refs, files, load_entries(refs)):
             failures.append("integrity failed after a clean rename")
+        second_chapter = manuscript / "120-chapter-2.md"
+        second_chapter.write_text("First [Smi05b]. Then [Smi05a].\n", encoding="utf-8")
+        apply_fix({"Smi05b": "Smi05a", "Smi05a": "Smi05b"}, refs, [second_chapter])
+        swapped = second_chapter.read_text(encoding="utf-8")
+        if swapped != "First [Smi05a]. Then [Smi05b].\n":
+            failures.append("two keys that swap places were merged: %r" % swapped)
     for line in failures:
         print("FAIL %s" % line)
     print("self-test: %s" % ("PASS" if not failures else "%d failure(s)" % len(failures)))
@@ -214,10 +232,13 @@ def main():
 
     entries = load_entries(refs)
     rename = build_rename_map(entries)
+    if args.fix and rename and not manuscript:
+        return tool_failed("no manuscript files found; --fix would rename keys in the bibliography "
+                           "but not in the text", TOOL)
     if args.fix and rename:
         changed = apply_fix(rename, refs, manuscript)
         print("Applied %d renames across %d file(s)." % (len(rename), changed))
-        if not verify_integrity(refs, files, load_entries(refs)):
+        if not verify_integrity(refs, manuscript, load_entries(refs)):
             return 1
         entries = load_entries(refs)
         rename = build_rename_map(entries)

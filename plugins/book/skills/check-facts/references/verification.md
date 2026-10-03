@@ -119,7 +119,7 @@ SIGNIFICANT ISSUE from review mode, read the chapter itself.
 ## Working in parallel
 
 One agent per chapter. Each agent greps both banks for its keys, fetches every uncached source
-through `fetch.py` (the cache mandate binds subagents; see `${CLAUDE_PLUGIN_ROOT}/skills/collect-sources/references/files-and-cache.md`), reads
+through `fetch.py` (the cache rule binds subagents; see `${CLAUDE_PLUGIN_ROOT}/skills/collect-sources/references/files-and-cache.md`), reads
 `reference-standard.md` and this file, never resolves a paywall on its own authority, and returns
 three blocks for EVERY key: list data, quotes data and the verdict. The missed-claims pass runs as its
 own agent, given only the chapter, the script flags and `missed-claims-pass.md`: an agent that has just

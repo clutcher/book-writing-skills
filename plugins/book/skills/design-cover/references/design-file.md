@@ -32,6 +32,11 @@ class MyCover(CoverDesign):
         return svg
 ```
 
+This design uses the base class fonts. Name a real font family with a generic fallback, as in
+`DISPLAY_FONT = 'DejaVu Serif, serif'`, and use only weights the family has: `font-check.py`
+reports a font named only as `serif` or `sans-serif`, and a weight the font does not have. The
+starter design that `/book:init new` writes does this.
+
 Draw text with `self.place_text`, not with `text` from `svg_parts`: `place_text` records the
 text's box, so `layout-check.py` can say when a title runs past the safe area. Text drawn with
 plain `text` is invisible to the check. A title too long for one line at `TITLE_SIZE` gets a

@@ -62,7 +62,7 @@ A TSV file, one row per path: `old path <TAB> new path or DROP <TAB> note`. Line
   owned by root) is a plan problem, named in the dry run; remove it by hand first.
 - Nothing inside `.git` is read, listed or touched, and no path may leave the book folder.
 
-The draft takes its rules from `lib/book_config.py`, never from a list of its own: every path
+The draft takes its rules from `${CLAUDE_PLUGIN_ROOT}/lib/book_config.py`, never from a list of its own: every path
 key whose older-layout default exists and differs from the standard default gets a row. Some keys
 move in parts instead of whole: only the dated run folders of `work.runs`, only the
 `*-inbox` folders of staged entries (they go into the move's own run folder,
@@ -102,7 +102,7 @@ counts, which no check reads any more) goes into the move's run folder; and `rea
    - *Previous layout:* the existing `book.yaml` is rewritten line by line, so every comment and
      every value it does not touch keeps its bytes: an old key name gets its new name (when
      both are set, the old one goes, because the new one already wins); a retired key
-     (`work.inbox`, `sources.incoming`) and a top-level `layout:` go; a path key the move sent
+     (`work.inbox`, `sources.incoming`) and a top-level `folder_layout:` go; a path key the move sent
      to its default goes; a path the plan kept elsewhere is written. The old file is copied to
      the run folder as `book.yaml.before`, and the new one must read back to exactly the
      intended values, or nothing is written.

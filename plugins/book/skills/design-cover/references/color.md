@@ -117,13 +117,13 @@ Treat all of this as weaker than it sounds; most of it is not about books.
 | Saturation and lightness shape brand personality: saturated reads as excitement, muted as sincerity and competence | Labrecque, Patrick and Milne 2013; moderate effects |
 | Color that fits the product category matters more than any one color | Bottomley and Doyle 2006 |
 | Restrained, muted designs read as higher quality for serious products; loud contrasting designs read as discount | Orth and Malkewitz 2008 |
-| Simpler design raises perceived quality for useful (not pleasure) products | Pieters, Wedel and Batra 2010 |
+| In print ads, dense perceptual clutter ("feature complexity") hurt attention to the brand and liking of the ad, while an elaborate creative design ("design complexity") helped attention, comprehension and liking. Inference for a cover: cut visual noise, not ideas | Pieters, Wedel and Batra 2010, *J. Marketing* 74(5) 48-60, DOI [10.1509/jmkg.74.5.048](https://doi.org/10.1509/jmkg.74.5.048); 249 ads, eye tracking; ads, not books |
 | Blue is linked with competence and is the most widely liked color across countries | Labrecque and Milne 2012; Madden, Hewett and Roth 2000 |
 | Moderate difference from the category beats both copying it and breaking it | Schoormans and Robben 1997 |
 | Distinct items in a set are remembered and looked at longer | Von Restorff 1933, Hunt 1995 (only true if the cover really is distinct on that shelf) |
 | White space raises perceived quality and price, but empty space around a message can reduce persuasion | Pracejus, Olsen and O'Guinn 2006; Kwan, Dai and Wyer 2017 |
 | Left-to-right readers read a left-to-right change as progress | Tversky 2011 |
-| For considered purchases, pleasure predicts buying better than arousal; do not over-saturate to "pop" | Donovan and Rossiter 1982 |
+| In shops, the pleasure a store gives predicted wanting to stay and to spend more than planned; arousal mattered less clearly. "Do not over-saturate to pop" is an inference from this, not a finding about covers | Donovan and Rossiter 1982, *J. Retailing* 58(1) 34-57; store atmosphere, not covers |
 | Color images are recognised 5-10% better than grey ones | Wichmann, Sharpe and Gegenfurtner 2002 |
 
 ## What designers do

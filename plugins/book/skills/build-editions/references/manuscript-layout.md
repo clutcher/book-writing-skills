@@ -3,7 +3,7 @@
 ## Files and order
 
 - The build takes the book's files from the shared config reader (`manuscript_files` in
-  `lib/book_config.py`), then keeps those whose name matches `pattern` (default `*.md`) and leaves
+  `${CLAUDE_PLUGIN_ROOT}/lib/book_config.py`), then keeps those whose name matches `pattern` (default `*.md`) and leaves
   out those matching `exclude`. `build-book.sh --show-settings` prints the result as
   `MANUSCRIPT_FILES`.
 - **Natural order is the default** (`manuscript.order: natural`): every `.md` file directly inside

@@ -74,6 +74,48 @@ DECIDED_WITHOUT_WHY = """# Decisions
 """
 
 
+OTHER_HEADING_FORMS = """# Decisions
+
+## Details
+
+## D-1: Keep the long example
+
+- **Status:** DECIDED / no change
+- **Idea:** The worked example in chapter three is too long.
+- **Decision:** Keep it.
+- **Why:** It is the only full example.
+- **Decided:** 2025-01-01
+- **Keywords:** worked example
+
+## [D-2] Spell out the acronym once
+
+- **Status:** OPEN / undiscussed
+- **Idea:** The acronym is never spelled out.
+- **Decision:** Question: spell it out at first use?
+- **Decided:** None
+
+## D-3
+
+- **Status:** OPEN / undiscussed
+- **Idea:** The preface repeats the introduction.
+- **Decision:** Question: cut the preface?
+- **Decided:** None
+"""
+
+BROKEN_HEADING = """# Decisions
+
+## Details
+
+## D-4—Move the glossary to the back
+
+- **Status:** DECIDED / changed
+- **Idea:** The glossary interrupts the opening.
+- **Decision:** Move it.
+- **Why:** Readers meet the terms in context first.
+- **Decided:** 2025-04-04
+"""
+
+
 class DecisionsParsingTest(unittest.TestCase):
     def setUp(self):
         self.decisions = read_decisions(NEW_BOOK_DECISIONS)
@@ -108,6 +150,24 @@ class DecisionsParsingTest(unittest.TestCase):
         self.assertEqual(decisions.entry("1.1").status_from, "section")
         self.assertEqual(decisions.entry("4.1").status, DECIDED_CHANGED)
         self.assertEqual(decisions.entry("4.1").title, "Fix the second table")
+
+    def test_should_read_entries_when_the_id_has_a_colon_brackets_or_no_title(self):
+        # when
+        decisions = parse_decisions(OTHER_HEADING_FORMS)
+
+        # then
+        self.assertEqual([(entry.id, entry.title) for entry in decisions.entries],
+                         [("D-1", "Keep the long example"),
+                          ("D-2", "Spell out the acronym once"), ("D-3", "")])
+
+    def test_should_match_a_decided_item_when_its_heading_uses_a_colon(self):
+        # when
+        found = match_finding(parse_decisions(OTHER_HEADING_FORMS),
+                              "The worked example in chapter three is too long; cut it.")
+
+        # then
+        self.assertEqual(found[0].entry.id, "D-1")
+        self.assertFalse(found[0].entry.policy.may_report)
 
 
 class DecisionsMatchingTest(unittest.TestCase):
@@ -337,6 +397,63 @@ class DecisionsCommandLineTest(unittest.TestCase):
 
         # then
         self.assertEqual(result.returncode, 2)
+
+    def test_should_report_a_defect_when_an_entry_heading_cannot_be_read(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "rules").mkdir()
+            (folder / "rules" / "decisions.md").write_text(with_current_index(BROKEN_HEADING),
+                                                           encoding="utf-8")
+
+            # when
+            result = run_script("decisions.py", "check", "--format", "tsv", cwd=folder)
+
+        # then
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("## D-4—Move the glossary to the back\tunread-heading", result.stdout)
+
+    def test_should_give_the_next_free_id_when_entries_use_other_heading_forms(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "rules").mkdir()
+            (folder / "rules" / "decisions.md").write_text(OTHER_HEADING_FORMS,
+                                                           encoding="utf-8")
+
+            # when
+            result = run_script("decisions.py", "add", "--title", "Name the metaphor once",
+                                "--status", OPEN_UNDISCUSSED, "--idea", "x", "--decision",
+                                "Question: once or twice?", cwd=folder)
+
+        # then
+        self.assertIn("## D-4 Name the metaphor once", result.stdout)
+
+    def test_should_leave_the_decided_date_empty_when_an_open_entry_is_added(self):
+        # given
+        with TemporaryBook(NEW_BOOK) as folder:
+            # when
+            result = run_script("decisions.py", "add", "--title", "Name the metaphor once",
+                                "--status", OPEN_UNDISCUSSED, "--idea", "x", "--decision",
+                                "Question: once or twice?", cwd=folder)
+
+        # then
+        self.assertIn("- **Decided:** None", result.stdout)
+
+    def test_should_keep_windows_line_endings_when_the_file_is_rewritten(self):
+        # given
+        with TemporaryBook(NEW_BOOK) as folder:
+            path = folder / "rules" / "decisions.md"
+            path.write_bytes(path.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+
+            # when
+            run_script("decisions.py", "set-status", "D-2", DECIDED_CHANGED, "--fix", cwd=folder)
+            run_script("decisions.py", "add", "--title", "Name the metaphor once", "--status",
+                       OPEN_UNDISCUSSED, "--idea", "x", "--decision", "Nothing decided",
+                       "--fix", cwd=folder)
+            written = path.read_bytes()
+
+        # then
+        self.assertNotIn(b"\n", written.replace(b"\r\n", b""))
+        self.assertIn(b"## D-3 Name the metaphor once\r\n", written)
 
     def test_should_print_help_when_asked(self):
         # then

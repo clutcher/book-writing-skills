@@ -1,3 +1,4 @@
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -7,6 +8,22 @@ import unittest
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[1] / "run-checks.py"
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "lib"))
+
+from command_runs import CommandResult
+
+
+def load_runner():
+    spec = importlib.util.spec_from_file_location("run_checks", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+CRASH_OUTPUT = """Traceback (most recent call last):
+  File "sentence-and-paragraph-check.py", line 40, in <module>
+KeyError: 'manuscript'
+"""
 
 LIST_TEXT = """# Sources list
 
@@ -138,6 +155,38 @@ class RunChecksTest(unittest.TestCase):
         self.assertIn("book-owned 1", self.line_of(output, "argument-key-check.py"))
         self.assertEqual(exit_code, 1)
 
+    def test_shouldFindAnUncitedClaimWhenTheBookHasNoSourcesYet(self):
+        # given
+        self.write("sources/list.md", "# Sources list\n")
+        self.write("sources/quotes.md", "# Quotes Bank\n")
+        (self.book / "manuscript" / "900-references.md").unlink()
+        self.write("thinking/argument/sun.md", "Shade slows the crop.\n")
+        self.write("manuscript/110-chapter-1.md",
+                   "# Chapter 1: Weeds\n\nGardeners spend 70% of their time weeding.\n")
+
+        # when
+        exit_code, output = self.run_checks("facts", "--no-report")
+
+        # then
+        self.assertIn("[FIND] uncited-claim-check.py", output)
+        self.assertIn("no sources yet", self.line_of(output, "cited-source-check.py"))
+        self.assertEqual(exit_code, 1)
+
+    def test_shouldSkipEveryManuscriptCheckWhenTheManuscriptFolderIsMistyped(self):
+        # when
+        _, text_output = self.run_checks("text", "--no-vale", "--no-report",
+                                         "--set", "manuscript.dir=manuscrpt")
+        _, facts_output = self.run_checks("facts", "--no-report",
+                                          "--set", "manuscript.dir=manuscrpt")
+
+        # then
+        for check in ("ascii-normalize.py", "unclear-this-check.py", "code-font-check.py"):
+            self.assertIn("[SKIP]", self.line_of(text_output, check))
+            self.assertIn("no manuscript files at", self.line_of(text_output, check))
+        self.assertIn("[SKIP]", self.line_of(facts_output, "uncited-claim-check.py"))
+        self.assertIn("no manuscript files at",
+                      self.line_of(facts_output, "uncited-claim-check.py"))
+
     def test_shouldSkipTheBibliographyChecksWhenTheBookHasNoBibliography(self):
         # given
         (self.book / "manuscript" / "900-references.md").unlink()
@@ -254,6 +303,34 @@ class RunChecksTest(unittest.TestCase):
         # then
         self.assertIn("no file changed since the last run",
                       self.line_of(output, "unclear-this-check.py"))
+
+
+class CheckOutcomeTest(unittest.TestCase):
+    def setUp(self):
+        self.runner = load_runner()
+        self.check = next(check for check in self.runner.checks_of("text")
+                          if not check.graded)
+
+    def test_shouldFailNotFindWhenACheckCrashesWithExitOne(self):
+        # given
+        crashed_run = CommandResult(1, CRASH_OUTPUT)
+
+        # when
+        result = self.runner.result_of_run(self.check, crashed_run, 60)
+
+        # then
+        self.assertEqual(result.state, self.runner.FAIL)
+        self.assertIn("KeyError: 'manuscript'", result.summary)
+
+    def test_shouldFindWhenACheckExitsOneWithoutCrashing(self):
+        # given
+        flagged_run = CommandResult(1, "110-chapter-1.md:3\tlong-sentence\t52 words\n")
+
+        # when
+        result = self.runner.result_of_run(self.check, flagged_run, 60)
+
+        # then
+        self.assertEqual(result.state, self.runner.FIND)
 
 
 if __name__ == "__main__":

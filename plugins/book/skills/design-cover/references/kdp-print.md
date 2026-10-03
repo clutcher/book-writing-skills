@@ -4,6 +4,14 @@ KDP changes its rules from time to time. Before a final upload, check the curren
 (paperback cover, ebook cover) instead of trusting this page or memory. Every fact below says
 where it matters in the skill.
 
+The print facts were read on 3 October 2026 from these KDP help pages:
+[Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020) (cover page),
+[Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180) (print options page) and
+[Color Ink Options](https://kdp.amazon.com/en_US/help/topic/GX56BFPW4BKNPGFW) (color ink page) and
+[Paperback Submission Guidelines](https://kdp.amazon.com/en_US/help/topic/G201857950) (interior page).
+A line marked **unverified** has no KDP source: it is common practice advice, so treat it as a
+guess to check on the printed proof.
+
 ## Geometry: derived, never quoted
 
 ```
@@ -35,12 +43,12 @@ These reject a file, so check them before any taste question.
 | What | Rule |
 |---|---|
 | Bleed | 0.125 in on the outer edges (case-laminate hardcovers need more) |
-| Safe area | title, author and anything that must survive the trim at least 0.25 in inside the trim; this skill uses 0.375 in |
+| Safe area | text at least 0.125 in inside the trim lines (cover page); this skill uses 0.375 in to leave room for trim drift |
 | Resolution | 300 dpi or more for every image |
 | File | one PDF, fonts embedded, transparency flattened, no spot colors, no crop or trim marks, under 650 MB |
 | Spine text | only on books with more than 79 pages (KDP: "We only print spine text on books with more than 79 pages"), at least 0.0625 in from each spine edge. The default spine draws nothing below that, and `layout-check.py` flags a design that does |
 | Barcode | KDP prints the barcode on the back, bottom right: a 2.0 x 1.2 in box, 0.25 in from the spine fold and from the bottom trim (the KDP help page names a barcode margin but not these sizes; they come from published KDP cover guides, so check them against the template in the overlay). KDP prints over whatever is there. `layout-check.py` flags back text inside this box |
-| Thin lines | at least 0.75 pt |
+| Thin lines | at least 0.75 pt (the interior page gives this for charts and tables inside the book; the cover page gives no figure). Text at least 7 pt (cover page) |
 
 ### The KDP template
 
@@ -95,14 +103,19 @@ dashboard: flattened on white, quality 95, no chroma subsampling, sRGB profile e
 
 ## How KDP prints the cover
 
-- Digital print on demand (HP Indigo or Xerox class), not offset.
-- KDP publishes no ICC profile. Soft-proof with U.S. Web Coated (SWOP) v2; U.S. Sheetfed Coated
+- Digital print on demand, not offset. KDP does not name its presses.
+- KDP publishes no ICC profile and does "not recommend including color profiles" in the file
+  (cover page). Soft-proof with U.S. Web Coated (SWOP) v2 (practice advice, **unverified**); U.S. Sheetfed Coated
   v2 is a little closer for digital presses, and the difference is small.
-- Cover stock is 80 lb (220 gsm) white card, laminated after printing.
+- "Covers are printed on 80 pound (220 GSM) white paper stock" (print options page), with a
+  glossy or matte finish.
 - An RGB PDF is converted to CMYK by KDP with an unknown profile.
-- Total ink (all four channels added) tops out around 300-320% on coated digital stock.
-- **Tints vanish.** Under 5% in every channel a color may print as white or show banding; under
-  10-15% results are unreliable. For a tint that must be seen, aim for 15% or more in some
+- KDP publishes no total ink limit (checked on the cover page). Keep total ink (all four
+  channels added) moderate and check dark areas on the proof; any exact percentage is
+  **unverified**.
+- **Tints vanish** (practice advice, **unverified**; the interior page recommends "a minimum
+  grayscale fill of 10%" for grey backgrounds inside a black-ink book). Under 5% in every
+  channel a color may print as white or show banding; under 10-15% results are unreliable. For a tint that must be seen, aim for 15% or more in some
   channel. A near-white background such as `#F0F2F5` (C2 M1 Y0 K4) prints as white: commit to
   white, or push the tint until it is clearly visible.
 - **No single CMYK channel above the limit** (`cover.cmyk_limit`, default 88%). Colors near the
@@ -138,18 +151,20 @@ the darkest and most saturated colors on it first.
 | Fingerprints | hides them | shows them |
 | Feel | quiet and rich on dark covers | brighter |
 
-A light cover with small color differences wants glossy. A dark, rich cover can take matte. KDP's
-own guidance leans glossy for non-fiction and textbooks and matte for novels.
+A light cover with small color differences wants glossy. A dark, rich cover can take matte. The
+table above is practice advice, **unverified** by KDP. KDP itself says only that glossy "makes
+black covers darker and artwork more striking" and is "typical for textbooks, children's books,
+and nonfiction", and that matte is "typical for novels and other fiction" (print options page).
 
 ## Paper and ink
 
 | Choice | Notes |
 |---|---|
-| White paper | non-fiction, technical books, books with diagrams |
-| Cream paper | fiction and memoir; thicker, so the spine is wider (see the table above) |
+| White paper | non-fiction, technical books, books with diagrams (practice advice; KDP gives no genre advice for paper). Color books print on white only |
+| Cream paper | fiction and memoir (practice advice); thicker, so the spine is wider (see the table above) |
 | Black and white ink | the cheapest |
-| Standard color | inkjet |
-| Premium color | toner, sharper; its own spine factor |
+| Standard color | printed "using inkjet printers" on the same lighter paper as black and white (color ink page) |
+| Premium color | heavier paper (60-71 lb) and sharper color for image-heavy books (color ink page); KDP does not say which press prints it. Its own spine factor |
 
 The paper changes the spine width, so `cover.paper` must match what is chosen in KDP.
 

@@ -32,9 +32,12 @@ a reason per row, and say plainly what could not be verified. It changes no copy
    category words are on the avoid list; repeating them wastes a slot. The listing already owns
    those words, and they come back free: an unquoted slot matches word by word, so a slot word
    plus a title word reach a two-word query together.
-2. **Test each candidate** with `search-suggestions.py WORD ...` and record the answer with the
-   date line the script prints first: echoes itself (a real query stem), completes to something off-domain, completes to one
-   rival title, or nothing.
+2. **Test each candidate** with `search-suggestions.py --online WORD ...` and record the answer
+   with the date line the script prints first: echoes itself (a real query stem), completes to
+   something off-domain, completes to one rival title, or nothing. It calls an unofficial Amazon
+   endpoint; you run it at your own discretion. Without `--online` it prints the manual way: type
+   each word into the Amazon search box, Books department, and note the suggestions with the
+   date.
 3. **Fill each slot with a small cluster of related, unquoted words** in a natural order. One
    word per slot wastes most of the characters. Record which KDP page's slot-length advice you
    follow (they disagree; see `store-limits.md`).

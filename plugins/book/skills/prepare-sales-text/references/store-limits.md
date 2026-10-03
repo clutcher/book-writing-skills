@@ -49,6 +49,7 @@ prohibited keyword gets recorded as merely risky.
 | The browse store is where available categories are listed; **the picker itself needs a signed-in account.** Confirm every category in the live picker before publishing, and never from memory or an agent's list | same |
 | A book ranks in up to 3 bestseller lists; **customer activity decides which three**, not your picks | [Sales Ranking](https://kdp.amazon.com/en_US/help/topic/G201648140) |
 | Bestseller badge: rank #1 in a category holding at least 100 products | [sell.amazon.com](https://sell.amazon.com/blog/amazon-best-sellers-rank) |
+| **Title and subtitle rules (read 3 October 2026):** no repeated generic keywords, no sales-rank words ("bestselling"), no advertising or promotion words ("free"), no HTML; the subtitle "must adhere to the same guidelines as your title"; title plus subtitle at most 200 characters; a print title must be on the cover and match the metadata | [Metadata Guidelines](https://kdp.amazon.com/en_US/help/topic/G201097560) |
 | Categories may not be chosen to mislead; the title field forbids "unauthorized reference to other titles or authors" and to trademarked terms | [Metadata Guidelines](https://kdp.amazon.com/en_US/help/topic/G201097560) |
 | **Title and subtitle lock at publish** (short grace period, print only). Keywords, categories and description stay editable | [Update book details](https://kdp.amazon.com/en_US/help/topic/G200736410) |
 | Search uses "keywords, book details, and the text of each book": the interior is indexed | [Find your book](https://kdp.amazon.com/en_US/help/topic/GPYDJ3SECAVVPNVG) |
@@ -57,6 +58,7 @@ prohibited keyword gets recorded as merely risky.
 | A+ Content: up to 5 modules, about 8 business days review. **No competitor comparison of any kind.** Endorsements at most 4, only "well-known publications or public figures" | [A+ Content](https://kdp.amazon.com/en_US/help/topic/GHL7P99B7AA543CN), [Guidelines](https://kdp.amazon.com/en_US/help/topic/G4WB7VPPEAREHAAD) |
 | Free or discounted review copies are allowed, **provided no review is required in exchange** | [Reviews](https://kdp.amazon.com/en_US/help/topic/G202101910) |
 | Amazon Vine is not available to KDP authors (needs a professional seller account, brand registry and an FBA offer) | [Vine](https://sell.amazon.com/programs/vine) |
+| **AI-content question at publish (read 3 October 2026).** When you publish a book, or edit and republish one, KDP asks whether it holds AI-generated content: text, images (cover and interior) or translations "created by an AI-based tool", even if you edited them a lot afterwards. Content you created yourself and only edited, refined or error-checked with an AI tool is "AI-assisted", and KDP does not require you to disclose it. Answer for each of the three kinds | [Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390) |
 
 **Labelled folklore, no Amazon source:** "search suppression" as a KDP mechanism; the "A10
 algorithm"; "50 reviews unlocks X"; "Hot New Releases needs rank above N in 30 days"; any "Look

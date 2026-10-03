@@ -16,7 +16,7 @@ every script follows it.
   it was on that day. It lives in a run folder, `.book/runs/<YYYY-MM-DD-HHMM>-<skill>-<mode>/`,
   never beside the banks or the evidence, and what lasts from it moves into a bank or
   `rules/decisions.md`. Only the newest three runs of each skill and mode are kept
-  (`lib/run_folders.py`).
+  (`${CLAUDE_PLUGIN_ROOT}/lib/run_folders.py`).
 
 ## The folders
 
@@ -28,7 +28,7 @@ every script follows it.
 | `thinking/author/` | `thinking.stance`, `thinking.stance_details`, `thinking.audience` | `thinking/author/stance.md`, `thinking/author/stance-details.md`, `thinking/author/audience.md` | yes |
 | `thinking/argument/` | `thinking.argument` | Why the book says what it says: `thinking/argument/claims.md` and one file per topic; `new.py` writes a starter `thinking/argument/claims.md` | yes |
 | `thinking/doubts/` | `thinking.doubts` | `thinking/doubts/counterarguments.md`, `thinking/doubts/open-questions.md`; `new.py` writes both as starters | yes |
-| `rules/decisions.md` | `rules.decisions` | Settled and open decisions: a generated `## Index`, then `## Details` (format: `lib/decisions-format.md`) | yes |
+| `rules/decisions.md` | `rules.decisions` | Settled and open decisions: a generated `## Index`, then `## Details` (format: `${CLAUDE_PLUGIN_ROOT}/lib/decisions-format.md`) | yes |
 | `rules/glossary.md` | `rules.glossary` | The terms the book defines, with their canonical wording | yes |
 | `rules/voice.md` | `rules.voice` | The author's voice profile; `new.py` copies the write-text skill's default profile | yes |
 | `rules/vale/` | `rules.vale`, `rules.vale_ini` | `vale.ini`, the book's own Vale rules, `config/vocabularies/Book/` word lists | yes |
@@ -60,7 +60,7 @@ sit at `X00`, chapters at `X10` steps, which leaves room to insert a file later;
 front matter and `900`-`999` back matter. `new.py` writes a copyright page, a preface, one part,
 one chapter and the references file, each in the shape the build and the writing checks accept.
 The full convention, including raw LaTeX blocks and a manual contents page, is in
-`skills/build-editions/references/manuscript-layout.md`.
+`${CLAUDE_PLUGIN_ROOT}/skills/build-editions/references/manuscript-layout.md`.
 
 ## No README or index files
 
@@ -71,6 +71,8 @@ folder is the index.
 
 ## Permissions for Claude Code
 
-`new.py` writes `.claude/settings.json` with tools that need no approval: the read-only ones
-(Read, Glob, Grep, `wc`, `ls`, `cat`) and `mkdir`, which only makes folders. Anything else that
-writes still asks.
+`new.py` writes `.claude/settings.json` with tools that need no approval: Glob, Grep, `wc` and
+`ls`, which only look, and `mkdir`, which only makes folders. Claude Code already reads files
+inside the book folder without asking, so the file does not allow Read or `cat`: a rule for them
+would also open every other file on the machine, and a downloaded source could carry text that
+asks for one. Anything else that writes still asks.

@@ -464,7 +464,7 @@ Evaluates the book's competitive positioning and market viability.
 - Does the market need this book (gap in existing offerings)?
 - How does this book differ from the 5-10 closest competitors?
 - Is the title effective (clear, memorable, searchable)?
-- Is the subtitle descriptive and keyword-rich?
+- Does the subtitle say plainly what the book is about, in words a buyer would search? It must not be a keyword list (the store rules forbid that in the title fields).
 - Does the book address a current need or timeless topic?
 
 ### 8.2 Competitive Differentiation

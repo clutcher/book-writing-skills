@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import io
+import os
 import re
 import sys
 import tokenize
@@ -13,6 +14,7 @@ REPOSITORY = SKILL.parents[3]
 sys.path.insert(0, str(PLUGIN / "lib"))
 
 from command_runs import python_command, run_command
+from vale_settings import ValeSettings
 
 TIME_LIMIT = 600
 TEXT_SUFFIXES = {".md", ".py", ".sh", ".yaml"}
@@ -25,6 +27,9 @@ BOOK_FILE_NAMES = re.compile(r"^(decisions|CLAUDE|SKILL|voice|glossary|list|quot
 PACKAGE_FILES = ("EmDashWrap", "PhrasalVerbs", "PossessiveSEnding", "Substitutions",
                  "WeakModifiers")
 ALWAYS_FORBIDDEN = (r"/home/", r"/Users/")
+LEAK_LIST_VARIABLE = "BOOK_LEAK_LIST"
+LEAK_WORDS_FILE = "leak-words.txt"
+REPOSITORY_LEAK_FOLDER = REPOSITORY / ".workspace" / "leak"
 KEY_DERIVATION = re.compile(r"^\s*def\s+(derive|derive_key|key_for)\s*\(", re.MULTILINE)
 HARDCODED_COUNT = re.compile(r"\b[0-9]+ (rules|sections)\b")
 ALLOWED_COUNT = re.compile(r"[0-9]+-[0-9]+ (rules|sections)|top rules|[Cc]hapter [0-9]+ section")
@@ -41,14 +46,16 @@ only, never on a book.
   6. no home-folder path in the skill and no citation-key code outside lib/citation_key.py;
      with a leak list, none of its words either (the author's name, one book's words,
      private paths)
-  7. (warning only) no hardcoded rule or section counts in the text
+  7. a Vale check mounts the book read-only; only `vale sync` may write to it
+  8. (warning only) no hardcoded rule or section counts in the text
 
 --with-other-book also runs tools/other-book-check.py of the repository on the write-text
 scripts (slower; only in a checkout of the repository, SKIPPED elsewhere).
---leak-words FILE reads the leak list: one regular expression per line, blank lines ignored.
-The list is kept outside the plugin, because it names the very words that must not ship.
-Without --leak-words, or when the file is missing, the leak-list part of check 6 prints
-SKIPPED."""
+--leak-words FILE reads the leak list: one regular expression per line, blank lines and lines
+starting with # ignored. The list is kept outside the plugin, because it names the very words
+that must not ship. Without --leak-words it reads leak-words.txt in the folder the environment
+variable BOOK_LEAK_LIST names, or else in .workspace/leak/ of the repository. When no list is
+found, the leak-list part of check 6 prints SKIPPED with the place it looked."""
 
 EPILOG = "exit codes: 0 all passed, 1 a check failed."
 
@@ -60,7 +67,8 @@ def parse_arguments(argv):
     parser.add_argument("--with-other-book", action="store_true",
                         help="also run tools/other-book-check.py on the write-text scripts")
     parser.add_argument("--leak-words", type=Path, metavar="FILE",
-                        help="the leak list (default: none, and that part is SKIPPED)")
+                        help="the leak list (default: leak-words.txt in $BOOK_LEAK_LIST, "
+                             "else in .workspace/leak/)")
     return parser.parse_args(argv)
 
 
@@ -172,15 +180,20 @@ def no_code_comments():
     return problems
 
 
+def default_leak_list():
+    folder = os.environ.get(LEAK_LIST_VARIABLE)
+    return (Path(folder).expanduser() if folder else REPOSITORY_LEAK_FOLDER) / LEAK_WORDS_FILE
+
+
 def nothing_of_one_book(leak_list):
+    leak_list = leak_list or default_leak_list()
     listed = []
-    if leak_list is None:
-        print("  SKIPPED no leak list given; pass --leak-words FILE")
-    elif leak_list.is_file():
+    if leak_list.is_file():
         listed = [line.strip() for line in leak_list.read_text(encoding="utf-8").splitlines()
-                  if line.strip()]
+                  if line.strip() and not line.strip().startswith("#")]
     else:
-        print(f"  SKIPPED no leak list at {leak_list}; pass --leak-words FILE")
+        print(f"  SKIPPED no leak list at {leak_list}; set {LEAK_LIST_VARIABLE} to the folder "
+              f"holding {LEAK_WORDS_FILE}, or pass --leak-words FILE")
     leaks = re.compile("|".join(list(ALWAYS_FORBIDDEN) + listed))
     problems = []
     for path in skill_files():
@@ -223,6 +236,22 @@ def other_book_check():
     return [] if result.passed else ["other-book check failed"]
 
 
+def vale_book_mounts():
+    book = Path("/books/field-guide")
+    settings = ValeSettings(book, book / "manuscript", book / ".vale.ini",
+                            book / "styles", "jdkato/vale:v3.14.2")
+    check_mount = settings.docker_command(["/workdir/manuscript/010-chapter.md"])
+    sync_mount = settings.docker_command(["sync"])
+    problems = []
+    if not any(argument.endswith(",readonly") for argument in check_mount):
+        problems.append("a Vale check mounts the book with write access")
+    if any(argument.endswith(",readonly") for argument in sync_mount):
+        problems.append("vale sync mounts the book read-only, so it cannot save the packages")
+    if not problems:
+        print("  [OK]   checks read the book only; vale sync may write")
+    return problems
+
+
 def run_section(title, check):
     print(title, flush=True)
     problems = check()
@@ -241,13 +270,14 @@ def main(argv=None):
         ("== 5. No Python code comments ==", no_code_comments),
         ("== 6. Nothing of one book or one machine ==",
          lambda: nothing_of_one_book(arguments.leak_words)),
+        ("== 7. Vale mounts the book read-only ==", vale_book_mounts),
     ]
     if arguments.with_other_book:
-        sections.append(("== 8. Other-book check (write-text scripts) ==", other_book_check))
-    passed = [run_section(title, check) for title, check in sections[:6]]
-    print("== 7. Hardcoded rule or section counts (warning) ==")
+        sections.append(("== 9. Other-book check (write-text scripts) ==", other_book_check))
+    passed = [run_section(title, check) for title, check in sections[:7]]
+    print("== 8. Hardcoded rule or section counts (warning) ==")
     hardcoded_counts()
-    passed += [run_section(title, check) for title, check in sections[6:]]
+    passed += [run_section(title, check) for title, check in sections[7:]]
     print()
     if not all(passed):
         print("self-check: FAILED")

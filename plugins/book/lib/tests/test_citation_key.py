@@ -2,7 +2,8 @@ import unittest
 
 from support import run_script
 
-from citation_key import bib_entry, derive, surnames_from_registry_field, validate
+from citation_key import (UnkeyableName, bib_entry, derive, is_safe_file_key,
+                          surnames_from_author_text, surnames_from_registry_field, validate)
 
 
 class CitationKeyTest(unittest.TestCase):
@@ -50,6 +51,66 @@ class CitationKeyTest(unittest.TestCase):
 
         # then
         self.assertEqual(result.stdout.strip(), "AB21")
+
+    def test_should_read_a_whole_surname_when_it_has_accents_or_a_hyphen(self):
+        # when
+        names, flags = surnames_from_author_text("Hernández-Ruiz, A., & Müller-Lyer, F. C.")
+
+        # then
+        self.assertEqual(names, ["Hernández-Ruiz", "Müller-Lyer"])
+        self.assertEqual(flags, [])
+        self.assertEqual(derive(names, 2001), "HRML01")
+
+    def test_should_derive_a_key_its_own_validation_accepts_when_the_name_is_latin(self):
+        cases = [(["Łukasik"], "Luk99"), (["Sørensen"], "Sor99"), (["Strauß"], "Str99"),
+                 (["O'Brien"], "OB03"), (["Déniz"], "Den96")]
+        for surnames, want in cases:
+            with self.subTest(surnames[0]):
+                # when
+                key = derive(surnames, want[-2:])
+
+                # then
+                self.assertEqual(key, want)
+                self.assertEqual(validate(key, surnames, want[-2:]), [])
+
+    def test_should_refuse_a_key_when_the_name_has_no_latin_letters(self):
+        # then
+        with self.assertRaises(UnkeyableName):
+            derive(["Иванов"], 1999)
+        with self.assertRaises(UnkeyableName):
+            derive(["王"], 1999)
+        self.assertEqual(surnames_from_author_text("Иванов, И.")[1], ["org-or-unparsed"])
+        self.assertIsNone(surnames_from_registry_field("Ivan Иванов")[1])
+
+    def test_should_use_the_no_year_mark_when_the_year_is_not_known(self):
+        # then
+        self.assertEqual(derive(["Smith"], "n.d."), "Smi--")
+        self.assertEqual(derive(["Smith"], None), "Smi--")
+        self.assertEqual(run_script("citation_key.py", "--derive", "Walsh",
+                                    "--year=--").stdout.strip(), "Wal--")
+
+    def test_should_read_two_surname_first_authors_when_joined_by_and(self):
+        # when
+        names, confidence, _ = surnames_from_registry_field("Smith, John and Doe, Jane")
+
+        # then
+        self.assertEqual(names, ["Smith", "Doe"])
+        self.assertEqual(confidence, "high")
+
+    def test_should_not_guess_when_authors_joined_by_and_may_be_given_first(self):
+        # when
+        _, confidence, reason = surnames_from_registry_field("Ann Lee, Bo Chen and Cy Dow, Di Fox")
+
+        # then
+        self.assertIsNone(confidence)
+        self.assertTrue(reason)
+
+    def test_should_accept_a_key_as_a_file_name_only_when_it_is_safe(self):
+        # then
+        for key in ["Smi99", "ABC+20", "Wal--", "vdM05a"]:
+            self.assertTrue(is_safe_file_key(key), key)
+        for key in ["", "../Smi99", "a/b", "Smi..99", ".hidden", "-Smi99", "Ива99"]:
+            self.assertFalse(is_safe_file_key(key), key)
 
     def test_should_print_help_when_asked(self):
         # then

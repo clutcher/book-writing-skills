@@ -44,8 +44,9 @@ build-book.sh --reviewer-copy "Jane Smith" --changes-since review-2
 2. `scripts/diff-preprocess.py` compares blocks. A prose block with an old counterpart (similarity
    at least 0.3) gets a word-level diff; new blocks and changed code blocks get a fenced div. All
    marks carry the class `added`. Whitespace-only gaps between two changed runs are joined, so
-   the highlight reads as one stretch. The marked files go to the build's temporary folder, never
-   into the book.
+   the highlight reads as one stretch. The marked files go to the build's temporary folder under
+   their path in the book, so two files with the same name in different folders stay apart;
+   nothing is written into the book.
 3. `assets/filters/diff-mode.lua` turns `Span.added` into `\added{...}` and `Div.added` into an
    `addedblock` environment.
    - `soul` cannot re-typeset content that switches fonts or makes its own boxes (inline code,

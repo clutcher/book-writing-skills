@@ -40,7 +40,7 @@ certainly lost them in extraction. Render the page and look.
 ## OCR text
 
 When a cached PDF extracts to almost nothing, the source is present and unsearchable, not
-unreadable. Run `ocr.py --key <Key>`; it writes `<Key>.txt` with an `OCR-PROVENANCE` header, an
+unreadable. Run `ocr.py --key <Key> --fix`; it writes `<Key>.txt` with an `OCR-PROVENANCE` header, an
 OCR origin record, and prints the `Access status: READABLE VIA OCR` line. It refuses to write
 under 2000 characters (the scan needs a higher `--dpi`, or is unusable). A non-English scan needs
 its tesseract language pack; say so rather than calling the scan unreadable.

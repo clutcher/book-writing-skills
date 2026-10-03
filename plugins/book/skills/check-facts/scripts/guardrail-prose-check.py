@@ -521,8 +521,12 @@ def main():
     if args.manuscript and not Path(args.manuscript).exists():
         return tool_failed("manuscript not found: %s" % args.manuscript, TOOL)
 
-    rows = assess(quotes, manuscript_paths(config, TOOL, args.manuscript),
-                  config.manuscript.references)
+    manuscript = manuscript_paths(config, TOOL, args.manuscript)
+    if not manuscript:
+        skipped = CheckReport(TOOL, CLASSES)
+        skipped.skip("no manuscript files at %s" % (args.manuscript or config.manuscript.dir))
+        return skipped.emit(args.format)
+    rows = assess(quotes, manuscript, config.manuscript.references)
     if args.key:
         wanted = set(args.key)
         rows = [row for row in rows if row["key"] in wanted]

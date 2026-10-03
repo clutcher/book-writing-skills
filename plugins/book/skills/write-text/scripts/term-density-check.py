@@ -742,7 +742,7 @@ def print_report(all_file_data, term_groups, compounds, page_override=None,
 
     print()
     print(f"  NOTE: Uneven distribution is expected. Research supports front-loading with")
-    print(f"  expanding intervals (Nation 2001, Mace 1932), not even spread. Learning-phase")
+    print(f"  expanding intervals (Mace 1932, Pimsleur 1967), not even spread. Learning-phase")
     print(f"  chapters should be dense; maintenance chapters should be sparse. Chapters that")
     print(f"  deepen term meaning (polysemy) can be denser than maintenance. Use --phases to")
     print(f"  see per-phase assessment.")

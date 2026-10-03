@@ -181,7 +181,7 @@ over the whole document, because a citation cannot be linked before the anchors 
 - **Visible text never changes.** A lone key links whole, brackets included, which gives an
   e-reader a tap target. In a group (`[Smi99, Wal--]`) only the keys link.
 - **Only key-shaped text is considered.** The key shape in the filter must accept every key
-  `lib/citation_key.py` can make, and nothing else; `scripts/key-pattern-check.py` checks this.
+  `${CLAUDE_PLUGIN_ROOT}/lib/citation_key.py` can make, and nothing else; `scripts/key-pattern-check.py` checks this.
   The bibliography decides what gets linked: a key-shaped token no entry backs becomes a warning.
   A bracket must hold keys and separators only, so a quoted `[a phrase]` is never a citation.
 - **Anchor ids** are cut to letters, digits and hyphens (`[ABC+20]` anchors as `ref-ABC-20`): a

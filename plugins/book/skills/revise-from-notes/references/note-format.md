@@ -84,7 +84,7 @@ decision entry in `decisions.md`.
   note is about something missing), say so in plain words, without quotes.
 - **From says where the note came from.** `author` for the author's own reading; for a review
   or a check, the skill, its mode and the run time, for example
-  `review-text flow, <YYYY-MM-DD HH:MM>` or `check-facts, <YYYY-MM-DD HH:MM>`. The run folder of that
+  `review-text flow, <YYYY-MM-DD HH:MM>` or `check-facts all, <YYYY-MM-DD HH:MM>`. The run folder of that
   time holds the full report. `check` advises (`no-from`) on a note without From.
 - **Note is the author's words exactly** (for a note from a skill, the finding as the review wrote it). Authors write short ("How long?", "Says who?").
   Write the exact problem in **Note (expanded)** before any analysis. Many wrong fixes come from

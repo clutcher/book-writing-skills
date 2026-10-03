@@ -1,16 +1,12 @@
 ---
 name: run-checks
 description: >-
-  Runs every script check of the book plugin on one non-fiction book, grouped by the part of
-  the book they check, grades each result, and writes a report into a run folder. Six modes: all (the default), text, facts, cover, sales-text and
-  setup. facts also checks the thinking files like the manuscript: every citation key must be
-  in the sources list and have a library copy or a line in needed.txt. setup checks book.yaml,
-  the decisions index and the outside tools. Use it when the author asks to run the checks,
-  the text checks, the source or citation checks, the cover or sales-text checks, to check the
-  setup or "check my tools", or to see what changed since the last check. It runs scripts
-  only; to review prose, ideas or facts by reading, use review-text, review-ideas or
-  check-facts. Stance: a skipped check is not a passed check, and every finding is reported
-  until it is fixed: there are no accepted counts.
+  Runs every script check of the book plugin on one book (text, facts, cover, sales text,
+  setup), grades each result and writes a report into a run folder. Use it when the author asks
+  to run the checks, run the text checks on a chapter, run the source or citation checks, run
+  the cover or sales-text checks, check the setup or "check my tools". It runs scripts only; to
+  review prose, ideas or facts by reading, use review-text, review-ideas or check-facts.
+argument-hint: "[all|text|facts|cover|sales-text|setup]"
 ---
 
 # Run checks
@@ -25,11 +21,11 @@ check.
 
 | Mode | Say | What it checks |
 |---|---|---|
-| `all` (default) | "run the checks", "check the book" | every group below |
-| `text` | "run the text checks", "check this chapter" | sentence and paragraph length, connectors, inversions, ASCII, unclear "this", one word for two things, word senses, person introductions, definitions, coined-term density, the glossary, the code font, the open notes, Vale |
-| `facts` | "check the citations", "check the sources" | citation keys, the bibliography, the sources list and the quotes bank, the library files; every `[Key]` in the manuscript and the thinking files |
-| `cover` | "check the cover" | colors and contrast, fonts, text placement, the KDP template overlay |
-| `sales-text` | "check the selling texts" | the surfaces agree, the store description, the keywords |
+| `all` (default) | "run the checks", "run all the checks on the book" | every group below |
+| `text` | "run the text checks", "run the checks on this chapter" | sentence and paragraph length, connectors, inversions, ASCII, unclear "this", one word for two things, word senses, person introductions, definitions, coined-term density, the glossary, the code font, the open notes, Vale |
+| `facts` | "run the citation checks", "run the source checks" | citation keys, the bibliography, the sources list and the quotes bank, the library files; every `[Key]` in the manuscript and the thinking files |
+| `cover` | "run the cover checks" | colors and contrast, fonts, text placement, the KDP template overlay |
+| `sales-text` | "run the sales-text checks" | the surfaces agree, the store description, the keywords |
 | `setup` | "check the setup", "check my tools" | book.yaml is valid, the decisions index is current, the outside tools are installed |
 
 Options:
@@ -54,6 +50,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/skills/run-checks/scripts/run-checks.py facts --sl
 python3 ${CLAUDE_PLUGIN_ROOT}/skills/run-checks/scripts/run-checks.py setup
 ```
 
+**Trust.** The cover file `design.py` and the Docker images named
+under `tools:` in `book.yaml` run as code on your machine. Only run cover checks and builds on
+books you trust.
+
 The book is found through `book.yaml` (walking up from the working folder, or above the first
 PATH); `--config` names it. Each check runs from the book root with the same config. The
 report goes into `<work.runs>/<YYYY-MM-DD-HHMM>-run-checks-<mode>/report.md`, with every
@@ -73,7 +73,7 @@ Each line of the output is one check, under its group:
 
 Exit 0 when nothing is `FIND` or `FAIL`, 1 for a `FIND`, 2 for a `FAIL`.
 
-A check that prints the JSON report of `lib/check_contract.md` is graded by the category of
+A check that prints the JSON report of `${CLAUDE_PLUGIN_ROOT}/lib/check_contract.md` is graded by the category of
 its items. A check without it (most prose checks) is read by its exit code: exit 1 is a
 finding, and the line shows its last line ("Total issues: 2"). Run it by hand for its full
 report. The list of checks and what each needs is in `references/checks.md`.

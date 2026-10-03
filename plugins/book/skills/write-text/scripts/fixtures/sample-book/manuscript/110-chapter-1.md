@@ -12,6 +12,6 @@ This suggests something important about the way a dough rises through a long nig
 
 ## 1.2 What Lean Dough Means
 
-The framework of this book rests on the two habits, and the Hartfield framework gives the home baker a fixed timetable in the same way. This chapter shows how a baker keeps the lean dough in mind while the rich leanness crust grows. Lean dough is easy because it is easy for anyone to shape and bake later.
+The framework of this book rests on the feeding routine, and the Hartfield framework gives the home baker a fixed timetable in the same way. This chapter shows how a baker keeps the lean dough in mind while the rich leanness crust grows. Lean dough is easy because it is easy for anyone to shape and bake later.
 
 The approach helps. From this observation emerges a rule that every later chapter applies to its own recipes in the same careful and patient way.

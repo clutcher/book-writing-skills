@@ -192,8 +192,9 @@ output and shown side by side with `compare.py`; the author approves before anyt
 
 ## 6. Scoring rubric (default weights)
 
-When ranking variants, a weighted score keeps the ranking honest. The weights below are only a
-starting point, taken from one expert panel; the book sets its own in its decisions file. Color
+When ranking variants, a weighted score keeps the ranking honest. The weights below are a
+starting guess with no study behind them; adjust them to the book and record its own in its
+decisions file. Color
 story 15%, print safety 10%, thumbnail 15%, difference from the shelf 15%, professional finish
 10%, fits the book's idea 10%, fits the register 10%, fits today's shelf 15%. Show each sub-score,
 not only the total.

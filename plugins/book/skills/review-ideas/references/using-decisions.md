@@ -4,7 +4,7 @@ The book's `decisions.md` (path: `rules.decisions` in the book's config) holds e
 the book that was discussed and decided, or is still open. It opens with a generated `## Index`
 (id, status, title); a run reads only the index (`decisions.py index`) and opens the entries it
 needs (`decisions.py show ID`). Its format, the six statuses and what a run may
-do with each are defined once, in the plugin's `lib/decisions-format.md`; `lib/decisions.py`
+do with each are defined once, in the plugin's `${CLAUDE_PLUGIN_ROOT}/lib/decisions-format.md`; `${CLAUDE_PLUGIN_ROOT}/lib/decisions.py`
 reads, checks, matches and writes it. This page says only how this skill uses it.
 
 ## The review never argues a decided item again

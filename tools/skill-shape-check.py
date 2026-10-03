@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Maintainer tool: every skill of the plugin has the same shape.
 
-Checks each skills/<name>/SKILL.md: the frontmatter holds exactly `name` and a folded
-`description: >-` block, the name is the folder name, the file stays under the line limit,
+Checks each skills/<name>/SKILL.md: the frontmatter holds exactly `name`, a folded
+`description: >-` block and an `argument-hint` line, the name is the folder name, the file stays under the line limit,
 it always has a `## Modes` section (a skill with no modes says so there), and every call
 into the plugin goes through ${CLAUDE_PLUGIN_ROOT} (never a relative `scripts/...` path after
 python3 or bash).
@@ -16,7 +16,8 @@ from pathlib import Path
 
 PLUGIN = Path(__file__).resolve().parents[1] / "plugins" / "book"
 LINE_LIMIT = 300
-FRONTMATTER = re.compile(r"\A---\nname: ([a-z-]+)\ndescription: >-\n((?:  \S.*\n)+)---\n")
+FRONTMATTER = re.compile(r"\A---\nname: ([a-z-]+)\ndescription: >-\n((?:  \S.*\n)+)"
+                         r"argument-hint: \"[^\"\n]+\"\n---\n")
 RELATIVE_CALL = re.compile(r"\b(?:python3|bash)\s+\"?(?:\./|\.\./|scripts/|lib/)")
 
 
@@ -26,7 +27,8 @@ def problems_of(skill_md):
     found = []
     frontmatter = FRONTMATTER.match(text)
     if not frontmatter:
-        found.append("frontmatter is not exactly `name:` and a `description: >-` block")
+        found.append("frontmatter is not exactly `name:`, a `description: >-` block and "
+                     "an `argument-hint:` line")
     elif frontmatter.group(1) != folder:
         found.append(f"name {frontmatter.group(1)!r} is not the folder name {folder!r}")
     lines = text.count("\n")

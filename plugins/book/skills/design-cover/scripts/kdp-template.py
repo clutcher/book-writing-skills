@@ -12,7 +12,7 @@ from book_config import ConfigError, add_config_arguments, config_from_args
 from check_output import ADVISORY, INFORMATIONAL, CheckReport, add_output_arguments, tool_failed
 from cover_settings import CoverSettingsError, read_cover_settings
 from cover_geometry import SPINE_INCHES_PER_PAGE, CoverSizeError
-from kdp_download import (DEFAULT_PRINT_LOCALE, NEW, REPLACED, SAME, NetworkMissingError,
+from kdp_download import (CALCULATOR_PAGE, DEFAULT_PRINT_LOCALE, NEW, REPLACED, SAME, NetworkMissingError,
                           TemplateAnswerError, TemplateRequest, fetch_templates)
 
 TOOL = 'kdp-template'
@@ -37,10 +37,17 @@ def main():
         description='Download the KDP paperback cover template (PNG and PDF) for the trim, page '
                     'count and paper of the book into cover.templates. Dry run by default: '
                     'prints the request and the target files and uses no network. --fix asks '
-                    'the public KDP cover calculator and unpacks the template; a file that is '
-                    'already there with the same bytes is left alone. The calculator is not a '
-                    'documented interface: when it changes, the script stops with exit 2 and '
-                    'says how to download the template by hand.')
+                    'the KDP cover calculator and unpacks the template; a file that is '
+                    'already there with the same bytes is left alone. '
+                    'This calls an unofficial, undocumented Amazon endpoint (the one behind the '
+                    'cover calculator page). It may change or stop at any time. You run it at '
+                    'your own discretion and under Amazon\'s terms. It names itself in its '
+                    'User-Agent and sends one request for the template and one for the zip '
+                    'file. When the endpoint changes, the script stops with exit 2 and says how '
+                    'to download the template by hand. '
+                    f'The manual way: open {CALCULATOR_PAGE}, choose paperback, the trim size, '
+                    'the page count and the paper, download the template, unzip it and put the '
+                    'PNG and PDF in cover.templates.')
     parser.add_argument('--pages', type=int, help='interior page count (default: book.pages, '
                                                   'else counted in the built print PDF)')
     parser.add_argument('--paper', choices=sorted(SPINE_INCHES_PER_PAGE),

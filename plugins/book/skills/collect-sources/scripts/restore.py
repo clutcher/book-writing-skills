@@ -41,11 +41,14 @@ Usage:
 """
 
 import argparse
+import functools
 import hashlib
+import http.server
 import re
 import shutil
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -275,6 +278,18 @@ def self_test():
     return 1 if failures else 0
 
 
+class QuietFileHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *_arguments):
+        pass
+
+
+def local_web_server(folder):
+    handler = functools.partial(QuietFileHandler, directory=str(folder))
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
+
+
 def network_self_test():
     failures = []
     with tempfile.TemporaryDirectory() as root:
@@ -286,15 +301,21 @@ def network_self_test():
                         + "</p></body></html>", encoding="utf-8")
         _kind, text, _extension = fetch.extract(str(page), "text/html")
         text_sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        server = local_web_server(root)
+        page_address = "http://127.0.0.1:%d/%s" % (server.server_address[1], page.name)
         entry_text = ("# Sources List\n\n## Entry format\n\n```\n### [<Key>] A, \"T\" (Y)\n```\n\n"
                       "### [Web05] Web, \"A page\" (2005)\n\n**Full title:** A page\n"
                       "**Cached text:** `sources/files/Web05.txt` (fetched 2025-01-01, sha256 %s)\n"
                       "**Cached original:** `sources/files/Web05.html` (fetched 2025-01-01, "
-                      "sha256 %s, from file://%s)\n\n---\n" % (text_sha, sha256_of(page), page))
+                      "sha256 %s, from %s)\n\n---\n" % (text_sha, sha256_of(page), page_address))
         (root / "list.md").write_text(entry_text, encoding="utf-8")
         folders = SourceFolders(root=root, files=files, origin=files)
         report = CheckReport(TOOL, CLASSES)
-        run(read_bank(root / "list.md").entries, folders, None, True, True, 30, report)
+        try:
+            run(read_bank(root / "list.md").entries, folders, None, True, True, 30, report)
+        finally:
+            server.shutdown()
+            server.server_close()
         if not (files / "Web05.html").exists() or not (files / "Web05.txt").exists():
             failures.append("the download route did not restore the page: %s" % report.items)
         elif sha256_of(files / "Web05.txt") != text_sha:

@@ -32,7 +32,12 @@ Two conventions sit on top of alpha:
     does this too.
 
 Keys are ASCII: diacritics are folded (`Deniz` from `Déniz`), where alpha.bst would emit
-the accented bytes.
+the accented bytes. The key takes the same characters alpha.bst takes, then folds them:
+Latin letters with no accent form are spelled out (`Luk` from `Łukasik`), and an apostrophe
+counts as a character and is then dropped (`OB` from `O'Brien`, where alpha prints `O'B`). A name with no Latin letters (Cyrillic, Chinese) gets no key:
+derive() raises UnkeyableName and the author-list readers leave the entry for a person.
+
+is_safe_file_key() says whether a key can be used as a file name as it stands.
 
 The module also owns the shapes around a key: the bank entry heading (`### [Key] ...`),
 the bibliography line (`[Key] Author, A. (Year). Title.`), and reading author lists
@@ -45,7 +50,7 @@ import sys
 sys.dont_write_bytecode = True
 import unicodedata
 
-CONTRACT = "citation-key/7"
+CONTRACT = "citation-key/8"
 
 STYLE = "alpha"
 
@@ -65,34 +70,69 @@ def _split_von_last(surname):
     return von, words
 
 
-def _ascii(text):
+LATIN_LETTERS_WITHOUT_ACCENT_FORM = {
+    "Ł": "L", "ł": "l", "Ø": "O", "ø": "o", "ß": "ss", "Æ": "AE", "æ": "ae",
+    "Œ": "OE", "œ": "oe", "Đ": "D", "đ": "d", "Ð": "D", "ð": "d", "Þ": "Th",
+    "þ": "th", "ı": "i", "Ħ": "H", "ħ": "h",
+}
+
+
+class UnkeyableName(ValueError):
+    pass
+
+
+def _key_letters(text):
+    spelled = "".join(LATIN_LETTERS_WITHOUT_ACCENT_FORM.get(c, c) for c in text)
+    folded = "".join(c for c in unicodedata.normalize("NFKD", spelled)
+                     if not unicodedata.combining(c))
+    return "".join(c for c in folded if c.isalpha() or c.isspace() or c == "-")
+
+
+def is_keyable(surname):
+    letters = _key_letters(surname)
+    return bool(re.fullmatch(r"[A-Za-z\s-]*[A-Za-z][A-Za-z\s-]*", letters))
+
+
+def _fold_accents(text):
     return "".join(c for c in unicodedata.normalize("NFKD", text)
                    if not unicodedata.combining(c))
 
 
-def _fragment(surname):
-    von, last = _split_von_last(_ascii(surname))
-    if not last:
-        return ""
+def _ascii_key_part(characters):
+    return _key_letters(characters).replace(" ", "").replace("-", "")
+
+
+def _first_characters(surname):
+    von, last = _split_von_last(_fold_accents(surname))
     return "".join(piece[:1]
                    for word in von + last
                    for piece in word.split("-") if piece)
 
 
+def _fragment(surname):
+    return _ascii_key_part(_first_characters(surname))
+
+
 def _single_author_stem(surname):
-    fragment = _fragment(surname)
-    if len(fragment) >= 2:
-        return fragment
-    _, last = _split_von_last(_ascii(surname))
+    if len(_first_characters(surname)) >= 2:
+        return _fragment(surname)
+    _, last = _split_von_last(_fold_accents(surname))
     word = last[0]
-    return word[0].upper() + word[1:3]
+    return _ascii_key_part(word[0].upper() + word[1:3])
 
 
+def _upper_case_letters():
+    return "".join(re.escape(chr(code)) for code in range(0x10000)
+                   if chr(code).isupper() and chr(code).isalpha())
+
+
+_UPPER = "[" + _upper_case_letters() + "]"
+_LETTER_OR_JOINER = r"(?:[^\W\d_]|['’-])"
 _PARTICLE_RUN = r"(?:(?:" + "|".join(sorted(PARTICLES)) + r")\s+)*"
-_SURNAME_WORD = r"[A-Z][A-Za-z'’-]+"
+_SURNAME_WORD = rf"{_UPPER}{_LETTER_OR_JOINER}+"
 AUTHOR_UNIT = re.compile(
-    rf"({_PARTICLE_RUN}{_SURNAME_WORD}(?:\s+{_SURNAME_WORD})*)"
-    r",\s*([A-Z]\.(?:-?[A-Z]\.)*)")
+    rf"(?<![\w'’-])({_PARTICLE_RUN}{_SURNAME_WORD}(?:\s+{_SURNAME_WORD})*)"
+    rf",\s*({_UPPER}\.(?:-?{_UPPER}\.)*)")
 
 NO_DATE = re.compile(r"\((?:--|n\.d\.)\)")
 YEAR_IN_ENTRY = re.compile(r"\((?:c\.\s*)?((?:1[89]|20)\d{2})")
@@ -105,7 +145,8 @@ def surnames_from_author_text(text):
     if re.search(r"\beds?\.", text):
         flags.append("eds")
     surnames = [m.group(1).strip() for m in AUTHOR_UNIT.finditer(text)]
-    if not surnames:
+    if not surnames or not all(is_keyable(name) for name in surnames):
+        surnames = []
         flags.append("org-or-unparsed")
     return surnames, flags
 
@@ -146,6 +187,15 @@ def surnames_from_registry_field(field):
         return [], None, "the author list is truncated, so the count is unknown"
 
     units = [u.strip() for u in text.split(";") if u.strip()]
+    joined_units = [u.strip() for u in re.split(r";|\s+(?:and|&)\s+", text) if u.strip()]
+
+    if (len(units) == 1 and len(joined_units) > 1
+            and all(u.count(",") == 1 for u in joined_units)):
+        heads = [u.split(",")[0].strip() for u in joined_units]
+        if all(len(head.split()) == 1 and head[0].isupper() for head in heads):
+            return _keyable_or_refused(heads, "surname-first, joined by 'and'")
+        return [], None, ("each author joined by 'and' has one comma, so 'Surname, Given' "
+                          "and a given-first list cannot be told apart here")
 
     if len(units) > 1 and all("," in u for u in units):
         out = []
@@ -154,7 +204,7 @@ def surnames_from_registry_field(field):
             if not head or not head[0].isupper():
                 return [], None, f"surname-first unit not readable: {u!r}"
             out.append(head)
-        return out, "high", "surname-first, semicolon-separated"
+        return _keyable_or_refused(out, "surname-first, semicolon-separated")
 
     if len(units) == 1 and text.count(",") == 1:
         head, tail = (x.strip() for x in text.split(","))
@@ -164,7 +214,7 @@ def surnames_from_registry_field(field):
                 and _REG_INITIAL.match(tail_words[-1])
                 and all(w[0].isupper() or w.lower() in PARTICLES for w in tail_words)
                 and not _REG_ORG_WORD.search(text)):
-            return [head], "high", "surname-first, single author"
+            return _keyable_or_refused([head], "surname-first, single author")
 
     if (len(units) == 1 and text.count(",") == 1
             and len(text.split(",")[0].split()) == 1
@@ -199,7 +249,15 @@ def surnames_from_registry_field(field):
             compound.append(surname)
     if compound:
         return out, None, "possible compound surname, needs a human: " + ", ".join(compound)
-    return out, "high", "given-first"
+    return _keyable_or_refused(out, "given-first")
+
+
+def _keyable_or_refused(surnames, how_read):
+    unkeyable = [name for name in surnames if not is_keyable(name)]
+    if unkeyable:
+        return [], None, ("no Latin letters to build a key from, needs a human: "
+                          + ", ".join(unkeyable))
+    return surnames, "high", how_read
 
 
 def strip_disambiguator(key):
@@ -207,9 +265,12 @@ def strip_disambiguator(key):
     return found.group(1) if found else key
 
 
+NO_YEAR_WORDS = {"--", "", "n.d.", "n.d", "nd", "none"}
+
+
 def year_suffix(year):
-    text = str(year).strip()
-    if text in ("--", ""):
+    text = "" if year is None else str(year).strip()
+    if text.lower() in NO_YEAR_WORDS:
         return "--"
     digits = re.sub(r"\D", "", text)
     if len(digits) < 2:
@@ -221,6 +282,9 @@ def derive(surnames, year):
     names = [s for s in surnames if s and s.strip()]
     if not names:
         raise ValueError("no surnames given")
+    unkeyable = [name for name in names if not is_keyable(name)]
+    if unkeyable:
+        raise UnkeyableName(f"no Latin letters to build a key from: {', '.join(unkeyable)}")
     suffix = year_suffix(year)
 
     if len(names) == 1:
@@ -228,6 +292,14 @@ def derive(surnames, year):
     if len(names) <= 4:
         return "".join(_fragment(n) for n in names) + suffix
     return "".join(_fragment(n) for n in names[:3]) + "+" + suffix
+
+
+SAFE_FILE_KEY = re.compile(r"[A-Za-z0-9][A-Za-z0-9+_.-]*")
+
+
+def is_safe_file_key(key):
+    return (isinstance(key, str) and bool(SAFE_FILE_KEY.fullmatch(key))
+            and ".." not in key)
 
 
 _STEM = r"[A-Za-z]{1,24}"
@@ -247,7 +319,7 @@ ENTRY_HEADING_M = re.compile(ENTRY_HEADING.pattern, re.M)
 
 FENCE_LINE = re.compile(r"^ {0,3}```")
 
-BIB_REST_OPENS = r'(?=["*_“‘A-Za-z0-9])'
+BIB_REST_OPENS = r'(?=["*“‘\w])'
 
 BIB_ENTRY = re.compile(rf"^\[({KEY_BODY})\]\s+{BIB_REST_OPENS}(.*)")
 
@@ -317,7 +389,10 @@ def validate(key, surnames=None, year=None):
     stem, has_plus, suffix, letter = parsed
 
     if surnames:
-        expected = derive(surnames, year if year is not None else suffix)
+        try:
+            expected = derive(surnames, year if year is not None else suffix)
+        except UnkeyableName as error:
+            return [f"{key}: {error}"]
         actual_core = f"{stem}{'+' if has_plus else ''}{suffix}"
         if actual_core != expected:
             problems.append(
@@ -464,8 +539,15 @@ def _self_test():
         if surnames_from_registry_field(field)[1] == "high":
             failures.append(f"{field!r} was derived; it must be refused: {why}")
 
-    check(_ascii("Déniz"), "Deniz", "ascii fold removes the accent")
-    check(_ascii("Plain"), "Plain", "ascii fold leaves plain text alone")
+    check(_key_letters("Déniz"), "Deniz", "ascii fold removes the accent")
+    check(_key_letters("Plain"), "Plain", "ascii fold leaves plain text alone")
+    check(derive(["Łukasik"], 1999), "Luk99", "a Latin letter with no accent form is spelled")
+    check(derive(["O'Brien"], 2003), "OB03", "alpha takes O'B; the apostrophe is then dropped")
+    check(derive(["Sørensen"], 1999), "Sor99", "alpha takes Sør; the letter is spelled out")
+    check(derive(["Hernández-Ruiz"], 2001), "HR01", "a hyphen splits the name, as in alpha")
+    check(derive(["Aßmann"], 1999), "Assm99", "alpha takes Aßm; the sharp s is spelled out")
+    check(bib_entry("[Luk99] Łukasik, J. (1999). *A Book*. Example Press.")[0], "Luk99",
+          "an entry whose author starts with a non-ASCII capital is read")
     check(derive(["Déniz"], 1996), "Den96", "accented surname keys as ASCII")
     check(derive(["Köster", "Kahn", "Vogel"], 2000), "KKV00", "accent in the first author")
     check(derive(["Gårdström Holm", "Söder", "Rydén"], 2026), "GHSR26",
@@ -598,7 +680,8 @@ def main():
     ap.add_argument("--self-test", action="store_true", help="run the built-in tests")
     ap.add_argument("--derive", nargs="+", metavar="SURNAME",
                     help="derive a key from surnames; pass --year as well")
-    ap.add_argument("--year", help="the year for --derive, or -- when there is none")
+    ap.add_argument("--year", help="the year for --derive; when there is none, write "
+                                   "--year=-- or --year n.d.")
     ap.add_argument("--validate", metavar="KEY", help="check the shape of one key")
     args = ap.parse_args()
 
@@ -608,7 +691,11 @@ def main():
         if not args.year:
             sys.stderr.write("--derive needs --year\n")
             return 2
-        print(derive(args.derive, args.year))
+        try:
+            print(derive(args.derive, args.year))
+        except ValueError as error:
+            sys.stderr.write(f"{error}\n")
+            return 2
         return 0
     if args.validate:
         problems = validate(args.validate)

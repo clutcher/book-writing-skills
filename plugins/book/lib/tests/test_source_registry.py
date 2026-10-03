@@ -88,6 +88,53 @@ class SourceBankTest(unittest.TestCase):
         self.assertEqual(fixed.returncode, 0, fixed.stderr)
         self.assertEqual(keys, ["Smi99", "Zed74"])
 
+    def test_should_keep_a_sub_heading_inside_its_entry(self):
+        # given
+        text = ("# Sources List\n\n## Entry format\n\n```\n### [<Key>] A, \"T\" (Y)\n```\n\n"
+                "### [Smi99] Smith, \"Rye Notes\" (1999)\n\n**Full title:** Rye Notes\n\n"
+                "#### Reading notes\n\n**Year:** 1999\n\n---\n\n"
+                "### [Ada85] Adams, \"Wheat Notes\" (1985)\n\n**Full title:** Wheat Notes\n")
+
+        # when
+        bank = parse_bank(text)
+
+        # then
+        self.assertEqual(bank.keys, ["Smi99", "Ada85"])
+        self.assertEqual(bank.breaks, [])
+        self.assertEqual(bank.entry("Smi99").field("Year"), "1999")
+        self.assertEqual(bank.out_of_order(), [("Smi99", "Ada85")])
+
+    def test_should_keep_windows_line_endings_when_sorting(self):
+        # given
+        with TemporaryBook(NEW_BOOK) as folder:
+            bank_path = folder / "sources" / "list.md"
+            text = bank_path.read_text(encoding="utf-8").replace("[Jon74]", "[Zed74]")
+            bank_path.write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
+
+            # when
+            fixed = run_script("source_registry.py", "--sort", str(bank_path), "--fix", cwd=folder)
+            written = bank_path.read_bytes()
+
+        # then
+        self.assertEqual(fixed.returncode, 0, fixed.stderr)
+        self.assertEqual(written.count(b"\n"), written.count(b"\r\n"))
+        self.assertLess(written.index(b"[Smi99]"), written.index(b"[Zed74]"))
+
+    def test_should_fail_as_a_tool_when_the_bank_to_sort_cannot_be_read(self):
+        with TemporaryBook(NEW_BOOK) as folder:
+            # given
+            not_a_bank = folder / "notes.md"
+            not_a_bank.write_text("# Notes\n\nSome prose about sources.\n", encoding="utf-8")
+
+            # when
+            missing = run_script("source_registry.py", "--sort", "no-such-bank.md", cwd=folder)
+            prose = run_script("source_registry.py", "--sort", str(not_a_bank), cwd=folder)
+
+        # then
+        self.assertEqual(missing.returncode, 2, missing.stderr)
+        self.assertEqual(prose.returncode, 2, prose.stderr)
+        self.assertNotIn("Traceback", missing.stderr + prose.stderr)
+
     def test_should_print_help_when_asked(self):
         # then
         self.assertEqual(run_script("source_registry.py", "--help").returncode, 0)

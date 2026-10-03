@@ -25,6 +25,11 @@ Do not add synonyms to the output so that more greps match. One name per idea.
 if ! python3 some-check.py; then echo "defects"; fi
 ```
 
+A crash is a tool failure, never a finding. A script ends with `run_main(main)` from
+`check_output.py`: an unexpected error then exits 2 with one line that names it, and the output
+is written as UTF-8, so a Windows pipe cannot make a check crash on a character. A runner that
+sees a Python `Traceback` from a check that exited 1 counts it as a failure, not as a finding.
+
 Three states, not two. Many checks report counts that are not defects: a reading queue, a
 download worklist, a state that is known and expected. If every non-zero count failed the run,
 every run would fail and nobody would read the result.
@@ -38,6 +43,8 @@ every run would fail and nobody would read the result.
   not a book with citation defects.
 
 A skipped check is not a passed check: whoever reports the run must say it was skipped, and why.
+With `--format tsv` the standard output holds item lines only, so the `SKIPPED` line goes to the
+error output; with `--format json` the reason is in the `skipped` field.
 
 ```python
 report = CheckReport("glossary-check", CLASSES)
@@ -95,9 +102,9 @@ Then the summary, always printed, always last:
 TOTAL     <n> defects, <n> informational, <n> advisory
 ```
 
-`--format tsv` prints the item lines only. `--format json` prints one object with the items,
-counts, totals and exit code. One parser, several output formats; never one file
-written in several formats.
+`--format tsv` prints the item lines only (and a skip on the error output). `--format json`
+prints one object with the items, counts, totals and exit code. One parser, several output
+formats; never one file written in several formats.
 
 ## What this contract does not change
 

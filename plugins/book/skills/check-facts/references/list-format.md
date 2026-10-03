@@ -177,6 +177,6 @@ When a check flags an entry, split it line by line, never move the whole block:
 - A `###` heading that is not an entry heading (a note block) must end the entry above it.
 - A heading glued onto the end of a field line is invisible to every parser.
 - A field name written twice in one entry: every tool reads the first and never the second.
-- lib/source_registry.py owns entry boundaries, fields and separators; every script uses it.
+- ${CLAUDE_PLUGIN_ROOT}/lib/source_registry.py owns entry boundaries, fields and separators; every script uses it.
 - Never write a historical reason into a bank header ("this drifted twice") without checking the
   history first: an unsupported reason misleads whoever next merges or splits the banks.

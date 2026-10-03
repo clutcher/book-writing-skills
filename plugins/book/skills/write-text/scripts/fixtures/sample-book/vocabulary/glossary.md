@@ -18,4 +18,4 @@
 
 ### habit (word discipline) -- book usage
 
-**Canonical definition:** kept for the two habits the book teaches.
+**Canonical definition:** kept for the habit of feeding the starter at the same hour each day.

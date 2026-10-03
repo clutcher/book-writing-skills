@@ -2,6 +2,7 @@
 import argparse
 import json
 import sys
+import traceback
 sys.dont_write_bytecode = True
 from pathlib import Path
 
@@ -74,9 +75,12 @@ class CheckReport:
     def item_lines(self):
         return [f"{key}\t{name}\t{message}" for key, name, message in self.items]
 
+    def skipped_line(self):
+        return f"SKIPPED   {self.skipped_reason}"
+
     def summary_lines(self):
         if self.skipped_reason is not None:
-            return [f"SKIPPED   {self.skipped_reason}"]
+            return [self.skipped_line()]
         lines = []
         counts = self.counts()
         for name in sorted(counts):
@@ -105,11 +109,13 @@ class CheckReport:
         return "\n".join(self.item_lines() + ([""] if self.items else [])
                          + self.summary_lines())
 
-    def emit(self, output_format="text", stream=None):
+    def emit(self, output_format="text", stream=None, error_stream=None):
         stream = stream or sys.stdout
         text = self.render(output_format)
         if text:
             stream.write(text + "\n")
+        if output_format == "tsv" and self.skipped_reason is not None:
+            (error_stream or sys.stderr).write(self.skipped_line() + "\n")
         return self.exit_code()
 
 
@@ -136,6 +142,31 @@ def tool_failed(message, tool=None):
     prefix = f"{tool}: " if tool else ""
     sys.stderr.write(f"{prefix}{message}\n")
     return EXIT_TOOL_FAILED
+
+
+def make_output_safe():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+def run_main(main, tool=None):
+    make_output_safe()
+    tool = tool or Path(sys.argv[0]).stem
+    try:
+        code = main()
+    except Exception as error:
+        sys.stdout.flush()
+        sys.stderr.write(f"{tool}: {failure_reason(error)}\n")
+        code = EXIT_TOOL_FAILED
+    sys.exit(code)
+
+
+def failure_reason(error):
+    frames = traceback.extract_tb(error.__traceback__)
+    where = f" (at {Path(frames[-1].filename).name}:{frames[-1].lineno})" if frames else ""
+    detail = _one_line(error) or "no details"
+    return f"the tool failed: {type(error).__name__}: {detail}{where}"
 
 
 def _self_test():
@@ -203,4 +234,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    run_main(main)

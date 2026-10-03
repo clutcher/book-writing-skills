@@ -7,8 +7,11 @@ from pathlib import Path
 
 from citation_key import ENTRY_HEADING, is_placeholder, sort_position
 from book_config import ConfigError, add_config_arguments, config_from_args
+from check_output import tool_failed
 
 CONTRACT = "source-registry/1"
+
+TOOL = "source_registry"
 
 SOURCE_FIELDS = frozenset({
     "Full title", "Authors", "Year", "Edition", "Venue", "Publisher",
@@ -40,6 +43,8 @@ FIELD_LINE = _FIELD_LINE
 FIELD_LINE_M = re.compile(_FIELD_LINE.pattern, re.M)
 
 _HEADING = re.compile(r"^(#{1,6})\s")
+
+_SECTION_HEADING = re.compile(r"^(#{1,3})\s")
 
 _FENCE = re.compile(r"^```")
 
@@ -312,7 +317,7 @@ def parse_bank(text, path=None):
         if _FENCE.match(stripped):
             fenced = not fenced
             continue
-        if fenced or not _HEADING.match(stripped):
+        if fenced or not _SECTION_HEADING.match(stripped):
             continue
         entry = ENTRY_HEADING.match(stripped)
         if entry and not is_placeholder(entry.group(1)):
@@ -356,6 +361,11 @@ def parse_bank(text, path=None):
 def read_bank(path):
     with open(path, encoding="utf-8") as handle:
         return parse_bank(handle.read(), path)
+
+
+def line_ending_of(path):
+    with open(path, "rb") as handle:
+        return "\r\n" if b"\r\n" in handle.read() else "\n"
 
 
 def is_findings_bank(path_or_text, config=None):
@@ -635,7 +645,10 @@ def main():
         findings = args.findings or config.sources.quotes
         return _self_test([sources, findings], config)
     if args.sort:
-        bank = read_bank(args.sort)
+        try:
+            bank = read_bank(args.sort)
+        except (OSError, ValueError) as error:
+            return tool_failed(f"cannot sort {args.sort}: {error}", TOOL)
         if bank.serialise() != bank.text:
             sys.stderr.write(f"{args.sort} does not round-trip; refusing to sort\n")
             return 1
@@ -654,7 +667,8 @@ def main():
                     split_separator(e.raw)[0] for e in read_bank(args.sort).entries):
                 sys.stderr.write("entry contents changed; nothing written\n")
                 return 1
-            with open(args.sort, "w", encoding="utf-8") as handle:
+            with open(args.sort, "w", encoding="utf-8",
+                      newline=line_ending_of(args.sort)) as handle:
                 handle.write(rebuilt)
             print(f"   wrote {args.sort}")
         elif moved:

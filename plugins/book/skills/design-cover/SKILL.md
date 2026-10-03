@@ -1,16 +1,12 @@
 ---
 name: design-cover
 description: >-
-  Makes, checks, compares and reviews a book cover for KDP print and ebook, from a Python design
-  file in the book. Three modes: make (the default) renders the KDP geometry (spine from page
-  count and paper), the full wrap, the back-cover text, the ebook cover (PNG and sRGB JPEG) and
-  the print PDF, then runs the cover checks (color contrast, CMYK limit, fonts, text placement,
-  the KDP template); compare puts versions or variants side by side; review runs cold lens
-  reviewers and writes the findings as notes. Use when the author asks to make, render or update
-  the cover, the wrap, the spine or the ebook cover image, to check cover colors, print safety,
-  fonts, the barcode area or the KDP template, to compare cover versions, or to review or score
-  the cover. For the words on the back cover or the store page use prepare-sales-text; for the
-  book interior use build-editions. Stance: render, show, then ship, and nothing ships unseen.
+  Makes, checks, compares and reviews the KDP print cover and the ebook cover of a book, from a
+  Python design file in the book. Use it when the author asks to make or update the cover, the
+  wrap, the spine or the ebook cover image, to check cover colors, fonts, print safety or the
+  KDP template, to compare cover versions, or to review or score the cover. For the words on the
+  back cover or the store page use prepare-sales-text; for the book interior use build-editions.
+argument-hint: "[make|compare|review]"
 ---
 
 # Design cover
@@ -37,7 +33,12 @@ Scripts are in `${CLAUDE_PLUGIN_ROOT}/skills/design-cover/scripts/`. Every block
 SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/design-cover/scripts"
 ```
 
-and runs from the book folder. Every script has `--help`, finds
+and runs from the book folder.
+
+**Trust.** The cover file `design.py` and the Docker images named under `tools:` in `book.yaml`
+run as code on your machine. Only run cover checks and builds on books you trust.
+
+Every script has `--help`, finds
 `book.yaml` by walking up from the working folder (`--config FILE` picks another,
 `--set KEY=VALUE` overrides one value), and changes nothing in the book without `--fix`.
 
@@ -76,8 +77,8 @@ and runs from the book folder. Every script has `--help`, finds
    when it is missing; this step is only for getting it by hand. `python3 "$SCRIPTS/kdp-template.py"`
    shows the request and the target files, `--fix` downloads the PNG and PDF into
    `cover.templates` (a file already there with the same bytes is left alone). The script asks
-   the same address the public KDP cover calculator page asks; it is not a documented
-   interface, so when the answer changes the script stops with exit 2 and prints how to download
+   the same address the public KDP cover calculator page asks. That address is not a documented
+   interface: when the answer changes, the script stops with exit 2 and prints how to download
    the template by hand (`references/kdp-print.md`, "The KDP template"). With no network it says
    `SKIPPED`.
 5. Tools: `rsvg-convert` (librsvg) or `cairosvg` for SVG to PNG and PDF, ImageMagick for the
@@ -174,8 +175,8 @@ then put them in one `--grid`. Keep the grid, delete the rest (`references/desig
    finds the book's decisions file), and `decisions.py show ID` opens one entry; `python3 "${CLAUDE_PLUGIN_ROOT}/lib/decisions.py" policy` shows what a review may do for each
    status. A DECIDED item is never a finding: before reporting, run
    `python3 "${CLAUDE_PLUGIN_ROOT}/lib/decisions.py" match "<finding>"`, and when it matches a
-   decided item, name the item and drop the finding. An OPEN "fix owed" item is checked as a
-   regression, not raised as new.
+   decided item, name the item and drop the finding. An OPEN "fix owed" item is checked against the
+   cover as it is now (is the fix in yet?), not raised as new.
 2. Make the cover (`make.py`), run all checks, and make thumbnails (`compare.py`). For a front
    review, the shelf screenshots in `cover.shelf_screenshots` are **required**; without them,
    stop and ask (`references/review-prompt.md`, "Context gate").
@@ -184,9 +185,9 @@ then put them in one `--grid`. Keep the grid, delete the rest (`references/desig
    cold subagent per lens**: it gets the images, the script output, the review prompt and its
    lens, and never the history of the design or earlier reviews. Run up to three at a time.
 4. Collect the lenses into one report: two scores (full size and 180 px thumbnail), one section
-   per lens, cross-cutting issues, then the **calibration pass**: every claim about the shelf or
-   the colors is checked against a screenshot or a script output, and retracted openly if it
-   cannot be. Then changes in priority order, what not to change, and a ranking of variants.
+   per lens, and the issues that cross lenses. Then the **claim check** (step 4 of the review
+   prompt): every claim about the shelf or the colors is checked against a screenshot or a script
+   output, and taken back openly if it cannot be. Then changes in priority order, what not to change, and a ranking of variants.
 5. Read `references/review-lessons.md` before proposing any change.
 
 Write the report into the run folder that this command makes,
@@ -207,9 +208,9 @@ Put the report there, with one file per lens beside it. Two options:
 
 Then every change the report proposes becomes one note, in the format of
 `${CLAUDE_PLUGIN_ROOT}/skills/revise-from-notes/references/note-format.md`, with
-`**From:** design-cover review, <YYYY-MM-DD HH:MM>`: a note about the back-cover text goes to the
-notes file named after the back-cover file, every other cover note to `whole-book.md`, naming the
-panel. Get ids with
+`**From:** design-cover review, <YYYY-MM-DD HH:MM>`. A note about the back-cover text goes to the
+notes file named after the back-cover file. Every other cover note goes to `whole-book.md` and
+names the panel. Get ids with
 `python3 ${CLAUDE_PLUGIN_ROOT}/skills/revise-from-notes/scripts/open-notes.py next-id <file>`.
 The decisions the author makes are recorded when revise-from-notes answers the notes.
 

@@ -120,7 +120,7 @@ of the book it runs from.
 |-----|---------|-----|
 | `pandoc_image` | `pandoc/extra:3.8.3` | the pinned image; must match the pandoc the EPUB template was taken from ([epub.md](epub.md)) |
 | `pandoc_volume` | `book-to-pdf-texlive` | Docker volume holding TeX Live packages and fonts |
-| `epubcheck` | `5.1.0` | epubcheck release; the jar is checked against a pinned sha256 for this version |
+| `epubcheck` | `5.1.0` | epubcheck release, written like `5.1.0`; the jar is checked against a pinned sha256 for this version. Another version has no known sha256 and is refused unless `epub-check.py` runs with `--allow-unverified` |
 
 ## Other options
 
@@ -133,7 +133,7 @@ of the book it runs from.
 | `--reviewer-copy <name>` | reviewer name on a draft | none |
 | `--protected` / `--unprotected` | PDF copy/print protection for drafts | protected |
 | `--changes-since <ref>`, `--changes-until <ref>` | changes copy ([changes-since.md](changes-since.md)) | none |
-| `--output <file>` | output file name | generated |
+| `--output <file>` | output file name: letters, digits, `.`, `_` and `-` only | generated |
 | `--template <file>` | another LaTeX template | bundled |
 | `--config <file>`, `--set key=value` | config file, one override (repeatable) | found by walking up |
 

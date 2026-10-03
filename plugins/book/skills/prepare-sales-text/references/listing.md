@@ -84,9 +84,10 @@ dates and how each figure was read.
 - **Not a clone of the back cover.** Same argument, different length, different job.
 - **Length targets the category, not the cover** (the measured band), except where a block
   earns its place on evidence (next point).
-- **The structure block earns its space on evidence, not on convention.** The strongest
-  behavioural finding on book choice says contents, organisation and structure decide selection
-  (`marketing-evidence.md`, purchase drivers). A short block of the book's parts, each with a
+- **The structure block has some evidence behind it, not only convention.** One small study
+  suggests that contents, organisation and structure decide which book is chosen; it measured
+  undergraduates choosing library books, not buyers (`marketing-evidence.md`, purchase drivers,
+  MODERATE). A short block of the book's parts, each with a
   clause saying what it delivers, carries all three. Do not cut it to hit the category band.
 - **Bullets are expected** on this surface in many non-fiction categories; check the category
   teardown. Bold labels at the start of list items are labels, not emphasis.

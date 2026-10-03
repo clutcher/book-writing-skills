@@ -35,7 +35,10 @@ score improves it.
 The correlation holds **across texts**: harder passages tend to score worse. It does **not**
 hold **within a text under editing**: shortening sentences to move the score does not reliably
 make the text easier to understand, and can make it harder, because the edits that lower the
-score are not the edits that make meaning clearer. A predictor is not an intervention.
+score are not the edits that make meaning clearer. A predictor is not an intervention. In
+Duffy and Kabance (1982), rewriting passages to halve sentence length (about 20 to 10 words)
+gave no comprehension gain in a series of four experiments, and swapping a quarter of the
+content words for easier ones helped in only one; Redish (2000) reviews why.
 
 ## What a formula cannot see
 
@@ -63,16 +66,26 @@ Uses the evidence rules out:
 
 ## What to do instead
 
-1. **Test with readers.** Three to five readers doing the task the text supports find the major
-   failures.
+1. **Test with readers.** A few readers doing the task the text supports find most of the
+   major failures. The usual "about five" comes from software usability testing (Nielsen and
+   Landauer 1993), not from tests of books; treat it as a starting number, not a law.
 2. **Follow plain-language practice:** start from what the reader must do, organise with
    informative headings, use white space and lists where the reader scans, prefer the active
    voice and common words, and test.
 3. **Treat a score as a flag, never a goal.**
 
-What readers *say* is readable is also a weak measure: several studies find that the texts
-readers rate as more readable are not the ones they read faster or understand better.
-Ask readers to do something with the text, and measure that.
+What readers *say* is readable is also a weak measure (practice advice; no single study is
+cited here): a reader's rating and a reader's understanding can differ. Ask readers to do
+something with the text, and measure that.
 
 Two further cautions: no complexity score may be cited as predicting how hard a text is to
 understand, and a sentence-length target is a style choice of the voice profile, not a finding.
+
+## Sources
+
+- Duffy, T. M. and Kabance, P. (1982). "Testing a readable writing approach to text revision".
+  *Journal of Educational Psychology* 74(5) 733-748. DOI 10.1037/0022-0663.74.5.733.
+- Redish, J. (2000). "Readability formulas have even more limitations than Klare discusses".
+  *ACM Journal of Computer Documentation* 24(3) 132-137. DOI 10.1145/344599.344637.
+- Nielsen, J. and Landauer, T. K. (1993). "A mathematical model of the finding of usability
+  problems". *Proceedings of INTERCHI '93*, 206-213. DOI 10.1145/169059.169166.

@@ -63,6 +63,27 @@ class ContainerArgumentsTest(unittest.TestCase):
         # then
         self.assertEqual(arguments, ["--mount", f"type=bind,source={folder},target=/book,readonly"])
 
+    def test_should_quote_the_source_when_a_folder_name_has_a_comma(self):
+        # given
+        folder = Path("/srv/writer/Books/Smith, Jane/notes").resolve()
+
+        # when
+        arguments = folder_mount(folder, "/book", read_only=True)
+
+        # then
+        self.assertEqual(arguments, ["--mount", f'type=bind,"source={folder}",target=/book,readonly'])
+
+    def test_should_double_a_quote_mark_when_a_folder_name_has_one(self):
+        # given
+        folder = Path('/srv/writer/Books/The "Quiet" Draft, 2nd').resolve()
+
+        # when
+        arguments = folder_mount(folder, "/book")
+
+        # then
+        quoted_folder = str(folder).replace('"', '""')
+        self.assertEqual(arguments, ["--mount", f'type=bind,"source={quoted_folder}",target=/book'])
+
     def test_should_name_a_volume_mount_by_the_volume(self):
         # then
         self.assertEqual(volume_mount("texlive", "/opt/texlive"),

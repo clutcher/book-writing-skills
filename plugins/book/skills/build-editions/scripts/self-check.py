@@ -119,6 +119,16 @@ def script_steps(steps):
                   command_passes(python_command(SCRIPTS / name, "--self-test")))
     steps.run("key-pattern-check (filter keys match lib/citation_key.py)",
               command_passes(python_command(SCRIPTS / "key-pattern-check.py")))
+    steps.run("code-font-check says SKIPPED when the manuscript folder holds no file",
+              code_font_check_skips_a_missing_manuscript)
+
+
+def code_font_check_skips_a_missing_manuscript():
+    result = run_command(python_command(SCRIPTS / "code-font-check.py", "--config",
+                                        FIXTURES / "new-book" / "book.yaml", "--set",
+                                        "manuscript.dir=manuscrpt"), TIME_LIMIT)
+    return (result.passed and result.last_line().startswith("SKIPPED   no manuscript files at"),
+            result.output)
 
 
 def settings_steps(steps):
@@ -174,6 +184,11 @@ def settings_steps(steps):
               output_contains("TWOSIDE_MODE=false", "new-book", "--edition", "digital"))
     steps.run("an unknown style in the config stops the build",
               build_refuses("new-book", "--set", "book.chapter_style=fancy"))
+    steps.run("an output name with a space or a quote stops the build",
+              build_refuses("new-book", "--output", "Jane's draft.pdf"))
+    steps.run("a plain output name is accepted",
+              output_contains("/new-book/.book/output/reader-copy_v2.pdf", "new-book",
+                              "--output", "reader-copy_v2.pdf"))
 
 
 def main(argv=None):

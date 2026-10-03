@@ -2,7 +2,7 @@
 
 Self-contained review targeting the problems that recur most often in non-fiction drafts. This is the go-to review for any chapter.
 
-**What this review catches:** 6 frequent issues, plus the 4 cross-cutting cascade patterns that connect them. Fixing root causes (cascades) prevents downstream symptoms.
+**What this review catches:** 6 frequent issues, plus the 4 root causes that connect them: one problem that causes others. Fixing the root cause prevents the problems it causes.
 
 ---
 
@@ -10,17 +10,17 @@ Self-contained review targeting the problems that recur most often in non-fictio
 
 0. Read the decisions index (`decisions.py index`, then `decisions.py show ID` for an entry) and the voice profile first. A finding that matches a DECIDED entry is not reported (`decisions.py match`).
 1. Read the chapter once without stopping to mark issues
-2. Read the Cascade Patterns section below to understand root causes
+2. Read the Root Causes section below to see how one problem causes others
 3. Re-read the chapter, checking each paragraph against the 6 issue categories
 4. For each issue found, report using the output format at the end
 
 ---
 
-## Cascade Patterns: Fix Root Causes First
+## Root Causes: Fix Them First
 
-Before scanning individual issues, understand how they connect. Four cascades drive the majority of problems. Fixing the upstream cause prevents downstream symptoms.
+Before scanning individual issues, understand how they connect. Four root causes drive most problems. Fixing the first problem prevents the ones it causes.
 
-### Cascade A: Front-Loading Cascade (Most Common)
+### Root Cause A: Front-Loading (Most Common)
 
 **Flow:** Answer front-loading (Issue 1) -> development becomes restatement (Issue 2) -> sentences become vague summaries (Issue 5) -> reader loses track (Issue 3)
 
@@ -28,7 +28,7 @@ Before scanning individual issues, understand how they connect. Four cascades dr
 
 **Fix:** Return to rule 1.3. Open with the question, not the answer. Let development build toward the conclusion.
 
-### Cascade B: Example Reuse Cascade
+### Root Cause B: Example Reuse
 
 **Flow:** Same example across chapters (Issue 4) -> same explanation repeated (Issue 2) -> reader feels chapter is redundant (Issue 3)
 
@@ -36,7 +36,7 @@ Before scanning individual issues, understand how they connect. Four cascades dr
 
 **Fix:** Per rule 2.15, one chapter owns each example fully. Other chapters reference briefly and show what is NEW in this chapter's context.
 
-### Cascade C: Vocabulary-Flow Interaction
+### Root Cause C: Hard Words Break the Flow
 
 **Flow:** Complex word used (vocabulary issue) -> reader pauses to parse -> connector chain breaks (Issue 3)
 
@@ -44,7 +44,7 @@ Before scanning individual issues, understand how they connect. Four cascades dr
 
 **Fix:** Replace hard words with plain equivalents per rule 5.5 (`hard-words-criteria.md` says which words are worth flagging). Check that the simpler word preserves the adjacency chain.
 
-### Cascade D: Wrong Framing Cascade
+### Root Cause D: Wrong Framing
 
 **Flow:** Text contradicts book's definition (Issue 6) -> argument built on wrong premise -> conclusion doesn't follow (false causation) -> reader confused (Issue 3)
 
@@ -238,7 +238,7 @@ For each issue found, report:
 
 **Location:** [section number and name, paragraph number]
 **Text:** "[exact flagged text]"
-**Cascade:** [A/B/C/D if this issue is part of a cascade pattern, or "standalone"]
+**Root cause:** [A/B/C/D if another problem in this chapter causes this issue, or "standalone"]
 **Decision:** [the matching `decisions.md` entry and its status, or "none"]
 **Problem:** [why it matches the category -- be specific]
 **Suggestion:** [concrete fix: rewrite, remove, restructure, or brief replacement text]
@@ -246,6 +246,6 @@ For each issue found, report:
 Group issues by section order (as they appear in the chapter), not by category. This makes fixing them in a single pass straightforward.
 
 At the end, provide:
-1. **Cascade analysis:** Which cascades are active in this chapter? What is the root cause?
+1. **Root cause analysis:** Which root causes (A-D) are active in this chapter? Which problem causes the others?
 2. **Summary count:** How many issues per category.
-3. **Priority recommendation:** Which 3-5 fixes would have the highest impact (usually the cascade root causes).
+3. **Priority recommendation:** Which 3-5 fixes would have the highest impact (usually the root causes).

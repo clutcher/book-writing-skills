@@ -82,7 +82,7 @@ becomes one note in the notes file of the file it is in (a manuscript file or a 
 `thinking/argument/claims.md` -> `notes/claims.md`), in the folder `notes` of book.yaml, in the format of
 `${CLAUDE_PLUGIN_ROOT}/skills/revise-from-notes/references/note-format.md`:
 
-- `**From:** check-facts, <YYYY-MM-DD HH:MM>`, and the key in the Note (`[Smi99]: the source
+- `**From:** check-facts all, <YYYY-MM-DD HH:MM>` (`all` is the run folder's mode word), and the key in the Note (`[Smi99]: the source
   gives 1987, the book says 1978`);
 - the paragraph quoted word for word, the flagged sentence as Text, the suggested fix in Options,
   and what was verified (the quote from the source, with its location) in Analysis;

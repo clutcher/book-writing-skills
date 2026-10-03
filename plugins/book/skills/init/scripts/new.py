@@ -33,7 +33,9 @@ An existing file is never changed, except that .gitignore gains missing lines. A
 holding an older book (a CLAUDE.md with `## Book Metadata`, or a book.yaml in the previous
 layout) is refused: use existing.py. So is a folder inside another book (a book.yaml above
 it). A path the book.yaml puts outside the book folder is shown and made as a full path.
-After writing, the tool check runs (toolchain-check.py); --no-tools skips it.
+After writing, the write-text skill's vale-sync.py --fix copies the Vale style into
+rules/vale and runs `vale sync` in Docker (without Docker it says SKIPPED and the book is still
+made), then the tool check runs (toolchain-check.py). --no-tools skips both.
 
 Dry run by default: prints what it would write. --fix writes.
 Exit 0 done (or dry run), 2 the folder cannot take a new book.
@@ -52,6 +54,7 @@ LIB = Path(__file__).resolve().parents[3] / "lib"
 TEMPLATES = SKILL / "templates"
 MARKETING_TEMPLATES = SKILL.parent / "prepare-sales-text" / "templates"
 DEFAULT_VOICE = SKILL.parent / "write-text" / "profiles" / "default.md"
+VALE_SYNC = SKILL.parent / "write-text" / "scripts" / "vale-sync.py"
 sys.path.insert(0, str(LIB))
 sys.path.insert(0, str(SCRIPTS))
 sys.dont_write_bytecode = True
@@ -323,6 +326,16 @@ def older_layout(root):
     return None if layout == LAYOUT_NEW else layout
 
 
+def run_vale_sync(root):
+    print("\n== vale", flush=True)
+    exit_code = subprocess.run([sys.executable, str(VALE_SYNC), "--book", str(root),
+                                "--fix"]).returncode
+    if exit_code != 0:
+        print(f"note: vale-sync.py exited {exit_code}, so the Vale check stays SKIPPED; run "
+              f"{VALE_SYNC} --fix in the book once the problem above is fixed")
+    return exit_code
+
+
 def run_tool_check(root, pull):
     command = [sys.executable, str(SCRIPTS / "toolchain-check.py"), "--book", str(root)]
     if pull:
@@ -341,7 +354,8 @@ def parse_arguments(argv):
     parser.add_argument("--subtitle", help="the subtitle")
     parser.add_argument("--year", help="the year on the copyright page (default: this year)")
     parser.add_argument("--fix", action="store_true", help="write the files (default: dry run)")
-    parser.add_argument("--no-tools", action="store_true", help="skip the tool check")
+    parser.add_argument("--no-tools", action="store_true",
+                        help="skip the Vale sync and the tool check")
     parser.add_argument("--pull-images", action="store_true",
                         help="pull the pinned Docker images the book.yaml names")
     return parser.parse_args(argv)
@@ -387,8 +401,13 @@ def main(argv=None):
         print(f"\nwritten: {summary}")
     else:
         print(f"\ndry run: {summary}. Pass --fix to write.")
+        if not args.no_tools:
+            print("with --fix, vale-sync.py --fix then copies the Vale style into the book and "
+                  "runs 'vale sync' in Docker")
     if unset_names:
         print(f"note: {' and '.join(unset_names)} not set yet; set them in book.yaml and CLAUDE.md")
+    if args.fix and not args.no_tools:
+        run_vale_sync(root)
     if not args.no_tools:
         run_tool_check(root if root.is_dir() else root.parent, args.pull_images)
     return 0

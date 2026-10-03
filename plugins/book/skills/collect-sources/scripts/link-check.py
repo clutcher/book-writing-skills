@@ -41,6 +41,11 @@ timestamp the archive resolved, or a working URL already in the list. It never e
 `Cached original:` line, which records where bytes came from; "repairing" it would
 falsify provenance. A defect with no verified repair stays a report.
 
+Only http and https are opened. A redirect to any other kind of address (file:, ftp:,
+data:) is not followed, and neither is a redirect from https down to plain http: such a
+URL is reported as unreachable and never written as `moved`. Requests carry a User-Agent
+that names this project.
+
 Verdicts are cached under the book's work caches (`--max-age` days, default 7); the
 LINK_CHECK_CACHE environment variable overrides the folder.
 
@@ -76,6 +81,7 @@ from source_files import add_config_arguments, load_book, tool_cache_folder, too
 from check_output import (DEFECT, INFORMATIONAL, SHARED_CLASSES, CheckReport, add_output_arguments,
                           skipped_for_missing)
 from citation_key import BIB_ENTRY_ANY, ENTRY_HEADING
+from user_agent import USER_AGENT
 
 TOOL = "link-check"
 CLASSES = {
@@ -91,14 +97,11 @@ MAX_REDIRECTS = 8
 BODY_SAMPLE = 4096
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "User-Agent": USER_AGENT,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Upgrade-Insecure-Requests": "1",
 }
+WEB_SCHEMES = ("http", "https")
 
 URL_RE = re.compile(r"https?://[^\s<>\]]+")
 DOI_URL_RE = re.compile(r"^https?://(dx\.)?doi\.org/", re.IGNORECASE)
@@ -148,6 +151,31 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def web_only_opener():
+    opener = urllib.request.OpenerDirector()
+    for handler in (urllib.request.ProxyHandler(), urllib.request.HTTPHandler(),
+                    urllib.request.HTTPSHandler(), urllib.request.HTTPDefaultErrorHandler(),
+                    urllib.request.HTTPErrorProcessor(), NoRedirect(),
+                    urllib.request.UnknownHandler()):
+        opener.add_handler(handler)
+    return opener
+
+
+def scheme_of(url):
+    try:
+        return urllib.parse.urlsplit(url).scheme.lower()
+    except ValueError:
+        return ""
+
+
+def refused_redirect(current, target):
+    if scheme_of(target) not in WEB_SCHEMES:
+        return "a redirect to %s, which is not a web address, was not followed" % target
+    if scheme_of(current) == "https" and scheme_of(target) == "http":
+        return "a redirect from https down to plain http (%s) was not followed" % target
+    return None
+
+
 def registrable(url):
     try:
         host = urllib.parse.urlsplit(url).hostname or ""
@@ -162,7 +190,7 @@ class Fetcher(object):
         self.timeout = timeout
         self.requests = 0
         self._last = 0.0
-        self._opener = urllib.request.build_opener(NoRedirect)
+        self._opener = web_only_opener()
         self.body_hashes = collections.defaultdict(set)
         self.cert_mismatch = set()
 
@@ -205,9 +233,14 @@ class Fetcher(object):
                              error="unreachable: %s" % exc)
 
             if status in (301, 302, 303, 307, 308) and location:
+                target = urllib.parse.urljoin(current, location)
+                refusal = refused_redirect(current, target)
+                if refusal:
+                    return Probe(url, final=current, chain=chain,
+                                 error="unreachable: %s" % refusal)
                 chain.append((current, status, location))
                 permanent_so_far = permanent_so_far and permanent
-                current = urllib.parse.urljoin(current, location)
+                current = target
                 continue
 
             self.body_hashes[registrable(current)].add(body_hash)
@@ -327,7 +360,8 @@ def classify(url, probe, blocked_hosts):
         return "gated", "HTTP %d (bot gate or paywall)" % probe.status
 
     if probe.status and 200 <= probe.status < 300:
-        if probe.permanent and normalize(probe.final) != normalize(url):
+        if (probe.permanent and normalize(probe.final) != normalize(url)
+                and not refused_redirect(url, probe.final)):
             return "moved", "permanently redirected to %s" % probe.final
         return "ok", "HTTP %d" % probe.status
 
@@ -547,6 +581,16 @@ class FixtureFetcher(Fetcher):
         return set(self._blocked) | Fetcher.intercepted_hosts(self)
 
 
+class RedirectingFetcher(Fetcher):
+    def __init__(self, location):
+        Fetcher.__init__(self, throttle=0)
+        self.location = location
+
+    def _once(self, url):
+        self.requests += 1
+        return 301, self.location, True, hashlib.sha256(b"").hexdigest()
+
+
 def self_test():
     failures = []
 
@@ -602,6 +646,20 @@ def self_test():
                 "after --fix exactly the three unrepairable defects may remain, got %s" % left)
         require(all(f.repair is None for f in second if f.verdict in DEFECTS),
                 "a defect surviving --fix must have no repair")
+
+    for location in ("file:///etc/passwd", "ftp://files.example.org/x.pdf",
+                     "http://www.example.org/paper.html"):
+        fetcher = RedirectingFetcher(location)
+        probe = fetcher.probe("https://www.example.org/paper.html")
+        verdict, _detail = classify("https://www.example.org/paper.html", probe, set())
+        require(verdict == "unreachable" and fetcher.requests == 1,
+                "a redirect to %s must be unreachable and not followed, got %s"
+                % (location, verdict))
+    try:
+        web_only_opener().open("file:///etc/hostname", timeout=1)
+        failures.append("the opener read a file: address")
+    except urllib.error.URLError:
+        pass
 
     for message in failures:
         print("FAIL %s" % message)

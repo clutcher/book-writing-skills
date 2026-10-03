@@ -29,6 +29,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unicodedata
 
 sys.dont_write_bytecode = True
 
@@ -61,6 +62,39 @@ def bibtex_authors(segment):
     return " and ".join("{" + p + "}" for p in parts) + (" and others" if etal else ""), "corporate"
 
 
+LETTER_COMMANDS = {
+    "Ł": "L", "ł": "l", "Ø": "O", "ø": "o", "ß": "ss", "Æ": "AE", "æ": "ae",
+    "Œ": "OE", "œ": "oe", "ı": "i",
+}
+ACCENT_COMMANDS = {
+    "\u0301": "'", "\u0300": "`", "\u0308": '"', "\u0302": "^", "\u0303": "~",
+    "\u0304": "=", "\u0307": ".", "\u0327": "c ", "\u030c": "v ", "\u0306": "u ",
+    "\u030a": "r ", "\u030b": "H ", "\u0328": "k ",
+}
+LETTER_COMMAND = re.compile(r"\{\\(ss|ae|AE|oe|OE|o|O|l|L|i)\}")
+ACCENT_COMMAND = re.compile(r"\\(?:[`'\"^~=.]|[cvuHrk] )")
+
+
+def latex_letters(text):
+    written = []
+    for character in text:
+        if character in LETTER_COMMANDS:
+            written.append("{\\" + LETTER_COMMANDS[character] + "}")
+            continue
+        base, *marks = unicodedata.normalize("NFD", character)
+        commands = [ACCENT_COMMANDS.get(mark) for mark in marks]
+        if marks and all(commands):
+            written.append("{" + "".join("\\" + command for command in commands) + base + "}")
+        else:
+            written.append(character)
+    return "".join(written)
+
+
+def ascii_fold(label):
+    label = normalise(LETTER_COMMAND.sub(lambda match: match.group(1), label))
+    return re.sub(r"['\"^`]", "", ACCENT_COMMAND.sub("", label))
+
+
 def normalise(label):
     label = label.replace(r"{\etalchar{+}}", "+")
     while re.search(r"\{([^{}]*)\}", label):
@@ -85,7 +119,7 @@ def bibliography_rows(text):
 def write_bibtex_input(work, rows):
     with open(Path(work, "t.bib"), "w", encoding="utf-8") as handle:
         for row in rows:
-            handle.write("@article{%s,\n  author = {%s},\n" % (row["id"], row["authors"]))
+            handle.write("@article{%s,\n  author = {%s},\n" % (row["id"], latex_letters(row["authors"])))
             if row["year"]:
                 handle.write("  year = {%s},\n" % row["year"])
             handle.write("  title = {T},\n  journal = {J}\n}\n\n")
@@ -106,12 +140,13 @@ def sibling_registered(key, got, registered):
 def grade(rows, emitted, registered):
     agree, deviation, disagree = 0, [], []
     for row in rows:
-        got = normalise(emitted.get(row["id"], "(none)"))
+        emitted_label = emitted.get(row["id"], "(none)")
+        got = normalise(emitted_label)
         if got == row["key"]:
             agree += 1
         elif not row["year"] and row["key"] == got + "--":
             deviation.append((row["key"], got, "the `--` year is a convention alpha cannot produce"))
-        elif got and re.sub(r"\\.|[{}'\"^`]", "", got) == row["key"]:
+        elif got and ascii_fold(emitted_label) == row["key"]:
             deviation.append((row["key"], got, "key fragments are ASCII-folded"))
         elif sibling_registered(row["key"], got, registered):
             deviation.append((row["key"], got,
@@ -177,6 +212,12 @@ def self_test():
           "two corporate authors are braced one by one")
     check(normalise(r"ABC{\etalchar{+}}20"), "ABC+20", "etalchar becomes '+'")
     check(normalise("{vB}99"), "vB99", "braces dropped")
+    check(latex_letters("Sørensen, K."), "S{\\o}rensen, K.", "a letter with no accent form becomes its command")
+    check(latex_letters("Déniz, M."), "D{\\'e}niz, M.", "an accent becomes an accent command")
+    check(ascii_fold("S{\\o}r99"), "Sor99", "a letter command folds to its letters")
+    check(ascii_fold("{\\L}uk99"), "Luk99", "a capital letter command folds too")
+    check(ascii_fold("D{\\'e}n96"), "Den96", "an accent command is dropped")
+    check(ascii_fold("O'B03"), "OB03", "an apostrophe is dropped")
     rows = bibliography_rows(
         "[Smi01] Smith, J. (2001). A thing.\n"
         "[Wal--] Walsh, K. (--). An undated thing.\n"

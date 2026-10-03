@@ -14,6 +14,7 @@ from container_run import calling_user_arguments, folder_mount
 PACKAGE_NAME = "PlainBook"
 PACKAGE_SOURCE = SCRIPTS / "vale" / PACKAGE_NAME
 CONTAINER_BOOK = "/workdir"
+VALE_COMMANDS_THAT_WRITE = {"sync"}
 
 
 class ValeSetupError(Exception):
@@ -49,9 +50,15 @@ class ValeSettings:
         return CONTAINER_BOOK if inside == "." else f"{CONTAINER_BOOK}/{inside}"
 
     def docker_command(self, vale_arguments):
+        book_read_only = not writes_to_book(vale_arguments)
         return (["docker", "run", "--rm", *calling_user_arguments(), "-e", "HOME=/tmp",
-                 *folder_mount(self.book_root, CONTAINER_BOOK), "-w", CONTAINER_BOOK, self.image,
+                 *folder_mount(self.book_root, CONTAINER_BOOK, read_only=book_read_only),
+                 "-w", CONTAINER_BOOK, self.image,
                  f"--config={self.container_path(self.vale_ini)}", *vale_arguments])
+
+
+def writes_to_book(vale_arguments):
+    return bool(vale_arguments) and vale_arguments[0] in VALE_COMMANDS_THAT_WRITE
 
 
 def add_book_arguments(parser):

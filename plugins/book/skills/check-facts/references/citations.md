@@ -1,6 +1,6 @@
 # Citation keys and bibliography entries
 
-The key rule is executable in one place, `lib/citation_key.py`, and every script uses it. Do not
+The key rule is executable in one place, `${CLAUDE_PLUGIN_ROOT}/lib/citation_key.py`, and every script uses it. Do not
 derive a key by hand:
 
 ```bash
