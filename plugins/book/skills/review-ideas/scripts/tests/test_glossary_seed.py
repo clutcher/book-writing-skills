@@ -31,7 +31,7 @@ class GlossarySeedTest(unittest.TestCase):
     def test_shouldLeaveTheGlossaryAloneWhenFixIsNotGiven(self):
         with CopyOfBook(NEW_BOOK) as book:
             # given
-            glossary = book / "vocabulary" / "glossary.md"
+            glossary = book / "rules" / "glossary.md"
             before = glossary.read_text(encoding="utf-8")
 
             # when
@@ -43,7 +43,7 @@ class GlossarySeedTest(unittest.TestCase):
     def test_shouldAddDatelessEntriesToCurateWhenFixIsGiven(self):
         with CopyOfBook(NEW_BOOK) as book:
             # given
-            glossary = book / "vocabulary" / "glossary.md"
+            glossary = book / "rules" / "glossary.md"
             before = glossary.read_text(encoding="utf-8")
 
             # when
@@ -90,7 +90,7 @@ class GlossarySeedTest(unittest.TestCase):
     def test_shouldFailAndWriteNothingWhenTheSectionIsNotInTheGlossary(self):
         with CopyOfBook(NEW_BOOK) as book:
             # given
-            glossary = book / "vocabulary" / "glossary.md"
+            glossary = book / "rules" / "glossary.md"
             before = glossary.read_text(encoding="utf-8")
 
             # when

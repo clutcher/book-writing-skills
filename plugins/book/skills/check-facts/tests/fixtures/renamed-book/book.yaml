@@ -11,9 +11,10 @@ manuscript:
 sources:
   list: evidence/bank.md
   quotes: evidence/says.md
-  files: evidence/cache
-  origin: evidence/origin
+  library: evidence/cache
+  library_index: evidence/origin
   backup: null
-reasons: notes
+thinking:
+  argument: ideas
 work:
   dir: .state

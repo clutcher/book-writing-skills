@@ -27,15 +27,15 @@ Then, in an empty folder, run `/book:init new`. It writes a starter book, and te
 
 ## Have a manuscript already?
 
-Name your chapter files `NNN-name.md` (for example `110-first-steps.md`; the number sets the book order), put them in a folder called `manuscript/`, and run `/book:init new` in the folder above it. It adds only what is missing and never changes your text.
+Run `/book:init existing` in the folder that holds it, whatever its shape. Claude first asks you to make a backup, then reads the folder and drafts a move plan as a table: which files are chapters and in what order (they go to `manuscript/NNN-name.md`, the number sets the book order), which are notes, sources and images, and which stay where they are. You edit the plan; nothing moves until you agree. The files then move as they are: no byte changes, nothing is deleted, nothing is written over. After that, init adds only what is still missing and never changes your text.
 
-A book made with an earlier version of these skills can move into the current layout with `/book:init existing`. It drafts a move plan you can edit, and moves nothing until you agree.
+If your chapters are already in a `manuscript/` folder as `NNN-name.md` files (for example `110-first-steps.md`), `/book:init new` in the folder above it is enough.
 
 ## The eleven skills
 
 | Skill | Call | What it does |
 |---|---|---|
-| init | `/book:init` | Sets up a new book, or moves an existing book into the layout; checks the tools on this machine |
+| init | `/book:init` | Sets up a new book, or a book from any folder by a move plan you agree to; checks the tools on this machine |
 | write-text | `/book:write-text` | Writes and rewrites prose; holds the prose rules and the text checks |
 | review-text | `/book:review-text` | Reviews the prose of a chapter or the whole book; findings become notes |
 | review-ideas | `/book:review-ideas` | Reviews the argument and evidence: `editor` in three stages, or `readers`, a cold review in a clean room; findings become notes |

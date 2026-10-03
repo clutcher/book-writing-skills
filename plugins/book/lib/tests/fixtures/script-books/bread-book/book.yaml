@@ -4,7 +4,6 @@ book:
   author: Sam Example
 manuscript:
   dir: manuscript
-vocabulary:
-  glossary: vocabulary/glossary.md
+glossary_format:
   location_pattern: '^(?:§(?P<chapter>\d+)|(?P<file>[A-Za-z][\w-]*))'
 work: .book

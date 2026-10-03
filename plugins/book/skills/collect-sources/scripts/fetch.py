@@ -872,8 +872,8 @@ def self_test():
     for merged in (False, True):
         layout = "merged origin" if merged else "records beside files"
         with tempfile.TemporaryDirectory() as root:
-            files = Path(root) / "sources" / "files"
-            origin = Path(root) / "sources" / "origin" if merged else files
+            files = Path(root) / "sources" / "library"
+            origin = Path(root) / "sources" / "library-index" if merged else files
             folders = SourceFolders(root=Path(root), files=files, origin=origin)
             list_path = Path(root) / "list.md"
             list_path.write_text(FIXTURE_LIST.format(d=folders.shown_files), encoding="utf-8")

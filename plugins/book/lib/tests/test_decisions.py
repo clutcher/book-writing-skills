@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from support import NEW_BOOK, PREVIOUS_BOOK, TemporaryBook, run_script
+from support import NEW_BOOK, TemporaryBook, run_script
 
 from decisions import (DECIDED_CHANGED, DECIDED_NO_CHANGE, OPEN_FIX_OWED, OPEN_UNDISCUSSED,
                        index_is_current, match_finding, parse_decisions, read_decisions,
@@ -9,31 +9,41 @@ from decisions import (DECIDED_CHANGED, DECIDED_NO_CHANGE, OPEN_FIX_OWED, OPEN_U
 
 NEW_BOOK_DECISIONS = NEW_BOOK / "rules" / "decisions.md"
 
-OLD_STYLE = """# Decisions
+GROUPED_BY_TOPIC = """# Decisions
 
-# 1. DECIDED / no change
+# Examples
 
 ## 1.1 Keep the long example
 
+- **Status:** DECIDED / no change
 - **Aliases:** `A-1`
 - **Idea.** The example is too long.
 - **Decision.** Keep it.
-- **Change.** None
 - **Why.** It is the only full example.
 - **Decided.** 2025-01-01
-- **Refs.** none
 
-# 4. OPEN / fix owed
+# Tables
 
-## 4.1 Fix the second table -- RESOLVED
+## 4.1 Fix the second table
 
+- **Status:** DECIDED / changed
 - **Aliases:** `B-2`
 - **Idea:** A table row is wrong.
 - **Decision:** Correct it.
 - **Change:** Done.
 - **Why:** It was checked against the source.
 - **Decided:** 2025-02-02
-- **Refs:** none
+"""
+
+NO_STATUS_FIELD = """# Decisions
+
+# 1. DECIDED / no change
+
+## 1.1 Keep the long example -- RESOLVED
+
+- **Idea:** The example is too long.
+- **Decision:** Keep it.
+- **Decided:** 2025-01-01
 """
 
 
@@ -141,15 +151,13 @@ class DecisionsParsingTest(unittest.TestCase):
         self.assertEqual(self.decisions.entry("D-2").field("Change"),
                          "Rows 3 and 5 still carry no source.")
 
-    def test_should_infer_status_from_section_or_title_when_not_written(self):
+    def test_should_leave_the_status_unset_when_the_entry_has_no_status_field(self):
         # when
-        decisions = parse_decisions(OLD_STYLE)
+        decisions = parse_decisions(NO_STATUS_FIELD)
 
         # then
-        self.assertEqual(decisions.entry("1.1").status, DECIDED_NO_CHANGE)
-        self.assertEqual(decisions.entry("1.1").status_from, "section")
-        self.assertEqual(decisions.entry("4.1").status, DECIDED_CHANGED)
-        self.assertEqual(decisions.entry("4.1").title, "Fix the second table")
+        self.assertIsNone(decisions.entry("1.1").status)
+        self.assertEqual(decisions.entry("1.1").title, "Keep the long example -- RESOLVED")
 
     def test_should_read_entries_when_the_id_has_a_colon_brackets_or_no_title(self):
         # when
@@ -270,21 +278,21 @@ class DecisionsCommandLineTest(unittest.TestCase):
         # then
         self.assertEqual(decisions.entry("D-1").field("Merged"), "D-2, D-5")
 
-    def test_should_write_status_lines_when_check_fix_is_given(self):
+    def test_should_report_no_status_and_write_none_when_check_fix_is_given(self):
         # given
         with TemporaryBook() as folder:
             path = folder / "rules" / "decisions.md"
             path.parent.mkdir()
-            path.write_text(OLD_STYLE, encoding="utf-8")
+            path.write_text(NO_STATUS_FIELD, encoding="utf-8")
 
             # when
-            result = run_script("decisions.py", "check", "--fix", cwd=folder)
+            result = run_script("decisions.py", "check", "--fix", "--format", "tsv", cwd=folder)
             rewritten = read_decisions(path)
 
         # then
-        self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertEqual([entry.status_from for entry in rewritten.entries], ["field", "field"])
-        self.assertEqual(rewritten.entry("4.1").status, DECIDED_CHANGED)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("1.1\tno-status", result.stdout)
+        self.assertIsNone(rewritten.entry("1.1").status)
         self.assertTrue(index_is_current(rewritten))
 
     def test_should_match_from_standard_input(self):
@@ -476,15 +484,15 @@ class DecisionsIndexTest(unittest.TestCase):
             "| D-2 | OPEN / fix owed | The speed table needs a source for every row |",
         ])
 
-    def test_should_put_the_index_and_details_before_the_first_status_section(self):
+    def test_should_put_the_index_and_details_before_the_first_topic_section(self):
         # when
-        text = with_current_index(OLD_STYLE)
+        text = with_current_index(GROUPED_BY_TOPIC)
 
         # then
         self.assertTrue(text.startswith("# Decisions\n\n## Index\n"))
         self.assertIn("|---|---|---|\n| 1.1 | DECIDED / no change | Keep the long example |\n"
                       "| 4.1 | DECIDED / changed | Fix the second table |\n\n## Details\n\n"
-                      "# 1. DECIDED / no change\n", text)
+                      "# Examples\n", text)
         self.assertEqual(parse_decisions(text).entry("1.1").status, DECIDED_NO_CHANGE)
         self.assertEqual(with_current_index(text), text)
 
@@ -530,9 +538,17 @@ class DecisionsIndexTest(unittest.TestCase):
         self.assertEqual(fixed.returncode, 0, fixed.stdout)
         self.assertIn("| D-2 | DECIDED / changed |", index.stdout)
 
-    def test_should_report_a_missing_index_when_the_file_is_in_the_previous_format(self):
-        # when
-        result = run_script("decisions.py", "check", "--format", "tsv", cwd=PREVIOUS_BOOK)
+    def test_should_report_a_missing_index_when_the_file_has_no_index(self):
+        # given
+        with TemporaryBook(NEW_BOOK) as folder:
+            path = folder / "rules" / "decisions.md"
+            text = path.read_text(encoding="utf-8")
+            start = text.index("## Index")
+            path.write_text(text[:start] + text[text.index("\n## ", start + 1) + 1:],
+                            encoding="utf-8")
+
+            # when
+            result = run_script("decisions.py", "check", "--format", "tsv", cwd=folder)
 
         # then
         self.assertEqual(result.returncode, 1)

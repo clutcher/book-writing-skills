@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check that every source the book cites can be found: in the sources list and in the library.
 
-Reads every manuscript file and every thinking file (the `thinking` folder, or in an older
-layout the stance, audience, argument and doubts files), finds each `[Key]`, `[Key1, Key2]`
+Reads every manuscript file and every thinking file (the `thinking` folder, or, in a book with
+no thinking folder, the stance, audience, argument and doubts files), finds each `[Key]`, `[Key1, Key2]`
 and `[Key, p. 12]` outside fenced code, and asks two questions of each key:
 
   1. Does the sources list (sources.list) have an entry for it? The list is the one place a

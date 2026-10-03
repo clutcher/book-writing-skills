@@ -17,7 +17,7 @@ This skill gets that copy into the cache (`sources.library`, kept out of git), r
 there, and keeps the cache reproducible after a fresh checkout.
 
 Scripts are in `${CLAUDE_PLUGIN_ROOT}/skills/collect-sources/scripts/`; each takes `--config`,
-`--set KEY=VALUE` and `--help`, and works on a book.yaml book and on an older CLAUDE.md book.
+`--set KEY=VALUE` and `--help`, and reads the book's `book.yaml`.
 `fetch.py` and `ocr.py` write only with `--fix`: `fetch.py` into the cache, the list's cache
 lines and `needed.txt`, and `ocr.py` into the cache (the `<Key>.txt` text and its OCR origin
 record). Every write to the sources list, and every move of a file the author added, needs `--fix`.

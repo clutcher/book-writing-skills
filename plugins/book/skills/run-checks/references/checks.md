@@ -64,10 +64,9 @@ with `--slow`.
 | `scan-origin-check.py` | collect-sources | classes | slow |
 | `scan-marker-sweep.py` | collect-sources | classes | slow |
 
-`cited-source-check.py` reads the manuscript and the thinking files (the `thinking` folder,
-or the stance, audience, argument and doubts files of an older layout). Every `[Key]` must
-have an entry in the sources list, and a library copy (`<Key>.<ext>` in `sources.library`)
-or a line in `needed.txt` in the sources-to-add folder. A key that waits in `needed.txt` is
+`cited-source-check.py` reads the manuscript and the thinking files (the `thinking` folder).
+Every `[Key]` must have an entry in the sources list, and a library copy (`<Key>.<ext>` in
+`sources.library`) or a line in `needed.txt` in the sources-to-add folder. A key that waits in `needed.txt` is
 informational. There are no per-file reference sections: the sources list is the one place a
 key resolves.
 
@@ -103,9 +102,8 @@ It is only for looking; nothing in the book changes.
 | `decisions.py check` | lib | `check --fix`: writes missing Status lines and rebuilds the index |
 | `toolchain-check.py` | init | |
 
-`book_config.py check` names the new key for every old key name, and names an old accepted
-counts file (`rules/accepted-flags.json`, `<work.dir>/baselines/sources.json`) or the
-`rules.accepted_flags` key as no longer used, to delete.
+`book_config.py check` names every key in `book.yaml` that no script reads, and every path
+key whose file or folder is missing.
 
 ## Adding a check
 

@@ -102,7 +102,7 @@ class ContainerArgumentsTest(unittest.TestCase):
     def test_should_refuse_a_container_path_when_a_file_is_outside_the_shared_folder(self):
         # then
         with self.assertRaises(ValueError):
-            path_inside(Path(support.OLD_BOOK), Path(support.NEW_BOOK), "/workdir")
+            path_inside(Path(support.FIXTURES) / "elsewhere.md", Path(support.NEW_BOOK), "/workdir")
 
     def test_should_pass_a_user_only_on_systems_with_user_ids(self):
         # when

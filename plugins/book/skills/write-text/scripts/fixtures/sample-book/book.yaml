@@ -27,5 +27,3 @@ terms:
         - [flavour, flavours]
         - [note, notes]
       scope_targets: [loaf, crust, dish]
-author:
-  voice: author/voice.md

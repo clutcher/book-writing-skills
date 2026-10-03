@@ -69,7 +69,7 @@ overrides, `--set KEY=VALUE` overrides one value). Paths are relative to the boo
 | `sales_text.amazon` | `<publishing.sales_text>/amazon.html` | the Amazon store description |
 | `sales_text.keywords` | `<publishing.sales_text>/keywords-and-categories.md` | keywords, categories, subjects, category evidence |
 | `sales_text.intended_impression` | `<publishing.sales_text>/intended-impression.md` | what the surfaces must signal |
-| `sales_text.plain_description` | `<publishing.sales_text>/plain-description.txt` | generated plain-text description (old key `sales_text.google_books`) |
+| `sales_text.plain_description` | `<publishing.sales_text>/plain-description.txt` | generated plain-text description |
 | `sales_text.contents`, `sales_text.contents_full` | `<publishing.sales_text>/contents.html`, `contents-full.html` | generated tables of contents |
 | `sales_text.preface` | first front-matter file named `*preface*` | its opening paragraph is checked against the copy |
 | `sales_text.retired_phrases` | none | wordings decided never to return (checked by `sync-check.py`) |

@@ -2,7 +2,7 @@
 """Align the citation keys used in the book's thinking files with the bibliography.
 
 It reads every markdown file in the book's thinking folder (`thinking.dir`, all subfolders:
-the argument, the doubts and the author files), or, in a layout with no thinking folder, the
+the argument, the doubts and the author files), or, in a book with no thinking folder, the
 stance, audience, argument and doubts places the config names. A file or folder given on the
 command line is read alone.
 

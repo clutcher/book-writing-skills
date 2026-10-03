@@ -1,3 +1,0 @@
-# 040-preface
-
-Text.

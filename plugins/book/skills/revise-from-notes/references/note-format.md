@@ -25,8 +25,7 @@ Free text is allowed under the `#` title, before the first note. Every `##` head
 be a note heading. The script's `check` (`scripts/open-notes.py`) reports any other `##` heading.
 
 **What a notes file does not hold:** a status legend, a summary table of counts, a "Resolution"
-field, or finished notes. Old field names (`Status`, `Resolution`, `Recommendation`,
-`Interconnected`) are not used; `check` advises on them as `old-field-name`. A count is one
+field, or finished notes. A count is one
 `list` of the script away, and a table that has to be kept up to date by hand goes wrong
 quietly. A finished note is removed; its record is the
 decision entry in `decisions.md`.

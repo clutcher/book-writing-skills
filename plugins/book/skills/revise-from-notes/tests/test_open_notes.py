@@ -10,7 +10,7 @@ from pathlib import Path
 SKILL = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL / "scripts" / "open-notes.py"
 FIXTURE_BOOK = SKILL / "tests" / "fixtures" / "book"
-CHAPTER_NOTES = Path("reading-notes") / "110-chapter-1.md"
+CHAPTER_NOTES = Path("notes") / "110-chapter-1.md"
 
 
 def run_open_notes(book, *arguments):
@@ -62,9 +62,9 @@ class CleanBookTest(CopiedBookTestCase):
         listing = {entry["file"]: [note["id"] for note in entry["notes"]]
                    for entry in json.loads(result.stdout)}
         self.assertEqual(listing, {
-            "reading-notes/110-chapter-1.md": ["110-chapter-1 #1", "110-chapter-1 #2"],
-            "reading-notes/back-cover.md": ["back-cover #1"],
-            "reading-notes/whole-book.md": ["whole-book #1"],
+            "notes/110-chapter-1.md": ["110-chapter-1 #1", "110-chapter-1 #2"],
+            "notes/back-cover.md": ["back-cover #1"],
+            "notes/whole-book.md": ["whole-book #1"],
         })
 
     def test_should_skip_numbers_already_used_in_decisions_when_giving_a_new_id(self):
@@ -76,7 +76,7 @@ class CleanBookTest(CopiedBookTestCase):
         self.assertEqual(chapter, "110-chapter-1 #5")
         self.assertEqual(preface, "010-preface #1")
 
-    def test_should_name_the_section_the_sources_and_the_reasons_when_preparing_a_note(self):
+    def test_should_name_the_section_the_sources_and_the_argument_when_preparing_a_note(self):
         # when
         result = run_open_notes(self.book, "read-first", "110-chapter-1", "#1", "--format", "json")
 
@@ -84,8 +84,9 @@ class CleanBookTest(CopiedBookTestCase):
         prepared = json.loads(result.stdout)
         self.assertEqual(prepared["sections"], ["110-chapter-1.md: 1.1 What Rest Does"])
         self.assertEqual(prepared["citation keys"], [{"key": "Doe20", "in quotes": "in quotes"}])
-        self.assertEqual(prepared["argument files"], ["reasons/grounding.md", "reasons/hydration.md"])
-        self.assertEqual(prepared["always read"]["decisions"], "decisions.md")
+        self.assertEqual(prepared["argument files"],
+                         ["thinking/argument/grounding.md", "thinking/argument/hydration.md"])
+        self.assertEqual(prepared["always read"]["decisions"], "rules/decisions.md")
 
     def test_should_show_a_decided_entry_when_a_note_repeats_it(self):
         # when
@@ -127,7 +128,7 @@ class ChangedTextTest(CopiedBookTestCase):
 
     def test_should_only_advise_when_a_flagged_sentence_is_not_found_word_for_word(self):
         # given
-        replace_in(self.book / "marketing" / "back-cover.md",
+        replace_in(self.book / "publishing" / "sales-text" / "back-cover.md",
                    "A short book about bread", "A small book about bread")
 
         # when
@@ -154,7 +155,7 @@ class ChangedTextTest(CopiedBookTestCase):
 class BrokenNotesTest(CopiedBookTestCase):
     def test_should_report_a_notes_file_that_names_no_text_file(self):
         # given
-        (self.book / "reading-notes" / "150-chapter-9.md").write_text(
+        (self.book / "notes" / "150-chapter-9.md").write_text(
             "# Reading notes\n\n## 150-chapter-9 #1 Lost\n\n**Note:** where is this?\n",
             encoding="utf-8")
 
@@ -251,18 +252,6 @@ class BrokenNotesTest(CopiedBookTestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(classes.count("linked-note-missing"), 1)
 
-    def test_should_advise_when_a_note_uses_an_old_field_name(self):
-        # given
-        append_to(self.book / CHAPTER_NOTES,
-                  "\n## 110-chapter-1 #3 Old\n\n**Note:** hm\n**Recommendation:** swap it\n")
-
-        # when
-        exit_code, classes = finding_classes(self.book)
-
-        # then
-        self.assertEqual(exit_code, 0)
-        self.assertIn("old-field-name", classes)
-
 
 class MarkdownInTextTest(CopiedBookTestCase):
     def quote_in_note_and_write_in_text(self, text_markdown, quoted_as_reader_sees_it):
@@ -325,7 +314,7 @@ class DottedFileNameTest(CopiedBookTestCase):
         super().setUp()
         (self.book / "manuscript" / "120-2.1-intro.md").write_text(
             "# 2.1 Intro\n\nA second chapter opens here.\n", encoding="utf-8")
-        (self.book / "reading-notes" / "120-2.1-intro.md").write_text(
+        (self.book / "notes" / "120-2.1-intro.md").write_text(
             "# Reading notes: 120-2.1-intro\n\n## 120-2.1-intro #1 Opening\n\n**Note:** thin\n",
             encoding="utf-8")
 
@@ -346,9 +335,9 @@ class DottedFileNameTest(CopiedBookTestCase):
 
 
 class MissingFoldersTest(CopiedBookTestCase):
-    def test_should_say_skipped_when_the_book_has_no_reading_notes_folder(self):
+    def test_should_say_skipped_when_the_book_has_no_notes_folder(self):
         # given
-        shutil.rmtree(self.book / "reading-notes")
+        shutil.rmtree(self.book / "notes")
 
         # when
         result = run_open_notes(self.book, "check")
@@ -381,28 +370,14 @@ class MissingFromTest(CopiedBookTestCase):
         self.assertEqual(classes.count("no-from"), 1)
 
 
-NEW_LAYOUT_MOVES = (
-    ("reading-notes", "notes"),
-    ("reasons", "thinking/argument"),
-    ("author/stance.md", "thinking/author/stance.md"),
-    ("decisions.md", "rules/decisions.md"),
-    ("vocabulary/glossary.md", "rules/glossary.md"),
-    ("marketing", "publishing/sales-text"),
-)
-
-
-class NewLayoutTest(CopiedBookTestCase):
+class ThinkingFilesTest(CopiedBookTestCase):
     def setUp(self):
         super().setUp()
-        for old, new in NEW_LAYOUT_MOVES:
-            target = self.book / new
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(self.book / old), str(target))
         (self.book / "thinking" / "doubts").mkdir()
         (self.book / "thinking" / "doubts" / "open-questions.md").write_text(
             "# Open questions\n\nIs one hour the right rest?\n", encoding="utf-8")
 
-    def test_should_report_no_defects_when_the_book_uses_the_new_layout(self):
+    def test_should_report_no_defects_when_the_book_has_a_doubts_file(self):
         # when
         exit_code, classes = finding_classes(self.book)
 

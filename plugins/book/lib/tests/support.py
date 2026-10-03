@@ -8,8 +8,6 @@ from pathlib import Path
 LIB = Path(__file__).resolve().parents[1]
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 NEW_BOOK = FIXTURES / "new-book"
-PREVIOUS_BOOK = FIXTURES / "previous-book"
-OLD_BOOK = FIXTURES / "old-book"
 
 if str(LIB) not in sys.path:
     sys.path.insert(0, str(LIB))

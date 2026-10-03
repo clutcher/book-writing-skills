@@ -54,20 +54,18 @@ use it to check a new `book.yaml`.
 
 ## Where the settings come from
 
-The script finds the book root by walking up to `book.yaml` (or, for an older book, to a
-`CLAUDE.md` that has a `## Book Metadata` section). Every value is taken in this order:
+The script finds the book root by walking up to `book.yaml`. Every value is taken in this
+order:
 
 1. a command-line option (`--font garamond`), or `--set book.font=garamond`;
 2. `book.yaml`, under `book:` (build settings), `manuscript:` and `work:` (folders), `tools:`
    (Docker image and TeX Live volume);
-3. the `## Book Metadata` section of an older book's `CLAUDE.md` (`Font-Size:` there is
-   `font_size` in `book.yaml`);
-4. the built-in default.
+3. the built-in default.
 
 `--config FILE` names a `book.yaml` directly. Every key, with its values and default, is in
 [settings.md](references/settings.md). Paths come from the shared config reader
-(`${CLAUDE_PLUGIN_ROOT}/lib/book_config.py paths --shell` and `metadata --shell`), so a new layout (`.book/output/`)
-and an old layout (`output/`) both work without options.
+(`${CLAUDE_PLUGIN_ROOT}/lib/book_config.py paths --shell` and `metadata --shell`), so the
+output goes to `.book/output/` unless `work.output` names another folder.
 
 ## Editions
 

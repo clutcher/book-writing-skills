@@ -46,7 +46,7 @@ registry. A clean run says nothing about the entries it could not see.
 
 Set a contact address before running at scale: CROSSREF_CONTACT or --contact
 (mailto: or URL). Responses cache under the book's work caches
-(METADATA_CHECK_CACHE overrides; the older name METADATA_CROSSCHECK_CACHE still works),
+(METADATA_CHECK_CACHE overrides),
 so a rerun is free; --refresh bypasses.
 
 Usage:
@@ -1174,7 +1174,7 @@ def build_parser():
     )
     parser.add_argument(
         "--cache",
-        default=os.environ.get("METADATA_CHECK_CACHE") or os.environ.get("METADATA_CROSSCHECK_CACHE"),
+        default=os.environ.get("METADATA_CHECK_CACHE"),
         help="folder for cached registry responses (default: under the book's work "
              "caches, or METADATA_CHECK_CACHE)",
     )
@@ -1612,9 +1612,7 @@ def self_test():
 
 
 def default_cache_folder(config):
-    folder = tool_cache_folder(config, "metadata-check")
-    older = tool_cache_folder(config, "metadata-crosscheck")
-    return older if older.is_dir() and not folder.is_dir() else folder
+    return tool_cache_folder(config, "metadata-check")
 
 
 def main():

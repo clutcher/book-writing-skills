@@ -17,8 +17,7 @@ from command_runs import python_command, run_command
 
 RUNNERS = {"self-check.py"}
 SKILL_CHOICES = ("check-facts", "collect-sources")
-FIXTURE_BOOKS = ("standard-book/book.yaml", "previous-book/book.yaml", "renamed-book/book.yaml",
-                 "old-book/CLAUDE.md")
+FIXTURE_BOOKS = ("standard-book/book.yaml", "renamed-book/book.yaml")
 STANDARD_BOOK = "standard-book/book.yaml"
 STANDARD_BOOK_CHECKS = ("cited-source-check.py",)
 FIXTURE_CHECKS = (
@@ -66,10 +65,9 @@ HELP = """Maintainer check of the check-facts and collect-sources scripts; no bo
 
   A. script self-tests   every script must answer --help with exit 0 and offer --self-test,
                          and every self-test must pass; also the self-tests of the shared lib
-  B. fixture books       the checks run against four small books kept with the skill (one
-                         in the standard layout, one in the previous book.yaml layout, one
-                         with its own folder and file names and a listed file order, one in
-                         the older CLAUDE.md layout), copied to a temporary folder; every
+  B. fixture books       the checks run against two small books kept with the skill (one
+                         with the standard folder names, one with its own folder and file
+                         names and a listed file order), copied to a temporary folder; every
                          check must exit 0, and the standard book also runs the cited-source
                          check over its manuscript and thinking files
   C. a book with no sources: only book.yaml and one chapter; every check must say SKIPPED
@@ -208,7 +206,7 @@ def fixture_books(tally, chosen_skill):
     try:
         shutil.copytree(FIXTURES, work, dirs_exist_ok=True)
         for book in FIXTURE_BOOKS:
-            layout = book.split("/")[0]
+            book_name = book.split("/")[0]
             checks = FIXTURE_CHECKS + (STANDARD_BOOK_CHECKS if book == STANDARD_BOOK else ())
             for check in checks:
                 name, *options = check.split()
@@ -216,14 +214,14 @@ def fixture_books(tally, chosen_skill):
                     continue
                 result = run_command(python_command(script_path(name), *options, "--config",
                                                     work / book), CHECK_TIME_LIMIT, cwd=work)
-                text = f"{layout:<12} {check:<34}"
+                text = f"{book_name:<13} {check:<34}"
                 if result.passed:
                     tally.ok(f"{text} {result.last_line(60)}")
                 else:
                     tally.bad(f"{text} exit {result.exit_code} :: {result.last_line(80)}")
             result = run_command(python_command(LIB / "source_registry.py", "--self-test",
                                                 "--config", work / book), CHECK_TIME_LIMIT)
-            text = f"{layout:<12} {'lib/source_registry.py --self-test':<34}"
+            text = f"{book_name:<13} {'lib/source_registry.py --self-test':<34}"
             if result.passed:
                 tally.ok(f"{text} {result.last_line(60)}")
             else:

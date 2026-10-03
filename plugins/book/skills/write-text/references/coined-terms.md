@@ -18,9 +18,6 @@ terms:
   compounds: [open soil, closed soil, open bed]
 ```
 
-An older book keeps the same data as two tables under `## Coined Terminology` in its CLAUDE.md
-(`### Term Families` with columns Term | Role | Also matches, and `### Legal Compounds`).
-
 | Role | Meaning | Learning phase |
 |---|---|---|
 | primary | a coined term, new to the reader | full: 10-15 encounters, then maintenance |

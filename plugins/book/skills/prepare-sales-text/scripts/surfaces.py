@@ -191,7 +191,7 @@ def load_ebook_description(config):
     if not value:
         return None
     text = " ".join(str(value).split())
-    source = config.config_file or config.fallback_file or config.root
+    source = config.config_file or config.root
     return Surface("ebook-description", source, text, text + "\n", [])
 
 

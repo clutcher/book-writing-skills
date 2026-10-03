@@ -3,6 +3,38 @@
 The plugin is in early 0.x versions: names, modes and config keys may still change between
 versions. A change that needs work in an existing book is named here.
 
+## 0.4.0
+
+One folder layout, one config file, current names only.
+
+### Changes that may need work in your book
+
+- Only the layout that `/book:init new` writes is read. The two older layouts of this plugin
+  (settings in the book's `CLAUDE.md`, or `book.yaml` beside `author/`, `reasons/`,
+  `vocabulary/`, `marketing/` and a root `decisions.md`) are no longer read. Settings come only
+  from the command line, `book.yaml` (or `book.json`) and the built-in defaults.
+- Old key names are no longer read: for example `decisions`, `vocabulary.glossary`,
+  `reading_notes`, `reasons`, `author.*`, `style.*`, `marketing.*`, `sources.files`,
+  `sources.origin`, `outside_review`, `work.inbox`, `rules.accepted_flags` and `folder_layout`.
+  `book_config.py check` reports each one as an unknown key. Use the names in
+  `plugins/book/skills/init/references/book-yaml.md`.
+- `decisions.md`: the status of an entry comes only from its `Status:` field. A status in a
+  section heading or a ` -- CLOSED` title ending is no longer read; `decisions.py check` reports
+  such an entry as `no-status`.
+- Removed old names: `build-book.sh --reviewer`, `--diff-from` and `--diff-to` (use
+  `--reviewer-copy` and `--changes-since`), `term-density-check.py --registry`, the old
+  `metadata-crosscheck` cache folder and the old sales-text file names.
+- The review lens name `governing device` is no longer read as `main image`, `clean-room.py`
+  no longer looks for an `archive` folder inside the room, and `open-notes.py check` no longer
+  advises on old note fields (`old-field-name`).
+
+### New
+
+- `/book:init existing` now works on any folder that already holds a book: Claude makes a
+  backup, drafts a move plan you can edit (chapters, notes, sources, images), moves the files
+  without changing them once you agree, then adds what the layout still lacks. The migration
+  script for the two older layouts is gone.
+
 ## 0.3.1
 
 ### Changes that may need work in your book

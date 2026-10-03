@@ -25,17 +25,16 @@ Usage: build-book.sh [OPTIONS] [PATH]
 
 PATH (optional):
   A folder inside the book. The book root is found by walking up from it to
-  book.yaml (or, for an older book, to a CLAUDE.md with "## Book Metadata").
-  When PATH is a folder directly under the root, it is used as the manuscript
-  folder. When omitted, the walk starts at the current working directory and
+  book.yaml. When PATH is a folder directly under the root, it is used as the
+  manuscript folder. When omitted, the walk starts at the current working directory and
   the manuscript folder is always manuscript.dir from the config.
 
 Book settings:
   --config <file>        Use this book.yaml instead of searching for one
   --set <key=value>      Override one config value, e.g. --set book.font=garamond
                          or --set tools.pandoc_image=pandoc/extra:3.8.3 (repeatable)
-  Command-line options below win over book.yaml, which wins over CLAUDE.md,
-  which wins over the built-in defaults.
+  Command-line options below win over book.yaml, which wins over the built-in
+  defaults.
 
 Editions:
   --edition <name>       print   KDP paperback PDF: two-sided, gutter margins
@@ -100,12 +99,9 @@ Options:
                          wasy-verhexagon, wasy-star, wasy-sun, adforn-fleuron,
                          adforn-leaf, adforn-vine
   --page-ornament-size <size>  small, medium (default), large
-  --reviewer-copy <name> Reviewer name for a draft copy (adds a copyright notice);
-                         the old name --reviewer still works
-  --changes-since <ref>  Highlight what changed since this git commit (needs git);
-                         the old name --diff-from still works
-  --changes-until <ref>  Git commit to render as the new state (default: files on disk);
-                         the old name --diff-to still works
+  --reviewer-copy <name> Reviewer name for a draft copy (adds a copyright notice)
+  --changes-since <ref>  Highlight what changed since this git commit (needs git)
+  --changes-until <ref>  Git commit to render as the new state (default: files on disk)
   --protected            Copy/print protection for drafts (default)
   --unprotected          No PDF protection
   --part-pages           Separate part divider pages (default)
@@ -223,9 +219,9 @@ while [[ $# -gt 0 ]]; do
         --ornament)              ORNAMENT="$2"; mark_cli ornament; shift 2 ;;
         --quote-style)           QUOTE_STYLE="$2"; mark_cli quote-style; shift 2 ;;
         --highlight)             HIGHLIGHT_STYLE="$2"; mark_cli highlight; shift 2 ;;
-        --reviewer-copy|--reviewer) REVIEWER_NAME="$2"; shift 2 ;;
-        --changes-since|--diff-from) DIFF_FROM="$2"; shift 2 ;;
-        --changes-until|--diff-to) DIFF_TO="$2"; shift 2 ;;
+        --reviewer-copy)         REVIEWER_NAME="$2"; shift 2 ;;
+        --changes-since)         DIFF_FROM="$2"; shift 2 ;;
+        --changes-until)         DIFF_TO="$2"; shift 2 ;;
         --protected)             PROTECTED_MODE=true; mark_cli protected; shift ;;
         --unprotected)           PROTECTED_MODE=false; shift ;;
         --part-pages)            PART_PAGES=true; mark_cli part-pages; shift ;;
@@ -286,7 +282,7 @@ default_setting() {
 
 show_settings() {
     local name fallback
-    for name in BOOK_ROOT BOOK_FOLDER_LAYOUT BOOK_CONFIG_SOURCE MANUSCRIPT_DIR FULL_OUTPUT_DIR OUTPUT_FILE \
+    for name in BOOK_ROOT BOOK_CONFIG_SOURCE MANUSCRIPT_DIR FULL_OUTPUT_DIR OUTPUT_FILE \
                 DOCKER_IMAGE TEXLIVE_VOLUME EDITION DRAFT_MODE BOOK_TITLE BOOK_SUBTITLE BOOK_AUTHOR \
                 PAGE_FORMAT TWOSIDE_MODE FONT_CHOICE ITALIC_FONT_CHOICE HEADING_FONT FONT_SIZE \
                 PROPORTIONAL_HEADINGS CODE_SCALE INLINE_CODE_SCALE CHAPTER_STYLE SECTION_STYLE ORNAMENT \

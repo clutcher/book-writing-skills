@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "lib" / "tests"))
 
-from script_books import (NEW_BOOK, NEW_BOOK_RUN, OLD_BOOK, OTHER_BOOK, OTHER_BOOK_RUN,
+from script_books import (NEW_BOOK, NEW_BOOK_RUN, OTHER_BOOK, OTHER_BOOK_RUN, PLAIN_BOOK,
                          CopyOfBook, run_script)
 
 SCRIPT = Path(__file__).resolve().parents[1] / "match-decisions.py"
@@ -38,7 +38,7 @@ class MatchDecisionsTest(unittest.TestCase):
 
     def test_shouldSayThereIsNoFileWhenTheBookHasNoDecisionsYet(self):
         # when
-        run = run_script(SCRIPT, STAGE_TWO, book=OLD_BOOK)
+        run = run_script(SCRIPT, STAGE_TWO, book=PLAIN_BOOK)
 
         # then
         self.assertEqual(run.keys_of("no-decisions-file"), ["-"])

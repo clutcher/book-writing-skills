@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "lib" / "tests"))
 
-from script_books import OLD_BOOK, OTHER_BOOK, CopyOfBook, run_script
+from script_books import OTHER_BOOK, PLAIN_BOOK, CopyOfBook, run_script
 
 SCRIPT = Path(__file__).resolve().parents[1] / "glossary-check.py"
 
@@ -43,15 +43,15 @@ class GlossaryCheckTest(unittest.TestCase):
     def test_shouldFindTheQualifiedTermWhenTheHeadingHasTwoSeparators(self):
         # when
         new_book_run = run_script(SCRIPT)
-        old_book_run = run_script(SCRIPT, book=OLD_BOOK)
+        plain_book_run = run_script(SCRIPT, book=PLAIN_BOOK)
 
         # then
         self.assertNotIn("rise speed", new_book_run.keys_of("never-found"))
-        self.assertNotIn("strong flour", old_book_run.keys_of("never-found"))
+        self.assertNotIn("strong flour", plain_book_run.keys_of("never-found"))
 
-    def test_shouldReadTheChapterNotationWhenTheBookKeepsItsSettingsInClaudeMd(self):
+    def test_shouldReadTheChapterNotationWhenTheGlossaryUsesTheDefaultNotation(self):
         # when
-        run = run_script(SCRIPT, book=OLD_BOOK)
+        run = run_script(SCRIPT, book=PLAIN_BOOK)
 
         # then
         self.assertEqual(run.exit_code, 0)
@@ -73,7 +73,7 @@ class GlossaryCheckTest(unittest.TestCase):
         self.assertEqual(run.keys_of("used-before-defined"), [])
 
     def test_shouldWriteTheMarkdownReportWhenAReportFileIsGiven(self):
-        with CopyOfBook(OLD_BOOK) as book:
+        with CopyOfBook(PLAIN_BOOK) as book:
             # when
             run_script(SCRIPT, "--report", "glossary-report.md", "--verbose", book=book)
 
@@ -84,9 +84,9 @@ class GlossaryCheckTest(unittest.TestCase):
             self.assertIn("Post-definition context windows", report)
 
     def test_shouldSkipWithoutFailingWhenTheBookHasNoGlossaryYet(self):
-        with CopyOfBook(OLD_BOOK) as book:
+        with CopyOfBook(PLAIN_BOOK) as book:
             # given
-            (book / "review" / "glossary-registry.md").unlink()
+            (book / "rules" / "glossary.md").unlink()
 
             # when
             run = run_script(SCRIPT, book=book)

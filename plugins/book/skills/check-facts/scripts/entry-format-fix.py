@@ -26,8 +26,9 @@ What it fixes:
   separator     an entry heading not introduced by one `---` with a blank line either
                 side gets it. A doubled rule hides entries from every parser. Only the
                 run of blank and `---` lines before an entry is rewritten.
-  cache-folder  a cache line naming the other layout's cache folder is rewritten to
-                the book's `sources.library` folder.
+  cache-folder  in a book that keeps its library in its own folder, a cache line naming
+                the default folder (`sources/library`) is rewritten to the book's
+                `sources.library` folder.
 
 What it refuses: anything that needs knowing the source. A missing Full title cannot
 be invented, a URL cannot be guessed, a Venue already holding different content is
@@ -369,7 +370,7 @@ grep hit may be a commentator rather than the author.
 **Full title:** An entry that dated its own field name
 **Authors:** D. Delta
 **Year:** 2004
-**Cached text:** `review/sources/Ddd04.txt` (fetched 2025-01-01, sha256 abc)
+**Cached text:** `sources/library/Ddd04.txt` (fetched 2025-01-01, sha256 abc)
 **Fix applied 2025-05-04:** the DOI was resolved and the entry corrected
 
 ---
@@ -582,6 +583,9 @@ def _reported(output):
     return changes, refusals
 
 
+OWN_LIBRARY_FOLDER_CONFIG = "version: 1\nsources:\n  library: evidence/cache\n"
+
+
 def self_test():
     failures = []
 
@@ -591,7 +595,9 @@ def self_test():
 
     cwd = Path.cwd()
     with tempfile.TemporaryDirectory() as root:
-        Path(root, "sources", "library").mkdir(parents=True)
+        Path(root, "sources").mkdir()
+        Path(root, "evidence", "cache").mkdir(parents=True)
+        Path(root, "book.yaml").write_text(OWN_LIBRARY_FOLDER_CONFIG, encoding="utf-8")
         sources = Path(root, "sources", "list.md")
         findings = Path(root, "sources", "quotes.md")
         with open(sources, "w", encoding="utf-8") as handle:
@@ -634,7 +640,7 @@ def self_test():
     require("bank: list" in first, "the list fixture was not read as the sources list")
     require("bank: quotes" in findings_first,
             "the quotes fixture was not read as the quotes bank")
-    require("**Cached text:** `sources/library/Ddd04.txt`" in after_one,
+    require("**Cached text:** `evidence/cache/Ddd04.txt`" in after_one,
             "[Ddd04]'s cache line was not moved to the configured folder")
 
     print("\n== changes reported")

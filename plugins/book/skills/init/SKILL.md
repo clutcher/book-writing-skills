@@ -2,11 +2,11 @@
 name: init
 description: >-
   Sets up a book for the book plugin: in a new folder it writes book.yaml, CLAUDE.md, the
-  folders and the starter files, then checks which outside tools are missing (Docker, tesseract,
-  poppler, Java and others) and what each one turns off. It also moves a book made with an
-  earlier version of these skills into the layout, after the author agrees to a plan. Use it to
-  start a new book or set up a book folder. To check the tools later, use run-checks; for text,
-  sources, editions or cover, use the skill for that job.
+  folders and the starter files, then checks which outside tools are missing and what each one
+  turns off. It also sets up a book from any folder that already holds one: it drafts a move
+  plan and moves the files only after the author agrees. Use it to start a new book or set up a
+  book folder. To check the tools later, use run-checks; for text, sources, editions or cover,
+  use the skill for that job.
 argument-hint: "[new|existing] [folder]"
 ---
 
@@ -23,11 +23,11 @@ writes only with `--fix`; each answers `--help`.
 
 - **This skill never runs git and never commits.** The author decides what to commit.
 - **Draft, show, then apply.** Show the dry run (and for `existing`, the move plan) to the author
-  before any `--fix`, and wait for the answer.
-- **Never overwrite.** `new.py` writes only files that do not exist; `existing.py` refuses a plan
-  whose target exists. Neither edits the manuscript.
+  before any `--fix` or move, and wait for the answer.
+- **Never overwrite, never delete.** `new.py` writes only files that do not exist and never
+  edits the manuscript. A move never goes over a file and never deletes one.
 - **Move, then change, never both at once.** A moved file keeps every byte; every later change
-  (book.yaml, a path line) is its own step, named in the report.
+  to its text is its own step, with the author.
 - **Say what was skipped.** A tool check that finds a tool missing is not a failure, but the
   author must hear which features it turns off.
 
@@ -36,13 +36,11 @@ writes only with `--fix`; each answers `--help`.
 | Mode | Say | What happens |
 |---|---|---|
 | `new` (default) | "start a new book", "set up a book in this folder", `/book:init new [folder]` | `new.py`: the starter book, the Vale style, then the tool check |
-| `existing` | "move my book into the layout", "set up this existing repo", `/book:init existing [folder]` | `existing.py draft`, the author edits the plan, then `existing.py move` |
+| `existing` | "set up my book from this folder", "I have a manuscript already", `/book:init existing [folder]` | Claude drafts a move plan, the author agrees, the files move, then `new.py` adds what is missing |
 
-With no mode, look at the folder. A folder with a `CLAUDE.md` holding `## Book Metadata` or
-with `review/*-registry.md` is in the old layout. A folder with a `book.yaml` beside `author/`,
-`reasons/`, `vocabulary/`, `style/`, `marketing/`, `reading-notes/` or `sources/files/` and no
-`thinking/`, `rules/`, `notes/` or `publishing/` is in the previous layout. Both are older
-books, so use `existing`; `new.py` refuses both. An empty or new folder uses `new`. Ask when unsure.
+With no mode, look at the folder. An empty or new folder, or one that already has `book.yaml`,
+uses `new`. A folder with chapters, notes or sources in its own shape uses `existing`. Ask when
+unsure.
 
 `new` runs the tool check as its last step. For "check my tools" on a book already set up, use
 the run-checks skill (`run-checks.py setup`), which runs `toolchain-check.py` with the other setup
@@ -84,50 +82,29 @@ Run in a folder that already has some of these files, `new.py` adds only what is
 the missing `.gitignore` lines, written for the paths this book's `book.yaml` sets). The
 starter manuscript, cover design and sales-text files are written only while the manuscript
 folder has no `.md` file, so a book that already has text never gets placeholders. It
-refuses a book in an older layout: that book needs `existing` first.
+refuses a folder inside another book (a `book.yaml` above it).
 
-## existing: an existing book
+## existing: a book from any folder
 
-Full procedure, the plan format and the rules for moving text: [references/existing.md](references/existing.md).
+No script decides where a file goes: Claude reads the folder, the author decides. Full
+procedure and the plan rules: [references/existing.md](references/existing.md).
 
-1. **Backup first.** Ask the author to zip the book folder, or confirm where a backup is.
-   `existing.py move` deletes what the plan marks DROP (`--keep-dropped DIR` keeps it
-   instead). Save the output of the run-checks skill (`run-checks.py facts` and
-   `run-checks.py text`) now, for step 6.
-2. **Draft the plan and show it:**
-   ```bash
-   S=${CLAUDE_PLUGIN_ROOT}/skills/init/scripts
-   python3 $S/existing.py draft BOOK           # show
-   python3 $S/existing.py draft BOOK --fix     # write BOOK/move-plan.tsv
-   ```
-   The draft finds the older layout: old (settings in `CLAUDE.md`, `review/*-registry.md`,
-   `review/sources/`, `research/`, `personal-review/`) or previous (`book.yaml` with `author/`,
-   `reasons/`, `vocabulary/`, `style/`, `sources/files/`, `sources/origin/`, `cover/`,
-   `marketing/`, `reading-notes/`, `.book/inbox/`). It proposes a row for every path, with
-   rules taken from the shared config reader. Walk the author through the rows that move or
-   drop; the author edits the file.
-3. **Dry run the move and show it:** `python3 $S/existing.py move BOOK`. It prints the moves, the
-   merged origin files, the drops, the book.yaml it would write, and every problem. A plan with
-   a problem moves nothing. A move that still fails stops the move at that file; the report and
-   `moves.tsv` say what moved, and the same plan run again moves the rest.
-4. **On approval:** `python3 $S/existing.py move BOOK --fix`. It moves every file byte for byte
-   (sha256 checked) and never over a file, merges each old-layout source's fetch and OCR records
-   into `sources/library-index/<Key>.json`, and drops what the plan says. An old-layout book
-   gets a new book.yaml from its `CLAUDE.md` sections; a previous-layout book.yaml has its keys
-   renamed in place, comments kept (the old file stays in the run folder). Either way the file
-   must read back to the intended values. Then it points the Vale config and the source banks at
-   the new paths, adds `.gitignore` lines, and writes the report to
-   `.book/runs/<YYYY-MM-DD-HHMM>-init-existing/move-report.md` with `moves.tsv` and the plan.
-5. **Fill the gaps:** `python3 $S/new.py BOOK --fix` adds what the layout still lacks
-   (`rules/decisions.md`, `rules/voice.md`, the glossary header,
-   empty folders) and changes nothing that exists. A moved `decisions.md` without a current
-   `## Index` fails `run-checks.py setup` until `decisions.py check --fix` rebuilds it; show
-   that change to the author as its own step.
-6. **Check:** the run-checks skill: `run-checks.py setup`, then `run-checks.py facts` and
-   `run-checks.py text`. Compare their findings with the output saved in step 1: a move must not
-   add a finding.
-7. **Report** the numbers: files moved and checked, origin files, drops, problems, and the list
-   of files that still name an old path (the author updates those, often `CLAUDE.md`).
+1. **Backup first.** Zip the whole folder into a file next to it and tell the author where it
+   is.
+2. **Draft the move plan and show it.** Read every file name (open the unclear ones) and write
+   a table: file, where it goes, why. Chapters in book order go to `manuscript/NNN-name.md`,
+   numbered like the starter book (`110`, `120`, ...). Notes go to `notes/`, copies of sources to
+   `sources/library/`, one list of sources to `sources/list.md`, images to
+   `manuscript/images/`. Anything unclear stays where it is.
+3. **The author edits the table and agrees.** Move nothing before that.
+4. **Move** with plain moves, one row at a time: never change a byte, never delete, never write
+   over a file. On a name clash, stop and ask.
+5. **Add what is missing:** `new.py FOLDER` (dry run, show it), then the same with `--fix`. It
+   writes only files that do not exist; moved chapters get no starter files beside them.
+6. **Check:** the run-checks skill, `run-checks.py setup`, then `run-checks.py facts` and
+   `run-checks.py text`. Each finding is its own step with the author.
+7. **Report** where the backup is, what moved, what stayed, what `new.py` added and what the
+   checks found. The author commits.
 
 ## The tools on this machine
 
@@ -144,11 +121,10 @@ images: [references/toolchain.md](references/toolchain.md).
 
 | Script | Does |
 |---|---|
-| `new.py` | Writes a new book's starter files, or adds what an existing layout lacks |
-| `existing.py` | `draft` a move plan from an older layout; `move` carries it out and writes the report |
+| `new.py` | Writes a new book's starter files, or adds what a book folder lacks |
 | `toolchain-check.py` | Lists the outside tools and what each missing one turns off; `--pull` pulls images |
-| `book_yaml.py` | Shared by the two: writes book.yaml and proves it reads back to the intended values |
-| `self-check.py` | Maintainer check on fixtures only: new (with `run-checks.py all`), existing on `scripts/fixtures/old-book` and `scripts/fixtures/previous-book`, the tool check |
+| `book_yaml.py` | Used by `new.py`: writes book.yaml values and proves they read back as intended |
+| `self-check.py` | Maintainer check in a temporary folder: new (with `run-checks.py all`), `new.py` on a folder that already holds a book, the tool check |
 
 ## Templates
 

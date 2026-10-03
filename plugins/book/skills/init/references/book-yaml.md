@@ -6,7 +6,7 @@ walking up from the folder it works in (`--config FILE` names it), through
 somewhere else rather than an error, so check it after every edit:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py check     # unknown, retired and old key names, missing paths, unused files
+python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py check     # unknown keys, missing paths
 python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py show      # every value, and where it came from
 ```
 
@@ -14,10 +14,9 @@ python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py show      # every value, and wh
 
 - **Every key is optional.** A missing key takes the default below; `null` means "none", and the
   script then computes a value, falls back, or skips.
-- **Which value wins:** `--set KEY=VALUE` on the command line > `book.yaml` > the `## Book Metadata` and
-  `## Coined Terminology` sections of an older book's `CLAUDE.md` > the default.
+- **Which value wins:** `--set KEY=VALUE` on the command line > `book.yaml` > the default.
 - **Paths are relative to the folder that holds `book.yaml`**; `~` is expanded.
-- **`book:` keys** also accept the older spelling `Title-Case-With-Hyphens`; `Cover-Front` and
+- **`book:` keys** also accept the spelling `Title-Case-With-Hyphens`; `Cover-Front` and
   `cover_front` are the same key. A key no script reads is reported by `check`.
 - **The YAML is a subset:** mappings, lists, plain and quoted scalars, one-line `[...]` and
   `{...}`, `|` and `>` blocks, `#` comments. No anchors, tags or several documents in one file.
@@ -35,7 +34,7 @@ only to change its value.
 
 ## The full schema
 
-The value shown is the default of the standard layout.
+The value shown is the default.
 
 ```yaml
 version: 1
@@ -256,71 +255,3 @@ tools:                                 # docker images pinned to a tag or digest
   render_image: null                   # an image with rsvg-convert, only when none is installed
   epubcheck: 5.1.0
 ```
-
-## Older layouts and old key names
-
-Two older layouts are still read, so a book keeps working until `existing.py` moves it
-([existing.md](existing.md)). `folder_layout: new`, `folder_layout: previous` or
-`folder_layout: old` at the top of `book.yaml` chooses one by hand; otherwise the folders
-decide.
-
-- **previous**: a `book.yaml` book with `decisions.md`, `vocabulary/`, `reading-notes/`,
-  `reasons/`, `author/`, `style/`, `marketing/` or `sources/files/`, and none of `thinking/`,
-  `rules/`, `notes/`, `publishing/`.
-- **old**: no `book.yaml`, and a `CLAUDE.md` holding `## Book Metadata` (or
-  `review/sources-registry.md`).
-
-| Key | previous | old |
-|---|---|---|
-| `thinking.stance`, `thinking.stance_details` | `author/stance.md`, `author/stance-details.md` | my-stance.md and my-stance-details.md at the book root |
-| `thinking.audience` | `author/positioning.md` | book-positioning.md at the book root |
-| `thinking.argument` | `reasons` | `research` |
-| `thinking.dir`, `thinking.doubts`, `rules.dir` | none | none |
-| `rules.decisions` | `decisions.md` | `decisions.md` |
-| `rules.glossary` | `vocabulary/glossary.md` | `review/glossary-registry.md` |
-| `rules.voice` | `author/voice.md` | none |
-| `rules.vale`, `rules.vale_ini` | `style`, `style/vale.ini` | `.vale`, `.vale.ini` |
-| `sources.list`, `sources.quotes` | `sources/list.md`, `sources/quotes.md` | `review/sources-registry.md`, `review/fact-check-findings-registry.md` |
-| `sources.library`, `sources.library_index` | `sources/files`, `sources/origin` | `review/sources` (fetch and OCR records sit beside each file) |
-| `sources.to_add` | `<work.dir>/sources-to-add` | `review/sources/incoming` |
-| `notes` | `reading-notes` | `personal-review` |
-| `publishing.cover`, `publishing.sales_text` | `cover`, `marketing` | `cover`, `cover` |
-| `cover.design`, `cover.final` | `cover/design.py`, `cover/final` | none, `cover` |
-| `sales_text.back_cover` | `marketing/back-cover.md` | none |
-| `sales_text.amazon` | as new | `cover/kdp-description.html` |
-| `sales_text.plain_description` | as new | `cover/plain-description.txt` |
-| `sales_text.contents`, `sales_text.contents_full` | as new | `cover/contents.html`, `cover/contents-full.html` |
-| `work` | `.book` | `.`, with runs in `review`, output in `output`, caches at the root |
-
-**Old key names still work**, as other names of the new keys; `book_config.py check` names the
-new key for each one (`old-key-name`):
-
-| Old name | New name |
-|---|---|
-| `decisions` | `rules.decisions` |
-| `vocabulary.glossary` | `rules.glossary` |
-| `reading_notes` | `notes` |
-| `reasons` | `thinking.argument` |
-| `author.stance`, `author.stance_details` | `thinking.stance`, `thinking.stance_details` |
-| `author.positioning` | `thinking.audience` |
-| `author.voice` | `rules.voice` |
-| `style.dir`, `style.vale_ini` | `rules.vale`, `rules.vale_ini` |
-| `sources.files`, `sources.origin` | `sources.library`, `sources.library_index` |
-| `cover.dir` | `publishing.cover` |
-| `marketing.dir` | `publishing.sales_text` |
-| `marketing.<name>` | `sales_text.<name>` |
-| `sales_text.google_books` | `sales_text.plain_description` |
-| `outside_review.<name>` | `readers_review.<name>` |
-| `vocabulary.heading_separator`, `vocabulary.location_pattern` | `glossary_format.heading_separator`, `glossary_format.location_pattern` |
-
-When a book sets both names of one key, the new name wins. Three keys are retired and reported
-as defects (`retired-key`): `work.inbox` (entries a run proposes are staged inside its own run
-folder), `sources.incoming` (files added by hand go to `sources.to_add`) and
-`rules.accepted_flags` (no check reads accepted counts: every finding is reported until it is
-fixed). An accepted counts file left in the book (`rules/accepted-flags.json`,
-`<work.dir>/baselines/sources.json`) is reported as `unused-file`, to delete.
-
-The plain-text description was named `google-books.txt` (`cover/google-books-description.txt` in
-the oldest layout); while only that file exists, it is still read and written. The generated
-contents pages had store-named files; they are made again under the new names, and the old
-files can be deleted.

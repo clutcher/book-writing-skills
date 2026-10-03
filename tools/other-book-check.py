@@ -16,7 +16,7 @@ out of the output before comparing, so a script that reads the same text twice g
 masked report twice. A difference means behaviour depends on what files are CALLED.
 
 Each script runs a third time from a decoy folder that looks like another book (its own
-book.yaml, CLAUDE.md, glossary and bibliography). A script that reads config from the working
+book.yaml, glossary and bibliography). A script that reads config from the working
 folder instead of the book it was pointed at picks up the decoy and reports on the wrong book.
 
 Every run gets no input on stdin and a time limit, so a script that waits for input or for
@@ -151,6 +151,8 @@ NOT_APPLICABLE = {
 
 EXTRA_ARGS = {}
 
+POINTED_AT_BOOK_CONFIG = {"glossary-seed.py"}
+
 DOCUMENTED_DEPENDENCIES = {}
 
 RUN_SECONDS = 60
@@ -192,10 +194,6 @@ def build_decoy(root):
     (decoy / "book.yaml").write_text(
         "version: 1\nterms:\n  families:\n    - {term: zzdecoy, role: primary}\n"
         "  compounds: [zzdecoy bed]\n", encoding="utf-8")
-    (decoy / "CLAUDE.md").write_text(
-        "# Decoy\n\n## Coined Terminology\n\n### Term Families\n\n"
-        "| Term | Role | Also matches |\n|---|---|---|\n| zzdecoy | primary | |\n\n"
-        "### Legal Compounds\n\n| Compound |\n|---|\n| zzdecoy bed |\n", encoding="utf-8")
     glossary = "# Glossary\n\n## Defined terms\n\n### zzdecoy -- Ch1 S1.1 (blockquote)\n"
     (decoy / "rules" / "glossary.md").write_text(glossary, encoding="utf-8")
     (decoy / "sources" / "list.md").write_text("# Sources\n", encoding="utf-8")
@@ -227,7 +225,11 @@ def run_script(script, target, names, cwd):
     """(masked output, problem) for one run; problem is None, 'TIMEOUT' or 'ERROR'."""
     command = ([sys.executable, str(script)] if script.suffix == ".py"
                else [shutil.which("bash") or "bash", str(script)])
-    command += EXTRA_ARGS.get(script.name, []) + [str(target)]
+    command += EXTRA_ARGS.get(script.name, [])
+    if script.name in POINTED_AT_BOOK_CONFIG:
+        command += ["--config", str(Path(target).parent / "book.yaml")]
+    else:
+        command += [str(target)]
     environment = dict(os.environ, NO_COLOR="1", PYTHONDONTWRITEBYTECODE="1")
     try:
         process = subprocess.run(command, capture_output=True, encoding="utf-8", errors="replace", cwd=str(cwd),

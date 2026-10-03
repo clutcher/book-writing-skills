@@ -7,7 +7,7 @@ manuscript:
   chapter_pattern: '^0*([1-9]\d?)-'
   front_matter: ["00-*.md"]
   references: text/99-bibliography.md
-vocabulary:
+rules:
   glossary: meta/terms.md
-decisions: meta/choices.md
+  decisions: meta/choices.md
 work: state

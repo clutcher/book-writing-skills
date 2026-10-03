@@ -120,9 +120,8 @@ def parse_arguments(argv):
 
 def config_arguments(config, overrides, takes_set):
     found = []
-    config_file = config.config_file or config.fallback_file
-    if config_file:
-        found += ["--config", str(config_file)]
+    if config.config_file:
+        found += ["--config", str(config.config_file)]
     if takes_set:
         for override in overrides:
             found += ["--set", override]

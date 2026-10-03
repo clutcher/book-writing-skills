@@ -88,9 +88,6 @@ declared in each check script, not in the book.
 
 - **Never hide a finding.** Fix it, or ask the author. A class that marks no problem is changed
   to INFORMATIONAL in its script, for every book; nothing in a book turns a finding off.
-- An older book kept accepted counts in `rules/accepted-flags.json` (key
-  `rules.accepted_flags`) or in `<work.dir>/baselines/sources.json`. No check reads them;
-  `setup` names each such file and key once, as no longer used, so the author can delete it.
 
 ## Reporting a run
 

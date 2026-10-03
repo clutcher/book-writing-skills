@@ -9,8 +9,8 @@ LIB = Path(__file__).resolve().parent
 if str(LIB) not in sys.path:
     sys.path.insert(0, str(LIB))
 
-from book_config import (LAYOUT_OLD, LAYOUTS, ConfigError, add_config_arguments,
-                         config_from_args, layout_default, load_config, natural_sort_key)
+from book_config import (ConfigError, add_config_arguments, config_from_args, load_config,
+                         natural_sort_key)
 from check_output import tool_failed
 from citation_key import is_safe_file_key
 
@@ -18,8 +18,7 @@ FETCH = "fetch"
 OCR = "ocr"
 ORIGIN_KINDS = (FETCH, OCR)
 
-LAYOUT_CACHE_FOLDERS = tuple(dict.fromkeys(layout_default(layout, "sources.library")
-                                           for layout in reversed(LAYOUTS)))
+LAYOUT_CACHE_FOLDERS = ("sources/library",)
 
 CACHE_FILE_NAME = r"[A-Za-z0-9][A-Za-z0-9+_.-]*"
 CACHE_REFERENCE = re.compile(r"`((?:[^`\s]+/)?)(" + CACHE_FILE_NAME + r")`")
@@ -205,8 +204,6 @@ def path_or_default(value, default):
 
 
 def tool_cache_folder(config, name):
-    if config.layout == LAYOUT_OLD:
-        return Path(config.root) / f".{name}-cache"
     return Path(config.work.caches) / name
 
 

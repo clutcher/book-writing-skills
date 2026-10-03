@@ -29,11 +29,10 @@ The starter manuscript, the thinking/argument and thinking/doubts starters, the 
 design and the sales-text files are written only while the manuscript folder has no .md
 file. No folder gets a README or index file.
 
-An existing file is never changed, except that .gitignore gains missing lines. A folder
-holding an older book (a CLAUDE.md with `## Book Metadata`, or a book.yaml in the previous
-layout) is refused: use existing.py. So is a folder inside another book (a book.yaml above
-it). A path the book.yaml puts outside the book folder is shown and made as a full path.
-After writing, the write-text skill's vale-sync.py --fix copies the Vale style into
+An existing file is never changed, except that .gitignore gains missing lines, so a folder
+that already holds a book gains only what it lacks. A folder inside another book (a book.yaml
+above it) is refused. A path the book.yaml puts outside the book folder is shown and made as a
+full path. After writing, the write-text skill's vale-sync.py --fix copies the Vale style into
 rules/vale and runs `vale sync` in Docker (without Docker it says SKIPPED and the book is still
 made), then the tool check runs (toolchain-check.py). --no-tools skips both.
 
@@ -60,8 +59,8 @@ sys.path.insert(0, str(SCRIPTS))
 sys.dont_write_bytecode = True
 
 from book_yaml import new_layout_paths, relative_or_none, same_values, scalar
-from book_config import (CONFIG_FILE_NAMES, GLOSSARY_HEADING_SEPARATOR, LAYOUT_NEW, ConfigError,
-                         find_config_file, has_fallback_sections, load_config)
+from book_config import (CONFIG_FILE_NAMES, GLOSSARY_HEADING_SEPARATOR, ConfigError,
+                         find_config_file, load_config)
 from decisions import render_template
 
 TOOL = "new"
@@ -315,17 +314,6 @@ def plan_book(root, title, author, subtitle, year):
     return plan
 
 
-def older_layout(root):
-    config_file = existing_config(root)
-    if config_file is None:
-        return None
-    try:
-        layout = load_config(config=config_file).layout
-    except ConfigError:
-        return None
-    return None if layout == LAYOUT_NEW else layout
-
-
 def run_vale_sync(root):
     print("\n== vale", flush=True)
     exit_code = subprocess.run([sys.executable, str(VALE_SYNC), "--book", str(root),
@@ -371,16 +359,6 @@ def main(argv=None):
     if enclosing is not None:
         print(f"{TOOL}: {root} is inside the book at {enclosing.parent}; run new.py on that "
               f"folder to add what it lacks", file=sys.stderr)
-        return 2
-    claude_md = root / "CLAUDE.md"
-    if existing_config(root) is None and claude_md.is_file() and has_fallback_sections(claude_md):
-        print(f"{TOOL}: {claude_md} holds an older book's settings; move it with existing.py first",
-              file=sys.stderr)
-        return 2
-    older = older_layout(root)
-    if older:
-        print(f"{TOOL}: {root} holds a book in the {older} layout; move it with existing.py first",
-              file=sys.stderr)
         return 2
     title = args.title or UNSET
     author = args.author or UNSET

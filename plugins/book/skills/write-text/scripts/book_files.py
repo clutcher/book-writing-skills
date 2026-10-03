@@ -13,10 +13,9 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPTS_DIR.parent
 FIXTURES_DIR = SCRIPTS_DIR / "fixtures"
 SAMPLE_BOOK = FIXTURES_DIR / "sample-book"
-OLD_LAYOUT_BOOK = FIXTURES_DIR / "old-layout-book"
 
 __all__ = [
-    "ConfigError", "EXIT_TOOL_FAILED", "FIXTURES_DIR", "OLD_LAYOUT_BOOK", "SAMPLE_BOOK",
+    "ConfigError", "EXIT_TOOL_FAILED", "FIXTURES_DIR", "SAMPLE_BOOK",
     "SKILL_DIR", "add_config_arguments", "coined_words", "config_for_targets", "is_english_book",
     "load_config", "markdown_files", "natural_sort_key", "skipped_for_language", "tool_failed",
     "watch_words",

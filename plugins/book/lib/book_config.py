@@ -13,25 +13,9 @@ from pathlib import Path
 from check_output import CheckReport, run_main
 
 CONFIG_FILE_NAMES = ("book.yaml", "book.yml", "book.json")
-FALLBACK_FILE_NAME = "CLAUDE.md"
-METADATA_HEADING = "## Book Metadata"
-TERMS_HEADING = "## Coined Terminology"
-TERM_FAMILIES_HEADING = "### Term Families"
-LEGAL_COMPOUNDS_HEADING = "### Legal Compounds"
-OLD_LAYOUT_MARKER = Path("review") / "sources-registry.md"
-
-LAYOUT_NEW = "new"
-LAYOUT_PREVIOUS = "previous"
-LAYOUT_OLD = "old"
-LAYOUTS = (LAYOUT_NEW, LAYOUT_PREVIOUS, LAYOUT_OLD)
-LAYOUT_KEY = "folder_layout"
-NEW_LAYOUT_SIGNS = ("thinking", "rules", "notes", "publishing")
-PREVIOUS_LAYOUT_SIGNS = ("decisions.md", "vocabulary", "reading-notes", "reasons", "author",
-                         "style", "marketing", "sources/files", "sources/origin")
 
 SOURCE_CLI = "command line"
 SOURCE_CONFIG_FILE = "config file"
-SOURCE_FALLBACK = "CLAUDE.md"
 SOURCE_DEFAULTS = "defaults"
 
 KIND_FRONT_MATTER = "front-matter"
@@ -154,7 +138,7 @@ SHARED_DEFAULTS = {
     },
 }
 
-NEW_LAYOUT_DEFAULTS = {
+FOLDER_DEFAULTS = {
     "thinking": {
         "dir": "thinking",
         "stance": "thinking/author/stance.md",
@@ -185,129 +169,16 @@ NEW_LAYOUT_DEFAULTS = {
     "sales_text": {"back_cover": None},
 }
 
-PREVIOUS_LAYOUT_DEFAULTS = {
-    "thinking": {
-        "dir": None,
-        "stance": "author/stance.md",
-        "stance_details": "author/stance-details.md",
-        "audience": "author/positioning.md",
-        "argument": "reasons",
-        "doubts": None,
-    },
-    "rules": {
-        "dir": None,
-        "decisions": "decisions.md",
-        "glossary": "vocabulary/glossary.md",
-        "voice": "author/voice.md",
-        "vale": "style",
-        "vale_ini": "style/vale.ini",
-    },
-    "sources": {
-        "list": "sources/list.md",
-        "quotes": "sources/quotes.md",
-        "library": "sources/files",
-        "library_index": "sources/origin",
-        "to_add": None,
-    },
-    "notes": "reading-notes",
-    "publishing": {"cover": "cover", "sales_text": "marketing"},
-    "work": {"dir": ".book", "runs": None, "output": None, "caches": None},
-    "cover": {"design": None, "final": None},
-    "sales_text": {"back_cover": None},
-}
-
-OLD_LAYOUT_DEFAULTS = {
-    "thinking": {
-        "dir": None,
-        "stance": "my-stance.md",
-        "stance_details": "my-stance-details.md",
-        "audience": "book-positioning.md",
-        "argument": "research",
-        "doubts": None,
-    },
-    "rules": {
-        "dir": None,
-        "decisions": "decisions.md",
-        "glossary": "review/glossary-registry.md",
-        "voice": None,
-        "vale": ".vale",
-        "vale_ini": ".vale.ini",
-    },
-    "sources": {
-        "list": "review/sources-registry.md",
-        "quotes": "review/fact-check-findings-registry.md",
-        "library": "review/sources",
-        "library_index": "review/sources",
-        "to_add": "review/sources/incoming",
-    },
-    "notes": "personal-review",
-    "publishing": {"cover": "cover", "sales_text": "cover"},
-    "work": {"dir": ".", "runs": "review", "output": "output", "caches": "."},
-    "cover": {"design": None, "final": "cover"},
-    "sales_text": {"back_cover": None},
-}
-
-LAYOUT_DEFAULTS = {
-    LAYOUT_NEW: NEW_LAYOUT_DEFAULTS,
-    LAYOUT_PREVIOUS: PREVIOUS_LAYOUT_DEFAULTS,
-    LAYOUT_OLD: OLD_LAYOUT_DEFAULTS,
-}
-
-KEY_ALIASES = {
-    "decisions": "rules.decisions",
-    "vocabulary.glossary": "rules.glossary",
-    "reading_notes": "notes",
-    "reasons": "thinking.argument",
-    "author.stance": "thinking.stance",
-    "author.stance_details": "thinking.stance_details",
-    "author.positioning": "thinking.audience",
-    "author.voice": "rules.voice",
-    "style.dir": "rules.vale",
-    "style.vale_ini": "rules.vale_ini",
-    "sources.files": "sources.library",
-    "sources.origin": "sources.library_index",
-    "cover.dir": "publishing.cover",
-    "marketing.dir": "publishing.sales_text",
-    "sales_text.google_books": "sales_text.plain_description",
-}
-SECTION_ALIASES = {"marketing": "sales_text", "outside_review": "readers_review",
-                   "vocabulary": "glossary_format"}
-RETIRED_KEYS = {
-    "work.inbox": "staged entries go inside the run folder of the run that made them",
-    "sources.incoming": "files added by hand go to sources.to_add",
-    "rules.accepted_flags": "no check reads accepted counts any more: every finding is "
-                            "reported until it is fixed",
-}
-ACCEPTED_COUNTS_KEY = "rules.accepted_flags"
-ACCEPTED_COUNTS_FILE = "accepted-flags.json"
-OLD_ACCEPTED_COUNTS_FILE = Path("baselines") / "sources.json"
-
 SALES_TEXT_FILE_NAMES = {
-    LAYOUT_NEW: {
-        "back_cover": "back-cover.md",
-        "amazon": "amazon.html",
-        "keywords": "keywords-and-categories.md",
-        "intended_impression": "intended-impression.md",
-        "plain_description": "plain-description.txt",
-        "contents": "contents.html",
-        "contents_full": "contents-full.html",
-    },
-    LAYOUT_OLD: {
-        "amazon": "kdp-description.html",
-        "plain_description": "plain-description.txt",
-        "contents": "contents.html",
-        "contents_full": "contents-full.html",
-    },
+    "back_cover": "back-cover.md",
+    "amazon": "amazon.html",
+    "keywords": "keywords-and-categories.md",
+    "intended_impression": "intended-impression.md",
+    "plain_description": "plain-description.txt",
+    "contents": "contents.html",
+    "contents_full": "contents-full.html",
 }
-OLD_SALES_TEXT_FILE_NAMES = {
-    "plain_description": ("google-books.txt", "google-books-description.txt"),
-}
-SALES_TEXT_FILE_NAMES[LAYOUT_PREVIOUS] = SALES_TEXT_FILE_NAMES[LAYOUT_NEW]
-COVER_FILE_NAMES = {
-    LAYOUT_NEW: {"design": "design.py", "final": "final"},
-    LAYOUT_PREVIOUS: {"design": "design.py", "final": "final"},
-    LAYOUT_OLD: {"final": "."},
-}
+COVER_FILE_NAMES = {"design": "design.py", "final": "final"}
 SHIPPED_COVER_FILES = {"cover_front": "front.png", "cover_back": "back.png",
                        "ebook_cover": "ebook.png"}
 SALES_TEXT_FILES = ("amazon", "keywords", "intended_impression", "plain_description", "contents",
@@ -319,7 +190,6 @@ COVER_SHELF_FOLDER = "shelf-screenshots"
 SOURCES_TO_ADD_FOLDER = "sources-to-add"
 SOURCES_FOR_REVIEWER_FILE = "sources-for-reviewer.md"
 READERS_REVIEW_ROOM_SUFFIX = "-readers-review"
-OLD_READERS_REVIEW_ROOM_SUFFIX = "-outside-review"
 
 THINKING_FILES = ("dir", "stance", "stance_details", "audience", "argument", "doubts")
 RULES_FILES = ("dir", "decisions", "glossary", "voice", "vale", "vale_ini")
@@ -345,12 +215,6 @@ TOOL_KEYS = ("pandoc_image", "pandoc_volume", "vale_image", "bibtex_image", "ren
              "epubcheck")
 
 METADATA_PATH_KEYS = ("cover_front", "cover_back", "ebook_cover")
-
-METADATA_KEYS_WITH_OWN_HOME = {
-    "manuscript": "manuscript.dir",
-    "output": "work.output",
-}
-
 
 _MISSING = object()
 
@@ -728,110 +592,12 @@ def normalise_metadata_key(name):
     return re.sub(r"[\s-]+", "_", name.strip()).lower()
 
 
-def read_metadata_section(text):
-    metadata = {}
-    inside = False
-    for line in text.split("\n"):
-        if line.rstrip() == METADATA_HEADING:
-            inside = True
-            continue
-        if inside and line.startswith("## "):
-            break
-        if not inside:
-            continue
-        found = re.match(r"^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$", line)
-        if not found:
-            continue
-        key = normalise_metadata_key(found.group(1))
-        value = re.sub(r"\s+#(?:\s.*)?$", "", found.group(2)).strip().rstrip("\r")
-        metadata.setdefault(key, value)
-    return metadata
-
-
-def _table_rows_after(lines, heading):
-    try:
-        start = next(i for i, line in enumerate(lines) if line.strip() == heading)
-    except StopIteration:
-        return []
-    index = start + 1
-    while index < len(lines) and not _is_table_row(lines[index]):
-        if lines[index].strip().startswith("#"):
-            return []
-        index += 1
-    table = []
-    while index < len(lines) and _is_table_row(lines[index]):
-        table.append(lines[index])
-        index += 1
-    rows = []
-    for position, raw in enumerate(table):
-        if position == 0 or re.fullmatch(r"\|[\s|:-]+\|", raw.strip()):
-            continue
-        rows.append([cell.strip() for cell in raw.strip().strip("|").split("|")])
-    return rows
-
-
-def _is_table_row(line):
-    stripped = line.strip()
-    return stripped.startswith("|") and stripped.endswith("|")
-
-
-def read_terms_section(text):
-    lines = text.split("\n")
-    families = []
-    for cells in _table_rows_after(lines, TERM_FAMILIES_HEADING):
-        if len(cells) < 2 or not cells[0]:
-            continue
-        also = cells[2] if len(cells) > 2 else ""
-        families.append({
-            "term": cells[0],
-            "role": cells[1].lower(),
-            "also": [word for word in re.split(r"[,\s]+", also) if word],
-        })
-    compounds = [cells[0].strip().lower()
-                 for cells in _table_rows_after(lines, LEGAL_COMPOUNDS_HEADING)
-                 if cells and cells[0].strip()]
-    return {"families": families, "compounds": compounds}
-
-
-def settings_from_fallback_file(path):
-    text = Path(path).read_text(encoding="utf-8-sig")
-    settings = {}
-    metadata = read_metadata_section(text)
-    for metadata_key, dotted_key in METADATA_KEYS_WITH_OWN_HOME.items():
-        if metadata.get(metadata_key):
-            _set_dotted(settings, dotted_key, metadata.pop(metadata_key))
-    if metadata:
-        settings["book"] = metadata
-    if TERMS_HEADING in text.split("\n") or TERM_FAMILIES_HEADING in text:
-        terms = read_terms_section(text)
-        if terms["families"] or terms["compounds"]:
-            settings["terms"] = terms
-    return settings
-
-
-def has_fallback_sections(path):
-    try:
-        lines = Path(path).read_text(encoding="utf-8-sig").split("\n")
-    except OSError:
-        return False
-    stripped = {line.rstrip() for line in lines}
-    return METADATA_HEADING in stripped or TERMS_HEADING in stripped
-
-
 def find_config_file(start=None):
     for folder in _folders_upwards(start):
         for name in CONFIG_FILE_NAMES:
             candidate = folder / name
             if candidate.is_file():
                 return candidate
-    return None
-
-
-def find_fallback_file(start=None):
-    for folder in _folders_upwards(start):
-        candidate = folder / FALLBACK_FILE_NAME
-        if candidate.is_file() and has_fallback_sections(candidate):
-            return candidate
     return None
 
 
@@ -868,7 +634,7 @@ def read_config_file(path):
 
 
 def sections_as_mappings(settings, defaults=None, prefix=""):
-    defaults = _merge(SHARED_DEFAULTS, _all_layout_defaults()) if defaults is None else defaults
+    defaults = all_defaults() if defaults is None else defaults
     shaped = {}
     for key, value in settings.items():
         default = defaults.get(key)
@@ -887,11 +653,8 @@ def sections_as_mappings(settings, defaults=None, prefix=""):
     return shaped
 
 
-def _all_layout_defaults():
-    combined = {}
-    for defaults in LAYOUT_DEFAULTS.values():
-        combined = _merge(combined, defaults)
-    return combined
+def all_defaults():
+    return _merge(SHARED_DEFAULTS, FOLDER_DEFAULTS)
 
 
 def _merge(base, layer):
@@ -936,63 +699,6 @@ def _get_dotted(settings, dotted_key):
     return node
 
 
-def canonical_key(dotted_key):
-    if dotted_key in KEY_ALIASES:
-        return KEY_ALIASES[dotted_key]
-    section, _, rest = dotted_key.partition(".")
-    if rest and section in SECTION_ALIASES:
-        renamed = f"{SECTION_ALIASES[section]}.{rest}"
-        return KEY_ALIASES.get(renamed, renamed)
-    return dotted_key
-
-
-def old_key_names(settings):
-    found = []
-    for key, value in settings.items():
-        if key in KEY_ALIASES:
-            found.append(key)
-        elif isinstance(value, dict):
-            found.extend(f"{key}.{name}" for name in value
-                         if f"{key}.{name}" in KEY_ALIASES or key in SECTION_ALIASES)
-    return found
-
-
-def retired_key_names(settings):
-    return [key for key in RETIRED_KEYS if _has_dotted(settings, key)]
-
-
-def with_new_key_names(settings):
-    renamed = copy.deepcopy(settings)
-    for key in retired_key_names(renamed):
-        _pop_dotted(renamed, key)
-    for old_key in old_key_names(renamed):
-        value = _pop_dotted(renamed, old_key)
-        new_key = canonical_key(old_key)
-        if not _has_dotted(renamed, new_key):
-            _set_dotted(renamed, new_key, value)
-    return renamed
-
-
-def _has_dotted(settings, dotted_key):
-    try:
-        _get_dotted(settings, dotted_key)
-    except KeyError:
-        return False
-    return True
-
-
-def _pop_dotted(settings, dotted_key):
-    parts = dotted_key.split(".")
-    parents = [settings]
-    for part in parts[:-1]:
-        parents.append(parents[-1][part])
-    value = parents[-1].pop(parts[-1])
-    for depth in range(len(parts) - 1, 0, -1):
-        if parents[depth] == {}:
-            parents[depth - 1].pop(parts[depth - 1])
-    return value
-
-
 def parse_override(text):
     if "=" not in text:
         raise ConfigError(f"--set expects KEY=VALUE, got {text!r}")
@@ -1001,10 +707,10 @@ def parse_override(text):
     if key.startswith("book."):
         key = "book." + normalise_metadata_key(key[len("book."):])
     if not value.strip():
-        return canonical_key(key), None
+        return key, None
     keep_plain_text = key.rsplit(".", 1)[-1] in _TEXT_KEYS
     try:
-        return canonical_key(key), parse_scalar(value, keep_plain_text=keep_plain_text)
+        return key, parse_scalar(value, keep_plain_text=keep_plain_text)
     except ConfigError as error:
         reason = re.sub(r"^line \d+: ", "", str(error))
         raise ConfigError(f"--set {key}: {reason}; to pass it as plain text, quote the value, "
@@ -1021,14 +727,10 @@ def _known_keys(tree, prefix=""):
     return keys
 
 
-ALL_KNOWN_KEYS = frozenset(
-    {LAYOUT_KEY}.union(*(_known_keys(_merge(SHARED_DEFAULTS, defaults))
-                         for defaults in LAYOUT_DEFAULTS.values())))
+ALL_KNOWN_KEYS = frozenset(_known_keys(all_defaults()))
 
 
 def unknown_keys(settings, prefix=""):
-    if not prefix:
-        settings = with_new_key_names(settings)
     found = []
     for key, value in settings.items():
         dotted = f"{prefix}{key}"
@@ -1038,14 +740,13 @@ def unknown_keys(settings, prefix=""):
         if dotted == "book" and isinstance(value, dict):
             found.extend(f"book.{name}" for name in value
                          if normalise_metadata_key(str(name)) not in BOOK_KEYS)
-        elif isinstance(value, dict) and key != "watch_words" and dotted != "work":
+        elif isinstance(value, dict) and key != "watch_words":
             found.extend(unknown_keys(value, dotted + "."))
     return found
 
 
-def layout_default(layout, dotted_key):
-    return _get_dotted(_merge(SHARED_DEFAULTS, LAYOUT_DEFAULTS[layout]),
-                       canonical_key(dotted_key))
+def default(dotted_key):
+    return _get_dotted(all_defaults(), dotted_key)
 
 
 @dataclass
@@ -1142,18 +843,6 @@ class SourcesSettings:
     to_add: Path
     citation_style: str
 
-    @property
-    def files(self):
-        return self.library
-
-    @property
-    def origin(self):
-        return self.library_index
-
-    @property
-    def incoming(self):
-        return self.to_add
-
 
 @dataclass
 class PublishingSettings:
@@ -1199,20 +888,6 @@ class SalesTextSettings:
 
 
 @dataclass
-class AuthorFiles:
-    stance: Path
-    stance_details: Path
-    positioning: Path
-    voice: Path
-
-
-@dataclass
-class StyleFiles:
-    dir: Path
-    vale_ini: Path
-
-
-@dataclass
 class ReadersReviewSettings:
     room: Path
     sources_for_reviewer: Path
@@ -1243,9 +918,7 @@ class ManuscriptFile:
 class BookConfig:
     root: Path
     config_file: Path
-    fallback_file: Path
     source: str
-    layout: str
     version: int
     book: BookMetadata
     manuscript: ManuscriptSettings
@@ -1264,7 +937,6 @@ class BookConfig:
     key_origins: dict
 
     def get(self, dotted_key, default=_MISSING):
-        dotted_key = canonical_key(dotted_key)
         if dotted_key in PATH_KEYS:
             return self.path(dotted_key)
         if dotted_key.startswith("book."):
@@ -1279,7 +951,6 @@ class BookConfig:
 
     def path(self, dotted_key):
         resolved = self.resolved_paths()
-        dotted_key = canonical_key(dotted_key)
         if dotted_key not in resolved:
             raise KeyError(dotted_key)
         return resolved[dotted_key]
@@ -1317,39 +988,6 @@ class BookConfig:
         }
 
     @property
-    def decisions(self):
-        return self.rules.decisions
-
-    @property
-    def glossary(self):
-        return self.rules.glossary
-
-    @property
-    def reading_notes(self):
-        return self.notes
-
-    @property
-    def reasons(self):
-        return self.thinking.argument
-
-    @property
-    def author(self):
-        return AuthorFiles(self.thinking.stance, self.thinking.stance_details,
-                           self.thinking.audience, self.rules.voice)
-
-    @property
-    def style(self):
-        return StyleFiles(self.rules.vale, self.rules.vale_ini)
-
-    @property
-    def marketing(self):
-        return self.sales_text
-
-    @property
-    def outside_review(self):
-        return self.readers_review
-
-    @property
     def trim(self):
         return self.cover.trim or self.book.get("format")
 
@@ -1370,7 +1008,7 @@ def _resolve(root, value):
     return path if path.is_absolute() else (root / path).resolve()
 
 
-def _build(settings, root, config_file, fallback_file, source, layout, key_origins):
+def _build(settings, root, config_file, source, key_origins):
     def path(dotted_key):
         return _resolve(root, _get_dotted(settings, dotted_key))
 
@@ -1384,8 +1022,8 @@ def _build(settings, root, config_file, fallback_file, source, layout, key_origi
     cover = settings["cover"]
     publishing = PublishingSettings(cover=path("publishing.cover"),
                                     sales_text=path("publishing.sales_text"))
-    cover_final = path("cover.final") or _cover_default(publishing.cover, layout, "final")
-    book_values = _with_shipped_cover(settings.get("book") or {}, cover_final, layout, root)
+    cover_final = path("cover.final") or _cover_default(publishing.cover, "final")
+    book_values = _with_shipped_cover(settings.get("book") or {}, cover_final, root)
     terms = settings.get("terms") or {}
     families = []
     for family in terms.get("families") or []:
@@ -1396,9 +1034,7 @@ def _build(settings, root, config_file, fallback_file, source, layout, key_origi
     return BookConfig(
         root=root,
         config_file=config_file,
-        fallback_file=fallback_file,
         source=source,
-        layout=layout,
         version=settings.get("version"),
         book=BookMetadata(book_values, root),
         manuscript=ManuscriptSettings(
@@ -1430,7 +1066,7 @@ def _build(settings, root, config_file, fallback_file, source, layout, key_origi
         work=work,
         cover=CoverSettings(
             dir=publishing.cover,
-            design=path("cover.design") or _cover_default(publishing.cover, layout, "design"),
+            design=path("cover.design") or _cover_default(publishing.cover, "design"),
             final=cover_final,
             trim=cover.get("trim"),
             paper=cover.get("paper") or "bw-white",
@@ -1445,9 +1081,9 @@ def _build(settings, root, config_file, fallback_file, source, layout, key_origi
         sales_text=SalesTextSettings(
             dir=publishing.sales_text,
             back_cover=path("sales_text.back_cover")
-            or _sales_text_default(publishing.sales_text, layout, "back_cover"),
+            or _sales_text_default(publishing.sales_text, "back_cover"),
             **{name: path(f"sales_text.{name}")
-               or _sales_text_default(publishing.sales_text, layout, name)
+               or _sales_text_default(publishing.sales_text, name)
                for name in SALES_TEXT_FILES},
         ),
         readers_review=ReadersReviewSettings(
@@ -1475,15 +1111,14 @@ def _cmyk_limit(value):
     return limit
 
 
-def _cover_default(folder, layout, name):
-    file_name = COVER_FILE_NAMES[layout].get(name)
-    if folder is None or file_name is None:
+def _cover_default(folder, name):
+    if folder is None:
         return None
-    return folder if file_name == "." else folder / file_name
+    return folder / COVER_FILE_NAMES[name]
 
 
-def _with_shipped_cover(book, cover_final, layout, root):
-    if layout == LAYOUT_OLD or cover_final is None:
+def _with_shipped_cover(book, cover_final, root):
+    if cover_final is None:
         return book
     filled = dict(book)
     for key, file_name in SHIPPED_COVER_FILES.items():
@@ -1501,19 +1136,14 @@ def _from_root(path, root):
 
 
 def _readers_room_default(root):
-    room = root.parent / f"{root.name}{READERS_REVIEW_ROOM_SUFFIX}"
-    old_room = root.parent / f"{root.name}{OLD_READERS_REVIEW_ROOM_SUFFIX}"
-    return old_room if old_room.is_dir() and not room.exists() else room
+    return root.parent / f"{root.name}{READERS_REVIEW_ROOM_SUFFIX}"
 
 
-def _sales_text_default(folder, layout, name):
-    file_name = SALES_TEXT_FILE_NAMES[layout].get(name)
+def _sales_text_default(folder, name):
+    file_name = SALES_TEXT_FILE_NAMES.get(name)
     if folder is None or file_name is None:
         return None
-    chosen = folder / file_name
-    old_files = [folder / old_name for old_name in OLD_SALES_TEXT_FILE_NAMES.get(name, ())]
-    old_file = next((path for path in old_files if path.is_file()), None)
-    return old_file if old_file and not chosen.exists() else chosen
+    return folder / file_name
 
 
 def _as_list(value):
@@ -1532,44 +1162,20 @@ def _record_origins(origins, layer, source, prefix=""):
 
 
 def load_config(config=None, start=None, overrides=None):
-    config_file = fallback_file = None
     if config:
-        chosen = Path(config).expanduser().resolve()
-        if not chosen.is_file():
-            raise ConfigError(f"config file not found: {chosen}")
-        if chosen.name == FALLBACK_FILE_NAME or chosen.suffix == ".md":
-            fallback_file = chosen
-        else:
-            config_file = chosen
+        config_file = Path(config).expanduser().resolve()
+        if not config_file.is_file():
+            raise ConfigError(f"config file not found: {config_file}")
     else:
         config_file = find_config_file(start)
-        if config_file is None:
-            fallback_file = find_fallback_file(start)
+    root = config_file.parent if config_file else Path(start or Path.cwd()).resolve()
 
-    if config_file:
-        root = config_file.parent
-        sibling = root / FALLBACK_FILE_NAME
-        if sibling.is_file() and has_fallback_sections(sibling):
-            fallback_file = sibling
-    elif fallback_file:
-        root = fallback_file.parent
-    else:
-        root = Path(start or Path.cwd()).resolve()
-
-    file_layer = _config_file_layer(config_file) if config_file else {}
-    layout = detect_layout(root, config_file, fallback_file, file_layer.get(LAYOUT_KEY))
-    settings = _merge(SHARED_DEFAULTS, LAYOUT_DEFAULTS[layout])
+    settings = all_defaults()
     origins = {}
     _record_origins(origins, settings, SOURCE_DEFAULTS)
     source = SOURCE_DEFAULTS
-
-    if fallback_file:
-        layer = _normalise_shapes(settings_from_fallback_file(fallback_file))
-        settings = _merge(settings, layer)
-        _record_origins(origins, layer, SOURCE_FALLBACK)
-        source = SOURCE_FALLBACK
     if config_file:
-        layer = _normalise_shapes(file_layer)
+        layer = _normalise_shapes(_config_file_layer(config_file))
         settings = _merge(settings, layer)
         _record_origins(origins, layer, SOURCE_CONFIG_FILE)
         source = SOURCE_CONFIG_FILE
@@ -1579,47 +1185,30 @@ def load_config(config=None, start=None, overrides=None):
         origins[key] = SOURCE_CLI
     settings = _normalise_shapes(settings)
 
-    return _build(settings, root, config_file, fallback_file, source, layout, origins)
+    return _build(settings, root, config_file, source, origins)
 
 
 def _config_file_layer(config_file):
     try:
-        return sections_as_mappings(with_new_key_names(read_config_file(config_file)))
+        return sections_as_mappings(read_config_file(config_file))
     except ConfigError as error:
         if str(error).startswith(str(config_file)):
             raise
         raise ConfigError(f"{config_file}: {error}") from error
 
 
-def detect_layout(root, config_file, fallback_file, chosen=None):
-    if chosen is not None:
-        if chosen not in LAYOUTS:
-            raise ConfigError(f"{LAYOUT_KEY} must be one of {', '.join(LAYOUTS)}, "
-                              f"not {chosen!r}")
-        return chosen
-    if config_file:
-        if any((root / sign).exists() for sign in NEW_LAYOUT_SIGNS):
-            return LAYOUT_NEW
-        if any((root / sign).exists() for sign in PREVIOUS_LAYOUT_SIGNS):
-            return LAYOUT_PREVIOUS
-        return LAYOUT_NEW
-    if fallback_file or (root / OLD_LAYOUT_MARKER).is_file():
-        return LAYOUT_OLD
-    return LAYOUT_NEW
-
-
 def _override_items(overrides):
     if not overrides:
         return []
     if isinstance(overrides, dict):
-        return [(canonical_key(key), value) for key, value in overrides.items()]
+        return list(overrides.items())
     return [parse_override(item) for item in overrides]
 
 
 def add_config_arguments(parser):
     parser.add_argument("--config", metavar="FILE",
                         help="the book's book.yaml (default: found by walking up from the "
-                             "working directory; an older book's CLAUDE.md also works)")
+                             "working directory)")
     parser.add_argument("--set", dest="config_overrides", action="append", default=[],
                         metavar="KEY=VALUE",
                         help="override one config value, e.g. --set sources.list=x.md "
@@ -1714,9 +1303,7 @@ def shell_paths(config):
     lines = [
         f"BOOK_ROOT={shlex.quote(str(config.root))}",
         f"BOOK_CONFIG_FILE={shlex.quote(_plain(config.config_file))}",
-        f"BOOK_FALLBACK_FILE={shlex.quote(_plain(config.fallback_file))}",
         f"BOOK_CONFIG_SOURCE={shlex.quote(config.source)}",
-        f"BOOK_FOLDER_LAYOUT={shlex.quote(config.layout)}",
     ]
     for key, value in config.resolved_paths().items():
         lines.append(f"{_shell_name('BOOK_', key)}={shlex.quote(_plain(value))}")
@@ -1740,9 +1327,7 @@ def as_dict(config):
     return {
         "root": str(config.root),
         "config_file": _plain(config.config_file) or None,
-        "fallback_file": _plain(config.fallback_file) or None,
         "source": config.source,
-        "folder_layout": config.layout,
         "version": config.version,
         "book": config.book.values,
         "paths": {key: _plain(value) or None for key, value in config.resolved_paths().items()},
@@ -1770,9 +1355,7 @@ def as_dict(config):
 def _show(config):
     print(f"root            {config.root}")
     print(f"read from       {config.source}"
-          + (f"  ({config.config_file})" if config.config_file else "")
-          + (f"  (fallback {config.fallback_file})" if config.fallback_file else ""))
-    print(f"folder layout   {config.layout}")
+          + (f"  ({config.config_file})" if config.config_file else ""))
     print("\npaths")
     for key, value in config.resolved_paths().items():
         state = "" if value is None else ("" if value.exists() else "   (missing)")
@@ -1796,50 +1379,20 @@ def _show(config):
 
 CHECK_CLASSES = {
     "unknown-key": "defect",
-    "retired-key": "defect",
-    "old-key-name": "informational",
-    "previous-layout": "informational",
     "missing-path": "informational",
     "no-config-file": "informational",
-    "unused-file": "defect",
 }
-
-
-def unused_files(config, written):
-    places = []
-    if config.rules.dir:
-        places.append(Path(config.rules.dir) / ACCEPTED_COUNTS_FILE)
-    if config.work.dir:
-        places.append(Path(config.work.dir) / OLD_ACCEPTED_COUNTS_FILE)
-    if _has_dotted(written, ACCEPTED_COUNTS_KEY):
-        places.append(_resolve(config.root, _get_dotted(written, ACCEPTED_COUNTS_KEY)))
-    existing = {place.resolve(): place for place in places if place and place.is_file()}
-    return list(existing.values())
 
 
 def _check(config, output_format):
     report = CheckReport("book-config", CHECK_CLASSES)
-    written = {}
     if config.config_file:
         written = read_config_file(config.config_file)
         name = config.config_file.name
         for key in unknown_keys(written):
             report.add(key, "unknown-key", f"{name}: no script reads '{key}'")
-        for key in retired_key_names(written):
-            report.add(key, "retired-key", f"{name}: '{key}' is no longer read; "
-                                           f"{RETIRED_KEYS[key]}")
-        for key in old_key_names(written):
-            report.add(key, "old-key-name", f"{name}: '{key}' is an old name; "
-                                            f"write '{canonical_key(key)}'")
     else:
         report.add("-", "no-config-file", f"no book.yaml found; using {config.source}")
-    for place in unused_files(config, written):
-        report.add(str(place), "unused-file", "the accepted counts are no longer used: every "
-                                              "finding is reported until it is fixed; delete it")
-    if config.layout != LAYOUT_NEW:
-        report.add(LAYOUT_KEY, "previous-layout",
-                   f"the book uses the {config.layout} folder layout; the init skill "
-                   f"(mode existing) moves it to the new one")
     for key, value in config.resolved_paths().items():
         if value is not None and not value.exists():
             report.add(key, "missing-path", str(value))
@@ -1849,7 +1402,7 @@ def _check(config, output_format):
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Show the book's configuration: paths, metadata, coined terms and "
-                    "manuscript files, from book.yaml or an older book's CLAUDE.md.",
+                    "manuscript files, from book.yaml.",
         epilog='Shell use: eval "$(python3 book_config.py paths --shell)"')
     add_config_arguments(parser)
     parser.add_argument("--start", metavar="DIR",
@@ -1866,8 +1419,7 @@ def main(argv=None):
     files = commands.add_parser("files", help="manuscript files in book order")
     files.add_argument("--kind", action="append", choices=MANUSCRIPT_KINDS,
                        help="only this kind (repeatable)")
-    check = commands.add_parser("check", help="unknown, retired and old key names, the "
-                                               "layout, missing paths and unused files")
+    check = commands.add_parser("check", help="unknown keys and missing paths")
     check.add_argument("--format", choices=("text", "tsv", "json"), default="text")
     args = parser.parse_args(argv)
 

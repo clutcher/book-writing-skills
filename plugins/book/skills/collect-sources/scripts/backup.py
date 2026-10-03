@@ -173,16 +173,16 @@ FIXTURE_LIST = """# Sources List
 
 **Full title:** Gated
 **Access status:** MANUAL FETCH REQUIRED (gate)
-**Cached text:** `sources/files/Gat70.txt` (fetched 2025-01-01)
-**Cached original:** `sources/files/Gat70.pdf` (fetched 2025-01-01, from manual download)
+**Cached text:** `sources/library/Gat70.txt` (fetched 2025-01-01)
+**Cached original:** `sources/library/Gat70.pdf` (fetched 2025-01-01, from manual download)
 
 ---
 
 ### [Web05] Web, "Downloadable" (2005)
 
 **Full title:** Downloadable
-**Cached text:** `sources/files/Web05.txt` (fetched 2025-01-01)
-**Cached original:** `sources/files/Web05.html` (fetched 2025-01-01, from https://example.org/w)
+**Cached text:** `sources/library/Web05.txt` (fetched 2025-01-01)
+**Cached original:** `sources/library/Web05.html` (fetched 2025-01-01, from https://example.org/w)
 
 ---
 
@@ -190,7 +190,7 @@ FIXTURE_LIST = """# Sources List
 
 **Full title:** An OCR text
 **DOI:** 10.5555/scn80
-**Cached text:** `sources/files/Scn80.txt` (fetched 2025-01-01)
+**Cached text:** `sources/library/Scn80.txt` (fetched 2025-01-01)
 
 ---
 """
@@ -200,14 +200,14 @@ def self_test():
     failures = []
     with tempfile.TemporaryDirectory() as root:
         root = Path(root)
-        files = root / "sources" / "files"
+        files = root / "sources" / "library"
         files.mkdir(parents=True)
         for name, body in (("Gat70.txt", "gated text"), ("Gat70.pdf", "%PDF gated"),
                            ("Web05.txt", "web text"), ("Web05.html", "<html></html>"),
                            ("Scn80.txt", "=== OCR-PROVENANCE ===\nscan")):
             (files / name).write_text(body, encoding="utf-8")
         (root / "list.md").write_text(FIXTURE_LIST, encoding="utf-8")
-        folders = SourceFolders(root=root, files=files, origin=root / "sources" / "origin")
+        folders = SourceFolders(root=root, files=files, origin=root / "sources" / "library-index")
         entries = read_bank(root / "list.md").entries
         rows = plan(entries, folders, False)
         names = sorted(name for _key, name, _reason in rows)

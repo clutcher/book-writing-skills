@@ -20,7 +20,8 @@ Classes (DEFECT unless marked):
   superseded          a "this supersedes the earlier entry" marker; correct in place
   premature-hash      a sha256 on a NOT YET FETCHED line
   cache-pointer       a cache line names a file that is not there
-  cache-folder        a cache line names the other layout's cache folder
+  cache-folder        a cache line names the default folder (sources/library) while
+                      the book keeps its library in its own folder
                       (entry-format-fix.py rewrites it to sources.library)
   heading-truncated   the heading's short title is a mid-word cut of Full title
   heading-multi-key   a heading naming two keys hides the second
@@ -30,7 +31,7 @@ Classes (DEFECT unless marked):
   field-outside-entry a field after the entry's `---`, owned by no entry
   orphan-cache        cached text with no list entry claiming it
   pointer-path        a `Findings:` / `Source:` pointer names another path than the
-                      configured bank (after a layout move; entry-format-fix.py rewrites it)
+                      configured bank (after the bank was moved; entry-format-fix.py rewrites it)
   unofficial-copy     ADVISORY. A book entry (one with an ISBN) links a file in a person's
                       GitHub repository or on a shadow-library site. In a public repository
                       that reads as linking to pirated books: link the publisher page or give
@@ -517,11 +518,10 @@ FIXTURE_EXPECTED = {
 def self_test():
     failures = 0
     with tempfile.TemporaryDirectory() as root:
-        files = Path(root) / "sources" / "files"
+        files = Path(root) / "evidence" / "cache"
         files.mkdir(parents=True)
         folders = SourceFolders(root=Path(root), files=files, origin=files)
-        other = "review/sources"
-        (Path(root) / "review" / "sources").mkdir(parents=True)
+        other = "sources/library"
         for name in ("Aaa01.txt", "Zzz99.txt"):
             (files / name).write_text("cached\n", encoding="utf-8")
         (files / "Bbb02.txt").write_text("cached\n", encoding="utf-8")

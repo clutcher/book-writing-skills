@@ -1,6 +1,6 @@
 import unittest
 
-from support import NEW_BOOK, OLD_BOOK, TemporaryBook, run_script
+from support import NEW_BOOK, TemporaryBook, run_script
 
 from book_config import load_config
 from source_registry import is_findings_bank, parse_bank, read_bank
@@ -29,10 +29,10 @@ class SourceBankTest(unittest.TestCase):
         self.assertTrue(is_findings_bank(config.sources.quotes, config))
         self.assertFalse(is_findings_bank(config.sources.list, config))
 
-    def test_should_tell_old_banks_apart_by_title_when_no_config_is_given(self):
+    def test_should_tell_banks_apart_by_title_when_no_config_is_given(self):
         # then
-        self.assertTrue(is_findings_bank(OLD_BOOK / "review" / "fact-check-findings-registry.md"))
-        self.assertFalse(is_findings_bank(OLD_BOOK / "review" / "sources-registry.md"))
+        self.assertTrue(is_findings_bank(NEW_BOOK / "sources" / "quotes.md"))
+        self.assertFalse(is_findings_bank(NEW_BOOK / "sources" / "list.md"))
 
     def test_should_read_a_new_book_bank_that_holds_only_its_format_header(self):
         # given
@@ -52,21 +52,20 @@ class SourceBankTest(unittest.TestCase):
 
     def test_should_report_a_field_from_the_other_bank(self):
         # given
-        entry = read_bank(OLD_BOOK / "review" / "sources-registry.md").entry("Jon74")
+        entry = read_bank(NEW_BOOK / "sources" / "list.md").entry("Jon74")
 
         # then
-        self.assertEqual(entry.unapproved(is_findings=True), ["Full title", "Authors", "Year"])
+        self.assertEqual(entry.unapproved(is_findings=True),
+                         ["Full title", "Authors", "Year", "Findings"])
         self.assertEqual(entry.unapproved(is_findings=False), [])
 
     def test_should_pass_self_test_on_the_banks_the_config_names(self):
-        for book in (NEW_BOOK, OLD_BOOK):
-            with self.subTest(book.name):
-                # when
-                result = run_script("source_registry.py", "--self-test", cwd=book)
+        # when
+        result = run_script("source_registry.py", "--self-test", cwd=NEW_BOOK)
 
-                # then
-                self.assertEqual(result.returncode, 0, result.stdout)
-                self.assertEqual(result.stdout.count("round-tripped"), 2)
+        # then
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(result.stdout.count("round-tripped"), 2)
 
     def test_should_sort_only_when_fix_is_given(self):
         # given

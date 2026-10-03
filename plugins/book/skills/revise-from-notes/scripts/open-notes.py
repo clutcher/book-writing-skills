@@ -36,7 +36,6 @@ MARKDOWN_LINK = re.compile(r"!?\[(?P<text>[^\]\n]*)\]\([^)\n]*\)")
 FOOTNOTE_MARK = re.compile(r"\[\^[^\]\n]+\]")
 EMPHASIS_UNDERSCORE = re.compile(r"(?<![A-Za-z0-9])_+|_+(?![A-Za-z0-9])")
 LINKED_NOTE = re.compile(r"(?:(?P<stem>[A-Za-z0-9][\w.-]*)\s+)?#(?P<number>\d+)\b")
-OLD_FIELD_NAMES = ("Recommendation", "Interconnected", "Status", "Resolution")
 
 TYPOGRAPHY = str.maketrans({
     "“": '"', "”": '"', "‘": "'", "’": "'",
@@ -65,7 +64,6 @@ FINDING_CLASSES = {
     "text-not-found": ADVISORY,
     "id-used-before": ADVISORY,
     "linked-note-missing": ADVISORY,
-    "old-field-name": ADVISORY,
     "no-from": ADVISORY,
     "not-analysed": INFORMATIONAL,
     "open-notes": INFORMATIONAL,
@@ -127,10 +125,6 @@ class Note:
     def linked_ids(self):
         return [f"{found.group('stem') or self.stem} #{found.group('number')}"
                 for found in LINKED_NOTE.finditer(self.fields.get(FIELD_LINKED, ""))]
-
-    @property
-    def old_field_names(self):
-        return [name for name in OLD_FIELD_NAMES if name in self.fields]
 
 
 @dataclass
@@ -308,9 +302,6 @@ def check_note_fields(config, report, note, open_ids):
             report.add(key, "linked-note-missing",
                        f"'{note.id}' links '{linked_id}', which is no open note; "
                        f"cite its decision entry instead")
-    for name in note.old_field_names:
-        report.add(key, "old-field-name",
-                   f"'{note.id}' has the old field '{name}'; see references/note-format.md")
 
 
 def check_one_note(config, report, note, notes_file, files, haystacks, seen_ids,

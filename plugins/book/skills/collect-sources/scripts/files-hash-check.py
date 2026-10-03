@@ -261,8 +261,8 @@ def _fixture_list(shown, hashes):
 
 
 def _build_fixture(root, merged_origin):
-    files = Path(root) / "sources" / "files"
-    origin = Path(root) / "sources" / "origin" if merged_origin else files
+    files = Path(root) / "evidence" / "cache"
+    origin = Path(root) / "evidence" / "origin" if merged_origin else files
     files.mkdir(parents=True)
     folders = SourceFolders(root=Path(root), files=files, origin=origin)
     hashes = {}
@@ -327,11 +327,11 @@ def self_test():
     with tempfile.TemporaryDirectory() as root:
         folders, list_path = _build_fixture(root, False)
         text = list_path.read_text(encoding="utf-8").replace(
-            "`%s/Kem77.txt`" % folders.shown_files, "`review/sources/Kem77.txt`")
+            "`%s/Kem77.txt`" % folders.shown_files, "`sources/library/Kem77.txt`")
         list_path.write_text(text, encoding="utf-8")
         issues, _unrecorded, _repairs = check(list_path, folders)
         require(("Kem77", "hash-stale") in {(k, r) for k, r, _d in issues},
-                "a value written with the other layout's folder must still resolve")
+                "a value written with the default folder must still resolve")
 
     for line in failures:
         print("FAIL %s" % line)

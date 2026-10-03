@@ -30,7 +30,7 @@ PLUGIN = REPOSITORY / "plugins" / "book"
 BOOK_FILES = {
     "design.py", "decisions.md", "whole-book.md", "some-check.py", "fact-check.md",
     "decision-matches.md", "mainstream-map.md", "citation-report.md", "glossary-report.md",
-    "citations-index.md", "hard-words-summary.md", "move-report.md",
+    "citations-index.md", "hard-words-summary.md",
 }
 RUN_FILE_PATTERNS = (re.compile(r"^hard-words-ch\w+\.md$"),)
 

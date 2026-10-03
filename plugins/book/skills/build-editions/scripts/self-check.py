@@ -143,17 +143,10 @@ def settings_steps(steps):
                               "new-book", "--final"))
     steps.run("new layout: language comes from book.yaml",
               output_contains("BOOK_LANGUAGE=en-GB", "new-book"))
-    steps.run("old layout: settings come from CLAUDE.md",
-              output_contains("FONT_SIZE=11.5pt", "old-book"))
-    steps.run("old layout: a comment after a value is stripped",
-              output_contains("GENERATE_TOC=false", "old-book"))
-    steps.run("old layout: output goes to output/",
-              output_contains("/old-book/output/an-old-layout-book-example.pdf", "old-book",
-                              "--final"))
     steps.run("new layout: accessibility summary comes from book.yaml",
               output_has_line("ACCESSIBILITY_SUMMARY=A short test summary.", "new-book"))
-    steps.run("old layout: no accessibility summary unless the book writes one",
-              output_has_line("ACCESSIBILITY_SUMMARY=", "old-book"))
+    steps.run("no accessibility summary unless the book writes one",
+              output_has_line("ACCESSIBILITY_SUMMARY=", "plain-book"))
     steps.run("files are in natural order by default",
               output_has_line("MANUSCRIPT_FILES=manuscript/000-copyright.md "
                               "manuscript/010-dedication.md manuscript/050-foreword.md "

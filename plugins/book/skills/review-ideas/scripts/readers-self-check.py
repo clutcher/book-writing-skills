@@ -90,7 +90,7 @@ def check_setup(check, book, room, checks_file):
                      "plan/templates/lens-report.md", "plan/templates/verification.md",
                      "room.json", ".claude/settings.local.json"):
         check.expect(f"room has {relative}", (room / relative).is_file())
-    check.expect("room has no author files", not (room / "author").exists())
+    check.expect("room has no thinking files", not (room / "thinking").exists())
     if code != 0:
         return
     facts = (room / "book" / "facts.md").read_text(encoding="utf-8")

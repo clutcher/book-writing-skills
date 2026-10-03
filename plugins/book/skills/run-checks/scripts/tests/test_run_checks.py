@@ -198,27 +198,6 @@ class RunChecksTest(unittest.TestCase):
         self.assertIn("[SKIP] reference-sort.py", output)
         self.assertNotIn("[FAIL]", output)
 
-    def test_shouldStillFindAFindingWhenAnOldAcceptedFlagsFileListsIt(self):
-        # given
-        self.write("rules/accepted-flags.json", '{"cited-source-check": {"not-in-list": 1}}\n')
-
-        # when
-        exit_code, output = self.run_checks("facts", "--no-report")
-
-        # then
-        self.assertIn("[FIND] cited-source-check.py", output)
-        self.assertEqual(exit_code, 1)
-
-    def test_shouldAskToDeleteAnOldAcceptedFlagsFileWhenTheSetupIsChecked(self):
-        # given
-        self.write("rules/accepted-flags.json", "{}\n")
-
-        # when
-        _, output = self.run_checks("setup", "--no-report")
-
-        # then
-        self.assertIn("unused-file 1", self.line_of(output, "book_config.py check"))
-
     def test_shouldPassAndShowTheCountWhenACheckReportsOnlyAnExpectedState(self):
         # given
         self.write("thinking/argument/sun.md", "Shade slows the crop [Smi99].\n")

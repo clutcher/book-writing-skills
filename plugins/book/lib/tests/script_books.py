@@ -8,7 +8,7 @@ from pathlib import Path
 
 FIXTURES_FOLDER = Path(__file__).resolve().parent / "fixtures" / "script-books"
 NEW_BOOK = FIXTURES_FOLDER / "bread-book"
-OLD_BOOK = FIXTURES_FOLDER / "old-book"
+PLAIN_BOOK = FIXTURES_FOLDER / "plain-book"
 OTHER_BOOK = FIXTURES_FOLDER / "other-book"
 NEW_BOOK_RUN = NEW_BOOK / ".book" / "runs" / "2025-04-01-100000"
 OTHER_BOOK_RUN = OTHER_BOOK / "state" / "runs" / "2025-05-01-090000"

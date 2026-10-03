@@ -2,9 +2,7 @@
 """Check how often the book's coined terms appear, where, and in which compounds.
 
 The terms come from the book config: `terms.families` (term, role, other forms) drives the
-density report, `terms.compounds` drives the compound check. An older book keeps both as the
-`### Term Families` and `### Legal Compounds` tables under `## Coined Terminology` in its
-CLAUDE.md; `--registry FILE` reads those tables from any markdown file.
+density report, `terms.compounds` drives the compound check.
 
 Roles:
     primary    a coined term; needs the full learning phase (10-15 encounters)
@@ -43,9 +41,9 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 
-from book_files import (ConfigError, SAMPLE_BOOK, OLD_LAYOUT_BOOK, add_config_arguments,
-                        config_for_targets, natural_sort_key, tool_failed)
-from book_config import TermFamily, read_terms_section
+from book_files import (ConfigError, SAMPLE_BOOK, add_config_arguments, config_for_targets,
+                        natural_sort_key, tool_failed)
+from book_config import TermFamily
 
 WORDS_PER_PAGE = 390
 SUMMARY_HEADING = "Summary"
@@ -109,14 +107,6 @@ def term_groups_from_families(families):
         term_groups.append({"name": family.term, "patterns": [pattern],
                             "role": family.role, "antonym": pairs.get(family.term)})
     return term_groups
-
-
-def registry_from_file(path):
-    registry_path = Path(path)
-    if not registry_path.is_file():
-        raise ConfigError(f"registry file not found: {path}")
-    families, compounds = read_terms_section(registry_path.read_text(encoding="utf-8"))
-    return families, compounds
 
 
 def is_prose_line(line):
@@ -895,8 +885,7 @@ def print_report(all_file_data, term_groups, compounds, page_override=None,
                 print(f"  {d['file']}:L{d['line']}  {d['snippet']}")
             print()
             print("  The script flags compounds not in the registry. Add a new form to")
-            print("  terms.compounds in book.yaml (or to the Legal Compounds table of an")
-            print("  older book's CLAUDE.md) to accept it, or rewrite the prose.")
+            print("  terms.compounds in book.yaml to accept it, or rewrite the prose.")
 
     if debug and dist_all:
         print()
@@ -1165,8 +1154,6 @@ def parse_arguments(argv):
     parser.add_argument("--terms", help="comma-separated ad-hoc terms; no compound check")
     parser.add_argument("--phases", help='chapter phases, e.g. "1-3:learning,4-8:maintenance,'
                                          '9-10:deepening" (default: writing.term_phases)')
-    parser.add_argument("--registry", metavar="FILE",
-                        help="read the terms from the Coined Terminology tables of this file")
     parser.add_argument("--pattern", metavar="GLOB", help="glob that names the chapter files")
     parser.add_argument("--first-use", action="store_true",
                         help="first emphasised use of each glossary term")
@@ -1266,16 +1253,10 @@ def run(argv):
             term_groups = parse_custom_terms(options.terms)
             run_compound_drift = False
         else:
-            if options.registry:
-                families, compounds = registry_from_file(options.registry)
-            else:
-                families, compounds = config.terms.families, config.terms.compounds
-                if not families:
-                    print("SKIPPED   no coined terms in book.yaml yet (terms.families)")
-                    return 0
+            families, compounds = config.terms.families, config.terms.compounds
             if not families:
-                raise ConfigError("no coined terms: set terms.families in book.yaml, or pass "
-                                  "--registry FILE or --terms 'a,b'")
+                print("SKIPPED   no coined terms in book.yaml yet (terms.families)")
+                return 0
             term_groups = term_groups_from_families(families)
         if Path(path).is_dir():
             files, warning = chapter_files(path, config, options.pattern)
@@ -1323,17 +1304,15 @@ def several_antonym_pairs_failures():
 
 def self_test():
     failures = []
-    for book, label in ((SAMPLE_BOOK, "previous layout (book.yaml)"),
-                        (OLD_LAYOUT_BOOK, "oldest layout (CLAUDE.md tables)")):
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output):
-            exit_code = run([str(book / "manuscript")])
-        text = output.getvalue()
-        if exit_code != 0:
-            failures.append(f"{label}: exit {exit_code}, expected 0")
-        drift_section = text.split("COMPOUND VOCABULARY DRIFT")[-1]
-        if "COMPOUND VOCABULARY DRIFT" not in text or " crust" not in drift_section:
-            failures.append(f"{label}: the unregistered compound '... crust' was not flagged")
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        exit_code = run([str(SAMPLE_BOOK / "manuscript")])
+    text = output.getvalue()
+    if exit_code != 0:
+        failures.append(f"book.yaml terms: exit {exit_code}, expected 0")
+    drift_section = text.split("COMPOUND VOCABULARY DRIFT")[-1]
+    if "COMPOUND VOCABULARY DRIFT" not in text or " crust" not in drift_section:
+        failures.append("book.yaml terms: the unregistered compound '... crust' was not flagged")
     output = io.StringIO()
     with contextlib.redirect_stdout(output):
         run(["--first-use", str(SAMPLE_BOOK / "manuscript")])

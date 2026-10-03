@@ -1,11 +1,9 @@
 # Build settings
 
 Every value is taken in this order: command-line option (or `--set key=value`) > `book.yaml` >
-the `## Book Metadata` section of an older book's `CLAUDE.md` > the built-in default.
+the built-in default.
 
-In `book.yaml` the build settings sit under `book:`, in lower case with underscores. In an older
-`CLAUDE.md` the same key is written `Font-Size:`; the reader treats both spellings as one key. A
-`# comment` after a value in `CLAUDE.md` is stripped.
+In `book.yaml` the build settings sit under `book:`, in lower case with underscores.
 
 ```yaml
 book:
@@ -102,10 +100,10 @@ Why each of these matters: [epub.md](epub.md).
 
 ## Folder keys
 
-| Key | Option | Default (new layout / old layout) |
-|-----|--------|-----------------------------------|
-| `manuscript.dir` | `--manuscript` | `manuscript` / `manuscript` (or `Manuscript:` in `CLAUDE.md`) |
-| `work.output` | `--output-dir` | `.book/output` / `output` (or `Output:` in `CLAUDE.md`) |
+| Key | Option | Default |
+|-----|--------|---------|
+| `manuscript.dir` | `--manuscript` | `manuscript` |
+| `work.output` | `--output-dir` | `.book/output` |
 | `manuscript.references` | none | `manuscript/900-references.md` |
 | `manuscript.order` | none | `natural` (sorted by file name); `list` takes the order from `manuscript.files` |
 | `manuscript.files` | none | none; with `order: list`, the file names in book order ([manuscript-layout.md](manuscript-layout.md)) |

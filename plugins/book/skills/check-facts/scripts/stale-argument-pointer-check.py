@@ -2,7 +2,7 @@
 """Find thinking files that still point INTO the book, and quotations of the book that went stale.
 
 It reads every markdown file in the book's thinking folder (`thinking.dir`, all subfolders:
-the argument, the doubts and the author files), or, in a layout with no thinking folder, the
+the argument, the doubts and the author files), or, in a book with no thinking folder, the
 stance, audience, argument and doubts places the config names. `--argument <folder>` reads
 only that folder.
 
@@ -454,21 +454,21 @@ Use plain words in Ch1, Ch2, or pre-§3.3 of Ch3 until the terms are defined.
 """
 
 FIXTURE_EXPECTED = {
-    ("reasons/drift.md", "stale-quote"),
-    ("reasons/drift.md", "graded-quote"),
-    ("reasons/drift.md", "historical-quote"),
-    ("reasons/drift.md", "disclaimed-quote"),
-    ("reasons/drift.md", "line-anchor"),
-    ("reasons/drift.md", "stale-line-anchor"),
-    ("reasons/drift.md", "manuscript-path"),
-    ("reasons/drift.md", "stale-manuscript-path"),
-    ("reasons/drift.md", "live-invocation"),
-    ("reasons/drift.md", "manuscript-verdict"),
-    ("reasons/drift.md", "guardrail-verdict"),
-    ("reasons/drift.md", "section-pointer"),
-    ("reasons/drift.md", "stale-section-pointer"),
-    ("reasons/structure.md", "exempt"),
-    ("reasons/structure.md", "stale-quote"),
+    ("thinking/argument/drift.md", "stale-quote"),
+    ("thinking/argument/drift.md", "graded-quote"),
+    ("thinking/argument/drift.md", "historical-quote"),
+    ("thinking/argument/drift.md", "disclaimed-quote"),
+    ("thinking/argument/drift.md", "line-anchor"),
+    ("thinking/argument/drift.md", "stale-line-anchor"),
+    ("thinking/argument/drift.md", "manuscript-path"),
+    ("thinking/argument/drift.md", "stale-manuscript-path"),
+    ("thinking/argument/drift.md", "live-invocation"),
+    ("thinking/argument/drift.md", "manuscript-verdict"),
+    ("thinking/argument/drift.md", "guardrail-verdict"),
+    ("thinking/argument/drift.md", "section-pointer"),
+    ("thinking/argument/drift.md", "stale-section-pointer"),
+    ("thinking/argument/structure.md", "exempt"),
+    ("thinking/argument/structure.md", "stale-quote"),
 }
 
 RENAMED_NOTES = """# Notes in a book with its own folder and file names
@@ -504,22 +504,22 @@ def chapter_of(path, chapter_pattern):
     return int(found.group(1)) if found else None
 
 
-def default_layout_failures():
+def standard_folder_failures():
     with tempfile.TemporaryDirectory() as root:
         write_fixture(root, (("manuscript/110-chapter-1.md", FIXTURE_CHAPTER),
-                             ("reasons/drift.md", FIXTURE_DRIFT),
-                             ("reasons/structure.md", FIXTURE_STRUCTURE),
-                             ("reasons/places.md", FIXTURE_PLACES)))
+                             ("thinking/argument/drift.md", FIXTURE_DRIFT),
+                             ("thinking/argument/structure.md", FIXTURE_STRUCTURE),
+                             ("thinking/argument/places.md", FIXTURE_PLACES)))
         book = fixture_book(root, "manuscript", r"(?:^|-)chapter-(\d+)\.md$")
-        findings = assess(visible_markdown_files_under(Path(root, "reasons")), book, root,
-                          ["reasons/structure.md"])
+        findings = assess(visible_markdown_files_under(Path(root, "thinking", "argument")), book, root,
+                          ["thinking/argument/structure.md"])
     found = set((f["path"], f["rule"]) for f in findings)
     failures = ["%-30s %-22s NOT REPORTED" % item for item in sorted(FIXTURE_EXPECTED - found)]
     failures += ["%-30s %-22s FALSE POSITIVE" % item for item in sorted(found - FIXTURE_EXPECTED)]
     return failures
 
 
-def renamed_layout_failures():
+def renamed_folder_failures():
     with tempfile.TemporaryDirectory() as root:
         write_fixture(root, (("text/ch01-reading.md", FIXTURE_CHAPTER),
                              ("notes/renamed.md", RENAMED_NOTES)))
@@ -532,7 +532,7 @@ def renamed_layout_failures():
 
 
 def self_test():
-    failures = default_layout_failures() + renamed_layout_failures()
+    failures = standard_folder_failures() + renamed_folder_failures()
     for failure in failures:
         print("FAIL %s" % failure)
     print("self-test: %s" % ("PASS" if not failures else "%d failure(s)" % len(failures)))

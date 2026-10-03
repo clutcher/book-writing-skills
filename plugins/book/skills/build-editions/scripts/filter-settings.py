@@ -64,14 +64,14 @@ def filter_settings(book):
 def self_test():
     from book_config import load_config
     new_book = filter_settings(load_config(start=FIXTURES / "new-book").book)[SETTINGS_KEY]
-    old_book = filter_settings(load_config(start=FIXTURES / "old-book").book)[SETTINGS_KEY]
-    overridden = filter_settings(load_config(start=FIXTURES / "old-book",
+    plain_book = filter_settings(load_config(start=FIXTURES / "plain-book").book)[SETTINGS_KEY]
+    overridden = filter_settings(load_config(start=FIXTURES / "plain-book",
                                              overrides=["book.emblem_alt=Seal"]).book)[SETTINGS_KEY]
     checks = [
         ("list setting read from book.yaml", new_book.get("latex_commands_to_drop"), ["enlargethispage"]),
         ("map setting read from book.yaml", new_book.get("language_codes"), {"welsh": "cy"}),
         ("text setting read from book.yaml", new_book.get("emblem_alt"), "Test press emblem"),
-        ("an old-layout book sets nothing", old_book, {}),
+        ("a book that sets no filter key gives nothing", plain_book, {}),
         ("a --set override reaches the filters", overridden.get("emblem_alt"), "Seal"),
     ]
     failures = [(name, got, expected) for name, got, expected in checks if got != expected]

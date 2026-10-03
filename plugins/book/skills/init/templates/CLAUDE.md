@@ -37,7 +37,7 @@ Start a skill of the book plugin with `/book:<skill>`.
 
 | Skill | Does |
 |---|---|
-| `/book:init` | Sets up a new book, or moves an older one into this layout |
+| `/book:init` | Sets up a new book, or sets up a book from a folder that already holds one, by a move plan the author agrees to |
 | `/book:write-text` | Writes and rewrites prose in `manuscript/` and `thinking/`: plan, draft, show, apply |
 | `/book:review-text` | Reviews the prose of one chapter or of the whole book; findings become notes |
 | `/book:review-ideas` | Reviews the argument, structure and evidence (`editor`, or a cold `readers` review); findings become notes |

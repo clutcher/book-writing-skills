@@ -186,10 +186,6 @@ readers_review:
   lenses: [...]                                     # replaces the default nine
 ```
 
-In an older book, a section named `outside_review` is read as `readers_review` (`run-checks
-setup` names the new key), and a room named `<book folder>-outside-review` is found while no
-`-readers-review` room exists.
-
 The nine default lenses: thesis and argument, correctness and evidence, borrowed research, teaching,
 mechanics and consistency, market and positioning, reader drop-off and clarity, main image,
 strengths to protect. How to change them: the end of `references/lenses.md`. A book with no

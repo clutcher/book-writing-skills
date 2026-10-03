@@ -490,7 +490,7 @@ FIXTURE_LIST = """# Sources List
 
 **Full title:** A scanned paper
 **Access status:** READABLE
-**Cached text:** `sources/files/Smi93.txt` (fetched 2025-01-01, sha256 0000000000000000000000000000000000000000000000000000000000000000)
+**Cached text:** `sources/library/Smi93.txt` (fetched 2025-01-01, sha256 0000000000000000000000000000000000000000000000000000000000000000)
 
 ---
 
@@ -533,9 +533,9 @@ def self_test():
         failures.append("an unrelated word must not be recoverable")
 
     with tempfile.TemporaryDirectory() as root:
-        files = Path(root) / "sources" / "files"
+        files = Path(root) / "sources" / "library"
         files.mkdir(parents=True)
-        folders = SourceFolders(root=Path(root), files=files, origin=Path(root) / "sources" / "origin")
+        folders = SourceFolders(root=Path(root), files=files, origin=Path(root) / "sources" / "library-index")
         (files / "Smi93.txt").write_text("the scanned text " * 200, encoding="utf-8")
         list_path = Path(root) / "list.md"
         list_path.write_text(FIXTURE_LIST, encoding="utf-8")

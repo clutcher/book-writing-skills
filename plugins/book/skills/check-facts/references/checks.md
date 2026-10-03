@@ -4,7 +4,7 @@ The scripts live in two skills: the checks of the banks and the book in
 `${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/`, the scripts of the cache in
 `${CLAUDE_PLUGIN_ROOT}/skills/collect-sources/scripts/` (the table "The cache" below), and
 `sources-for-reviewer.py` in `${CLAUDE_PLUGIN_ROOT}/skills/review-ideas/scripts/`. Every one reads the book's
-config (`book.yaml`, or an older book's `CLAUDE.md`), takes `--config FILE` and `--set KEY=VALUE`,
+config (`book.yaml`), takes `--config FILE` and `--set KEY=VALUE`,
 answers `--help`, and has a `--self-test` on built-in examples. Checks follow
 `${CLAUDE_PLUGIN_ROOT}/lib/check_contract.md`: one `KEY<TAB>class<TAB>message` line per item, a summary with a `TOTAL`
 line last, `--format text|tsv|json`, and exit 0 (no defects), 1 (defects), 2 (the tool failed). A
@@ -41,7 +41,7 @@ check reports. When one is missing, the check runs without it; it never fails fo
 
 | Script | What it checks |
 |---|---|
-| `entry-format-check.py` | both banks against the format each declares: required fields, closed vocabularies, label colons, DOI placement, dated or verdict field names, premature hashes, missing cache files, the other layout's cache folder, a pointer at an old bank path, truncated or two-key headings, key order, separators, fields after an entry's `---`, cached text with no entry, stale "not read" notes, a book entry that links an unofficial copy (a file in a person's GitHub repository or on a shadow-library site; advisory) |
+| `entry-format-check.py` | both banks against the format each declares: required fields, closed vocabularies, label colons, DOI placement, dated or verdict field names, premature hashes, missing cache files, the default library folder named in a book that keeps its library in its own folder, a pointer at an old bank path, truncated or two-key headings, key order, separators, fields after an entry's `---`, cached text with no entry, stale "not read" notes, a book entry that links an unofficial copy (a file in a person's GitHub repository or on a shadow-library site; advisory) |
 | `entry-format-fix.py` | the mechanical subset of the same rules. **Must report 0 changed** on a clean bank: the gate and the fixer are one rule |
 | `list-quotes-join-check.py` | the two banks against each other by key: quotes with no list entry, dangling or missing pointers, duplicate keys; `--stale DAYS` for old readings |
 | `key-authors-check.py` | every key against its own Authors field |

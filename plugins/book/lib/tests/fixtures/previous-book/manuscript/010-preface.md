@@ -1,3 +1,0 @@
-# 010-preface
-
-Text.

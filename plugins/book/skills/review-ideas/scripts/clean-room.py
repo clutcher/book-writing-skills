@@ -36,10 +36,8 @@ SOURCES_FOR_REVIEWER_FILE_NAME = "sources-for-reviewer.md"
 ROOM_STATE_FILE = "room.json"
 MECHANICAL_CHECKS_FILE = "mechanical-checks.txt"
 RESULT_FILES = ("merge-map.md", "REVIEW-REPORT.md", "verification")
-OLD_LENS_NAMES = {"governing device": "main image"}
 RUN_SKILL = "review-ideas"
 RUN_MODE = "readers"
-LEGACY_ARCHIVE_DIR = "archive"
 EXIT_OK = 0
 EXIT_FAILED = 2
 
@@ -96,9 +94,6 @@ def parse_default_lenses(lenses_text):
 
 def resolve_lenses(default_lenses, configured):
     by_name = {lens["name"].lower(): lens for lens in default_lenses}
-    for old_name, new_name in OLD_LENS_NAMES.items():
-        if new_name in by_name:
-            by_name[old_name] = by_name[new_name]
     chosen = default_lenses if not configured else []
     for entry in configured or []:
         if isinstance(entry, str):
@@ -355,9 +350,6 @@ def plan_setup(config, args):
         this_round = previous_round or 1
         if (review_dir / MECHANICAL_CHECKS_FILE).exists():
             plan.remove(review_dir / MECHANICAL_CHECKS_FILE)
-    if (room / LEGACY_ARCHIVE_DIR).exists():
-        warnings.append(f"{room / LEGACY_ARCHIVE_DIR} holds earlier rounds inside the room; "
-                        f"cold reviewers must not see them: move it to {runs_folder(config)}")
     for replaced in ("manuscript", "plan", "book", "sources", "decisions.md", "REVIEW-PLAN.md"):
         if (room / replaced).exists():
             plan.remove(room / replaced)
@@ -372,7 +364,7 @@ def plan_setup(config, args):
         plan.copy_file(sources_for_reviewer, room / "sources" / SOURCES_FOR_REVIEWER_FILE_NAME)
     else:
         warnings.append("no sources for the reviewer (--no-sources-for-reviewer); skeptics fetch sources from the list only")
-    decisions = config.path("decisions")
+    decisions = config.path("rules.decisions")
     if decisions and Path(decisions).is_file():
         plan.copy_file(Path(decisions), room / "decisions.md")
     else:

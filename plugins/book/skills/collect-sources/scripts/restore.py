@@ -212,8 +212,8 @@ FIXTURE_LIST = """# Sources List
 ### [Aaa01] Adams, "Backed up" (2001)
 
 **Full title:** Backed up
-**Cached text:** `sources/files/Aaa01.txt` (fetched 2025-01-01, sha256 {aaa_txt})
-**Cached original:** `sources/files/Aaa01.pdf` (fetched 2025-01-01, sha256 {aaa_pdf}, from https://example.org/a.pdf)
+**Cached text:** `sources/library/Aaa01.txt` (fetched 2025-01-01, sha256 {aaa_txt})
+**Cached original:** `sources/library/Aaa01.pdf` (fetched 2025-01-01, sha256 {aaa_pdf}, from https://example.org/a.pdf)
 
 ---
 
@@ -221,14 +221,14 @@ FIXTURE_LIST = """# Sources List
 
 **Full title:** A book
 **ISBN:** 9780000000002
-**Cached text:** `sources/files/Bbb02.txt` (fetched 2025-01-01, sha256 {missing})
+**Cached text:** `sources/library/Bbb02.txt` (fetched 2025-01-01, sha256 {missing})
 
 ---
 
 ### [Ccc03] Clark, "Present" (2003)
 
 **Full title:** Present
-**Cached text:** `sources/files/Ccc03.txt` (fetched 2025-01-01, sha256 {ccc_txt})
+**Cached text:** `sources/library/Ccc03.txt` (fetched 2025-01-01, sha256 {ccc_txt})
 
 ---
 """
@@ -238,7 +238,7 @@ def self_test():
     failures = []
     with tempfile.TemporaryDirectory() as root:
         root = Path(root)
-        files = root / "sources" / "files"
+        files = root / "sources" / "library"
         backup = root / "backup"
         files.mkdir(parents=True)
         backup.mkdir()
@@ -249,7 +249,7 @@ def self_test():
                                    aaa_pdf=sha256_of(backup / "Aaa01.pdf"),
                                    missing="0" * 64, ccc_txt=sha256_of(files / "Ccc03.txt"))
         (root / "list.md").write_text(text, encoding="utf-8")
-        folders = SourceFolders(root=root, files=files, origin=root / "sources" / "origin")
+        folders = SourceFolders(root=root, files=files, origin=root / "sources" / "library-index")
         entries = read_bank(root / "list.md").entries
         dry = CheckReport(TOOL, CLASSES)
         run(entries, folders, backup, False, False, 30, dry)
@@ -294,7 +294,7 @@ def network_self_test():
     failures = []
     with tempfile.TemporaryDirectory() as root:
         root = Path(root)
-        files = root / "sources" / "files"
+        files = root / "sources" / "library"
         files.mkdir(parents=True)
         page = root / "served.html"
         page.write_text("<html><body><p>" + "The page says what it says. " * 100
@@ -305,8 +305,8 @@ def network_self_test():
         page_address = "http://127.0.0.1:%d/%s" % (server.server_address[1], page.name)
         entry_text = ("# Sources List\n\n## Entry format\n\n```\n### [<Key>] A, \"T\" (Y)\n```\n\n"
                       "### [Web05] Web, \"A page\" (2005)\n\n**Full title:** A page\n"
-                      "**Cached text:** `sources/files/Web05.txt` (fetched 2025-01-01, sha256 %s)\n"
-                      "**Cached original:** `sources/files/Web05.html` (fetched 2025-01-01, "
+                      "**Cached text:** `sources/library/Web05.txt` (fetched 2025-01-01, sha256 %s)\n"
+                      "**Cached original:** `sources/library/Web05.html` (fetched 2025-01-01, "
                       "sha256 %s, from %s)\n\n---\n" % (text_sha, sha256_of(page), page_address))
         (root / "list.md").write_text(entry_text, encoding="utf-8")
         folders = SourceFolders(root=root, files=files, origin=files)

@@ -141,19 +141,10 @@ Rules the parser relies on:
   when a finding contains it whole.
 - **Fenced blocks are never parsed**, so the file can show its own format.
 
-### Status: written, or inferred
+### Status
 
-The status should be written in the `Status` field. Two older ways are still read, so an
-existing file keeps working:
-
-- a `#` section heading that names a status (`# 4. OPEN / fix owed`) gives that status to every
-  entry under it;
-- a title that ends in ` -- CLOSED: no change`, ` -- RESOLVED` or ` -- SUPERSEDED` gives
-  DECIDED / no change, DECIDED / changed and DECIDED / no change.
-
-`decisions.py check` reports every inferred status (`status-not-written`), and
-`decisions.py check --fix` writes each one as a `Status` line. After that, an entry can change
-status without moving in the file (`decisions.py set-status ID STATUS --fix`).
+The status is written in the `Status` field of each entry, so an entry can change status
+without moving in the file (`decisions.py set-status ID STATUS --fix`).
 
 ## Checks
 
@@ -162,7 +153,7 @@ exits 0.
 
 | Class | Kind | Meaning |
 |---|---|---|
-| `no-status` | defect | no Status field and no status section above it |
+| `no-status` | defect | no Status field |
 | `unknown-status` | defect | a status outside the six |
 | `duplicate-id` | defect | two entries share an id |
 | `missing-field` | defect | a required field is absent (`Why` only on a DECIDED entry) |
@@ -172,7 +163,6 @@ exits 0.
 | `unread-heading` | defect | a `##` heading that looks like an entry id but is not read as one |
 | `index-missing` | defect | no `## Index`; `--fix` builds it |
 | `index-stale` | defect | the index does not match the entries; `--fix` rebuilds it |
-| `status-not-written` | informational | the status is inferred; `--fix` writes it |
 | `fix-owed`, `decision-owed`, `undiscussed` | informational | the open work, so it stays visible |
 | `shared-alias` | advisory | one alias on several entries; sometimes right, when an issue was split |
 | `undated-decision` | advisory | a DECIDED entry whose Decided field has no date |

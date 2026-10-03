@@ -45,7 +45,7 @@ Vale needs no local install: it runs in Docker from `tools.vale_image`. BibTeX n
   with its drive letter whole and quotes a path that has a comma in it. `build-book.sh` uses
   `-v`. A Vale check sees the book read-only; only `vale sync` may write to it.
 - **A folder owned by root** inside a book (a Vale package synced by an older setup) cannot be
-  moved or removed without `sudo`; `existing.py` reports it instead.
+  moved or removed without `sudo`; the author removes it by hand.
 - **Images are pulled on first use** by the script that needs them. `--pull` fetches them all at
   once, which is worth doing before working offline. The pandoc image's TeX packages and fonts
   live in the Docker volume `tools.pandoc_volume`, which the build fills itself.

@@ -2,10 +2,10 @@ import shlex
 import unittest
 from pathlib import Path
 
-from support import NEW_BOOK, OLD_BOOK, TemporaryBook, run_script
+from support import NEW_BOOK, TemporaryBook, run_script
 
 import book_config
-from book_config import LAYOUT_NEW, LAYOUT_OLD, LAYOUT_PREVIOUS, layout_default, load_config
+from book_config import default, load_config
 from check_output import DEFECT, SHARED_CLASSES
 from citation_key import FENCE_LINE
 from decisions import match_finding, read_decisions
@@ -18,20 +18,18 @@ def check_book_yaml(folder, text):
 
 
 class GlossaryNotationKeysTest(unittest.TestCase):
-    def test_should_give_the_same_glossary_notation_when_either_layout_is_used(self):
+    def test_should_give_the_default_glossary_notation_when_the_book_sets_none(self):
         # when
-        new = load_config(start=NEW_BOOK)
-        old = load_config(start=OLD_BOOK)
+        config = load_config(start=NEW_BOOK)
 
         # then
-        for config in (new, old):
-            self.assertEqual(config.get("vocabulary.heading_separator"), " -- ")
-            self.assertTrue(config.get("vocabulary.location_pattern").startswith("^(?:Ch"))
+        self.assertEqual(config.get("glossary_format.heading_separator"), " -- ")
+        self.assertTrue(config.get("glossary_format.location_pattern").startswith("^(?:Ch"))
 
     def test_should_split_a_qualified_heading_when_the_book_sets_its_own_separator(self):
         # given
         with TemporaryBook() as folder:
-            (folder / "book.yaml").write_text('vocabulary:\n  heading_separator: " | "\n',
+            (folder / "book.yaml").write_text('glossary_format:\n  heading_separator: " | "\n',
                                               encoding="utf-8")
             notation = notation_from_config(load_config(start=folder))
 
@@ -57,13 +55,6 @@ class CoverKeysTest(unittest.TestCase):
         self.assertEqual(config.cover.cmyk_limit, 88.0)
         self.assertIsNone(config.cover.book_pdf)
         self.assertIsNone(config.cover.icc)
-
-    def test_should_derive_cover_output_from_the_old_output_folder_when_only_claude_md_exists(self):
-        # when
-        config = load_config(start=OLD_BOOK)
-
-        # then
-        self.assertEqual(config.cover.output, OLD_BOOK / "output" / "cover")
 
     def test_should_resolve_cover_paths_when_the_book_sets_them(self):
         # given
@@ -94,7 +85,7 @@ class CoverKeysTest(unittest.TestCase):
 
 
 class SalesTextKeysTest(unittest.TestCase):
-    def test_should_place_sales_text_files_in_the_sales_text_folder_when_the_layout_is_new(self):
+    def test_should_place_sales_text_files_in_the_sales_text_folder_when_the_book_sets_none(self):
         # when
         config = load_config(start=NEW_BOOK)
 
@@ -109,20 +100,6 @@ class SalesTextKeysTest(unittest.TestCase):
         self.assertEqual(config.sales_text.contents, folder / "contents.html")
         self.assertEqual(config.sales_text.contents_full, folder / "contents-full.html")
         self.assertIsNone(config.sales_text.preface)
-
-    def test_should_keep_the_old_file_names_when_only_claude_md_exists(self):
-        # when
-        config = load_config(start=OLD_BOOK)
-
-        # then
-        self.assertEqual(config.sales_text.amazon, OLD_BOOK / "cover" / "kdp-description.html")
-        self.assertEqual(config.sales_text.plain_description,
-                         OLD_BOOK / "cover" / "plain-description.txt")
-        self.assertEqual(config.sales_text.contents, OLD_BOOK / "cover" / "contents.html")
-        self.assertEqual(config.sales_text.contents_full,
-                         OLD_BOOK / "cover" / "contents-full.html")
-        self.assertIsNone(config.sales_text.keywords)
-        self.assertIsNone(config.sales_text.intended_impression)
 
     def test_should_follow_the_sales_text_folder_when_the_book_moves_it(self):
         # given
@@ -198,20 +175,6 @@ class ReadersReviewKeysTest(unittest.TestCase):
         self.assertEqual(config.get("readers_review.lens_batch"), 3)
         self.assertEqual(config.get("readers_review.skeptic_batch"), 2)
 
-    def test_should_read_the_old_section_name_as_the_readers_review_section(self):
-        # given
-        with TemporaryBook() as folder:
-            (folder / "book.yaml").write_text(
-                "book:\n  title: T\noutside_review:\n  lens_batch: 5\n  room: ../room\n",
-                encoding="utf-8")
-
-            # when
-            config = load_config(start=folder)
-
-            # then
-            self.assertEqual(config.get("readers_review.lens_batch"), 5)
-            self.assertEqual(config.readers_review.room, (folder.parent / "room").resolve())
-
     def test_should_accept_lenses_as_data_when_checking_book_yaml(self):
         # given
         with TemporaryBook() as folder:
@@ -263,7 +226,7 @@ class BookKeysTest(unittest.TestCase):
         self.assertIn("book.font_szie\tunknown-key", result.stdout)
         self.assertNotIn("Font-Size", result.stdout)
 
-    def test_should_report_the_accepted_flags_key_as_retired_when_book_yaml_still_sets_it(self):
+    def test_should_report_the_accepted_flags_key_as_unknown_when_book_yaml_still_sets_it(self):
         # given
         with TemporaryBook() as folder:
             # when
@@ -271,23 +234,7 @@ class BookKeysTest(unittest.TestCase):
 
         # then
         self.assertEqual(result.returncode, 1)
-        self.assertIn("rules.accepted_flags\tretired-key", result.stdout)
-        self.assertNotIn("unknown-key", result.stdout)
-
-    def test_should_ask_to_delete_the_accepted_flags_file_when_the_book_still_holds_it(self):
-        # given
-        with TemporaryBook() as folder:
-            (folder / "rules").mkdir()
-            (folder / "rules" / "accepted-flags.json").write_text('{"citation-check": {}}\n',
-                                                                  encoding="utf-8")
-
-            # when
-            result = check_book_yaml(folder, "book:\n  title: T\n")
-
-        # then
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("accepted-flags.json\tunused-file", result.stdout)
-        self.assertIn("delete it", result.stdout)
+        self.assertIn("rules.accepted_flags\tunknown-key", result.stdout)
 
     def test_should_return_the_default_when_a_key_is_not_set(self):
         # given
@@ -318,12 +265,11 @@ class ToolKeysTest(unittest.TestCase):
         self.assertEqual(values["BOOK_TOOLS_PANDOC_VOLUME"], "book-to-pdf-texlive")
         self.assertEqual(values["BOOK_TOOLS_RENDER_IMAGE"], "")
 
-    def test_should_give_each_layout_its_own_default_when_asked_directly(self):
+    def test_should_give_the_built_in_default_when_asked_directly(self):
         # then
-        self.assertEqual(layout_default(LAYOUT_NEW, "sources.library"), "sources/library")
-        self.assertEqual(layout_default(LAYOUT_PREVIOUS, "sources.library"), "sources/files")
-        self.assertEqual(layout_default(LAYOUT_OLD, "sources.files"), "review/sources")
-        self.assertEqual(layout_default(LAYOUT_OLD, "tools.pandoc_image"), "pandoc/extra:3.8.3")
+        self.assertEqual(default("sources.library"), "sources/library")
+        self.assertEqual(default("rules.decisions"), "rules/decisions.md")
+        self.assertEqual(default("tools.pandoc_image"), "pandoc/extra:3.8.3")
 
 
 class SharedRulesTest(unittest.TestCase):

@@ -37,8 +37,8 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 
-from book_files import (ConfigError, SAMPLE_BOOK, OLD_LAYOUT_BOOK, add_config_arguments,
-                        config_for_targets, markdown_files, tool_failed)
+from book_files import (ConfigError, SAMPLE_BOOK, add_config_arguments, config_for_targets,
+                        markdown_files, tool_failed)
 from terminal_colors import CYAN, GREEN, NC, RED, YELLOW
 from glossary import notation_from_config, parse_glossary
 
@@ -316,7 +316,6 @@ def self_test():
     failures = []
     cases = [
         (SAMPLE_BOOK / "manuscript" / "110-chapter-1.md", 1, "A poke test", "A float test"),
-        (OLD_LAYOUT_BOOK / "manuscript" / "110-chapter-1.md", 1, "A poke test", None),
     ]
     for chapter, expected_exit, flagged, passed in cases:
         output = io.StringIO()

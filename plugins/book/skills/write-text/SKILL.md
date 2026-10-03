@@ -19,8 +19,8 @@ watch lists) and its own decisions. Nothing in this skill is about one particula
 ## Before any work
 
 1. **Find the book.** Every script finds `book.yaml` by walking up from the file it checks
-   (`--config FILE` names it; an older book's `CLAUDE.md` sections also work). Show the setup
-   with `python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py show`.
+   (`--config FILE` names it). Show the setup with
+   `python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py show`.
 2. **Read the voice profile.** The book's `rules.voice` file, or
    `${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/default.md` when the book has none. Rules
    marked "per the voice profile" take their form and numbers from it.

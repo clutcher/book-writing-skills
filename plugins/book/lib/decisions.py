@@ -39,10 +39,6 @@ FIELD_ORDER = (FIELD_STATUS, FIELD_ALIASES, FIELD_IDEA, FIELD_DECISION, FIELD_CH
 REQUIRED_FIELDS = (FIELD_IDEA, FIELD_DECISION, FIELD_DECIDED)
 REQUIRED_WHEN_DECIDED = (FIELD_WHY,)
 
-STATUS_FROM_FIELD = "field"
-STATUS_FROM_SECTION = "section"
-STATUS_FROM_TITLE = "title"
-
 ENTRY_ID = r"(?:[A-Za-z]+-?)?\d+(?:\.\d+)*"
 _ENTRY_HEADING = re.compile(rf"^##\s+(?:\[({ENTRY_ID})\]|({ENTRY_ID})[.:]?)(?:\s+(.*?))?\s*$")
 _ID_LIKE_HEADING = re.compile(r"^##\s+\[?[A-Za-z]*-?\d")
@@ -52,7 +48,6 @@ _FENCE = re.compile(r"^\s*```")
 _STATUS_TEXT = re.compile(r"\b(DECIDED|OPEN)\s*[/:—–-]\s*"
                           r"(no change|changed|not a finding|fix owed|decision owed|undiscussed)",
                           re.I)
-_TITLE_SUFFIX = re.compile(r"\s+[—–-]+\s+(CLOSED:?\s*(.*)|RESOLVED\b.*|SUPERSEDED\b.*)$")
 _BACKTICKED = re.compile(r"`([^`]+)`")
 _DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 
@@ -134,7 +129,6 @@ class Decision:
     id: str
     title: str
     status: str
-    status_from: str
     line_number: int
     end_line: int
     fields: list = field(default_factory=list)
@@ -198,7 +192,6 @@ def parse_aliases(text):
 def parse_decisions(text, path=None):
     lines = text.split("\n")
     entries = []
-    section_status = None
     current = None
     current_field = None
     fenced = False
@@ -224,23 +217,15 @@ def parse_decisions(text, path=None):
             if current is not None:
                 notes.append(line)
             continue
-        section = _SECTION_HEADING.match(line)
-        if section:
+        if _SECTION_HEADING.match(line):
             close(index)
-            section_status = normalise_status(section.group(1))
             continue
         heading = _ENTRY_HEADING.match(line)
         if heading:
             close(index)
             entry_id = heading.group(1) or heading.group(2)
-            title, title_status = _split_title_status(heading.group(3) or "")
-            if title_status:
-                status, status_from = title_status, STATUS_FROM_TITLE
-            elif section_status:
-                status, status_from = section_status, STATUS_FROM_SECTION
-            else:
-                status, status_from = None, None
-            current = Decision(entry_id, title, status, status_from, number, number)
+            title = (heading.group(3) or "").strip()
+            current = Decision(entry_id, title, None, number, number)
             continue
         if line.startswith("## "):
             close(index)
@@ -258,7 +243,6 @@ def parse_decisions(text, path=None):
             if current_field.name == FIELD_STATUS:
                 explicit = normalise_status(current_field.value)
                 current.status = explicit or current_field.value.strip()
-                current.status_from = STATUS_FROM_FIELD
             continue
         if current_field is not None and line.strip() and (line.startswith((" ", "\t"))
                                                            or not line.startswith("- ")):
@@ -270,21 +254,6 @@ def parse_decisions(text, path=None):
         notes.append(line)
     close(len(lines))
     return Decisions(Path(path) if path else None, text, entries, unread_headings)
-
-
-def _split_title_status(title):
-    suffix = _TITLE_SUFFIX.search(title)
-    if not suffix:
-        return title, None
-    marker = suffix.group(1).upper()
-    if marker.startswith("CLOSED"):
-        closed_as = (suffix.group(2) or "").strip().lower()
-        status = normalise_status(f"DECIDED / {closed_as}") or DECIDED_NO_CHANGE
-    elif marker.startswith("RESOLVED"):
-        status = DECIDED_CHANGED
-    else:
-        status = DECIDED_NO_CHANGE
-    return title[: suffix.start()].strip(), status
 
 
 def read_decisions(path):
@@ -312,7 +281,6 @@ CHECK_CLASSES = {
     "duplicate-field": DEFECT,
     "index-missing": DEFECT,
     "index-stale": DEFECT,
-    "status-not-written": INFORMATIONAL,
     "fix-owed": INFORMATIONAL,
     "decision-owed": INFORMATIONAL,
     "undiscussed": INFORMATIONAL,
@@ -344,15 +312,10 @@ def check_decisions(decisions, report):
         seen_ids.setdefault(entry.id, entry.line_number)
 
         if entry.status is None:
-            report.add(entry.id, "no-status", f"line {entry.line_number}: no Status field "
-                                              f"and no status section above it")
+            report.add(entry.id, "no-status", f"line {entry.line_number}: no Status field")
         elif entry.status not in STATUSES:
             report.add(entry.id, "unknown-status", f"'{entry.status}' is not one of: "
                                                    + "; ".join(STATUSES))
-        elif entry.status_from != STATUS_FROM_FIELD:
-            report.add(entry.id, "status-not-written",
-                       f"status '{entry.status}' comes from the {entry.status_from}; "
-                       f"--fix writes it as a Status line")
         if entry.status in _OPEN_CLASS:
             report.add(entry.id, _OPEN_CLASS[entry.status], entry.title)
 
@@ -470,22 +433,6 @@ def check_index(decisions, report):
         report.add("index", "index-stale",
                    "the index does not match the entries; --fix rebuilds it")
     return report
-
-
-def write_missing_status_lines(decisions):
-    lines = decisions.lines
-    insertions = []
-    for entry in decisions.entries:
-        if entry.status in STATUSES and entry.status_from != STATUS_FROM_FIELD:
-            first_field = entry.fields[0].line_number if entry.fields else None
-            status_line = f"- **{FIELD_STATUS}:** {entry.status}"
-            if first_field:
-                insertions.append((first_field - 1, [status_line]))
-            else:
-                insertions.append((entry.line_number, ["", status_line]))
-    for index, new_lines in sorted(insertions, reverse=True):
-        lines[index:index] = new_lines
-    return "\n".join(lines), len(insertions)
 
 
 @dataclass
@@ -640,7 +587,7 @@ def render_template():
 def _decisions_path(args):
     if args.file:
         return Path(args.file)
-    return config_from_args(args).decisions
+    return config_from_args(args).rules.decisions
 
 
 def _read_input_text(args):
@@ -672,13 +619,11 @@ def _no_decisions_file(args, path):
                        "decisions")
 
 
-def _fix_status_lines_and_index(path, decisions):
-    new_text, count = write_missing_status_lines(decisions)
-    new_text = with_current_index(new_text)
+def _fix_index(path, decisions):
+    new_text = with_current_index(decisions.text)
     if new_text != decisions.text:
         write_decisions_text(path, new_text, decisions.newline)
-        rebuilt = "" if index_is_current(decisions) else "; rebuilt the index"
-        sys.stderr.write(f"wrote {count} Status line(s) to {path}{rebuilt}\n")
+        sys.stderr.write(f"rebuilt the index in {path}\n")
     return read_decisions(path)
 
 
@@ -694,8 +639,7 @@ def main(argv=None):
                                               "index, per check_contract.md")
     add_output_arguments(check)
     check.add_argument("--fix", action="store_true",
-                       help="write an explicit Status line where the status is inferred, "
-                            "and rebuild the index")
+                       help="rebuild the index")
 
     commands.add_parser("index", help="the index (id, status, title), built from the entries")
 
@@ -765,7 +709,7 @@ def main(argv=None):
 
     if args.command == "check":
         if args.fix:
-            decisions = _fix_status_lines_and_index(path, decisions)
+            decisions = _fix_index(path, decisions)
         report = check_decisions(decisions, CheckReport("decisions", CHECK_CLASSES))
         check_index(decisions, report)
         return report.emit(args.format)

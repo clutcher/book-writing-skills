@@ -12,17 +12,17 @@ For each citation key, in the book's `sources.library` folder:
 
 and an **origin record** for each key: what `fetch.py` requested and got (URL, HTTP status,
 content type, both sha256 hashes, or the reason a fetch was rejected with a 300-character
-sample), and, for an OCR text, the engine, dpi and pages. Two layouts:
-
-| Layout | Origin records |
-|---|---|
-| book.yaml books | one file per key, `<sources.library_index>/<Key>.json` = `{"fetch": {...}, "ocr": {...}}`; the origin folder is tracked in git while `sources.library` is not |
-| older CLAUDE.md books | `<Key>.fetch.json` and `<Key>.ocr.json` beside the cached files |
+sample), and, for an OCR text, the engine, dpi and pages. The records live in one file per key,
+`<sources.library_index>/<Key>.json` = `{"fetch": {...}, "ocr": {...}}`; the origin folder is
+tracked in git while `sources.library` is not. When `sources.library_index` is the same folder as
+`sources.library`, or a bare folder is given to a script, the records are
+`<Key>.fetch.json` and `<Key>.ocr.json` beside the cached files.
 
 Every script reads both, through `${CLAUDE_PLUGIN_ROOT}/lib/source_files.py`. A cache line in the list names its
 file as `<folder>/<name>`; the folder is the book's `sources.library` path relative to the book
-root. A line written with the other layout's folder still resolves, and `entry-format-fix.py
---fix` rewrites it to the configured folder.
+root. In a book that keeps its library in its own folder, a line written with the default folder
+(`sources/library`) still resolves, and `entry-format-fix.py --fix` rewrites it to the configured
+folder.
 
 Both files are required. Text extraction is lossy: it loses table structure, drops captions,
 merges two-column layouts, and mangles ligatures and maths. When a later run disputes a quote,
