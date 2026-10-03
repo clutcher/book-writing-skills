@@ -1,0 +1,13 @@
+version: 1
+book:
+  title: A Short Rye Book
+  author: Lee Example
+manuscript:
+  dir: text
+  chapter_pattern: '^0*([1-9]\d?)-'
+  front_matter: ["00-*.md"]
+  references: text/99-bibliography.md
+vocabulary:
+  glossary: meta/terms.md
+decisions: meta/choices.md
+work: state

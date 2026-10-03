@@ -1,0 +1,786 @@
+$if(twoside)$
+\documentclass[$fontsize$,twoside,openright]{book}
+$else$
+\documentclass[$fontsize$,oneside]{book}
+$endif$
+
+$if(geometry)$
+\usepackage[$for(geometry)$$geometry$$sep$,$endfor$]{geometry}
+$else$
+\usepackage[
+  paperwidth=6in,
+  paperheight=9in,
+  top=0.75in,
+  bottom=0.75in,
+  inner=0.75in,
+  outer=0.5in
+]{geometry}
+$endif$
+
+\usepackage{fontspec}
+\usepackage{unicode-math}
+
+$if(mainfont)$
+$if(italicfont)$
+\setmainfont[Ligatures=TeX,ItalicFont={$italicfont$}$if(bolditalicfont)$,BoldItalicFont={$bolditalicfont$}$endif$]{$mainfont$}
+$else$
+\setmainfont[Ligatures=TeX]{$mainfont$}
+$endif$
+$else$
+\setmainfont[Ligatures=TeX]{Latin Modern Roman}
+$endif$
+\setsansfont{Source Sans Pro}
+\setmonofont[Scale=MatchLowercase, ScaleAgain=$if(inlinecodescale)$$inlinecodescale$$else$1.0$endif$]{Source Code Pro}
+
+$if(headingfont)$
+\newfontfamily\headingfontfamily{$headingfont$}
+\newcommand{\headingfont}{\headingfontfamily}
+$else$
+$if(section-style-editorial)$
+\newfontfamily\headingfontfamily{Source Sans Pro}
+\newcommand{\headingfont}{\headingfontfamily}
+$else$
+\newcommand{\headingfont}{\normalfont}
+$endif$
+$endif$
+
+\usepackage[$if(hyphenation-language)$$hyphenation-language$$else$english$endif$]{babel}
+
+\newcommand{\langtext}[2]{#2}
+
+\usepackage{adforn}
+\DeclareFontFamily{U}{wasy}{}
+\DeclareFontShape{U}{wasy}{m}{n}{<->wasy10}{}
+\DeclareTextFontCommand{\wasyfontcmd}{\fontencoding{U}\fontfamily{wasy}\selectfont}
+\newcommand{\wasyhexagon}{\wasyfontcmd{\char55}}
+\newcommand{\wasyvarhexagon}{\wasyfontcmd{\char57}}
+\newcommand{\wasySquare}{\wasyfontcmd{\char50}}
+\newcommand{\wasysun}{\wasyfontcmd{\char46}}
+\newcommand{\wasyhexstar}{\wasyfontcmd{\char65}}
+
+$if(bodyfontsize)$
+\usepackage[fontsize=$bodyfontsize$]{fontsize}
+$endif$
+\usepackage{microtype}
+\usepackage{setspace}
+$if(leadingstretch)$
+\setstretch{$leadingstretch$}  %
+$else$
+\setstretch{1.05}  %
+$endif$
+
+$if(proportionalheadings)$
+\makeatletter
+\newlength{\bs@bodysize}
+\AtBeginDocument{%
+  \setlength{\bs@bodysize}{\f@size pt}%
+  \renewcommand{\small}{\fontsize{\dimexpr0.909\bs@bodysize\relax}{\dimexpr1.10\bs@bodysize\relax}\selectfont}%
+  \renewcommand{\large}{\fontsize{\dimexpr1.091\bs@bodysize\relax}{\dimexpr1.31\bs@bodysize\relax}\selectfont}%
+  \renewcommand{\Large}{\fontsize{\dimexpr1.309\bs@bodysize\relax}{\dimexpr1.57\bs@bodysize\relax}\selectfont}%
+  \renewcommand{\LARGE}{\fontsize{\dimexpr1.571\bs@bodysize\relax}{\dimexpr1.88\bs@bodysize\relax}\selectfont}%
+  \renewcommand{\huge}{\fontsize{\dimexpr1.885\bs@bodysize\relax}{\dimexpr2.26\bs@bodysize\relax}\selectfont}%
+  \renewcommand{\Huge}{\fontsize{\dimexpr2.262\bs@bodysize\relax}{\dimexpr2.71\bs@bodysize\relax}\selectfont}%
+}
+\makeatother
+$endif$
+
+\setlength{\parindent}{1.5em}  %
+\setlength{\parskip}{0pt}      %
+
+\widowpenalty=10000    %
+\clubpenalty=10000     %
+\emergencystretch=3em  %
+
+\usepackage{xcolor}
+
+\usepackage{soul}
+\soulregister\textsuperscript7
+\soulregister\textsubscript7
+
+$if(diff-mode)$
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+\definecolor{addedbg}{HTML}{FFF9C4}
+\sethlcolor{addedbg}
+\AtBeginDocument{%
+  \soulregister\ldots0
+  \soulregister\textellipsis0
+  \soulregister\textquoteleft0
+  \soulregister\textquoteright0
+  \soulregister\textquotedblleft0
+  \soulregister\textquotedblright0
+  \soulregister\textendash0
+  \soulregister\textemdash0
+}
+\DeclareRobustCommand{\added}[1]{\hl{#1}}
+\newtcolorbox{addedblock}{
+  breakable,
+  colback=addedbg,
+  colframe=addedbg,
+  boxrule=0pt,
+  arc=2pt,
+  left=4pt,
+  right=4pt,
+  top=2pt,
+  bottom=2pt,
+  before skip=6pt,
+  after skip=6pt,
+  parbox=false,
+}
+$endif$
+
+\usepackage{fancyhdr}
+
+\newcommand{\goldenspiralleft}[1][0.12]{%
+  \begin{tikzpicture}[scale=#1, rotate=180]
+    \draw[line width=0.4pt]
+      (0,0) arc (180:270:0.125)
+      arc (270:360:0.202)
+      arc (0:90:0.327)
+      arc (90:180:0.529)
+      arc (180:270:0.856)
+      arc (270:360:1.385)
+      -- ++(0.8,0);
+  \end{tikzpicture}%
+}
+\newcommand{\goldenspiralright}[1][0.12]{%
+  \begin{tikzpicture}[scale=#1, rotate=180, xscale=-1]
+    \draw[line width=0.4pt]
+      (0,0) arc (180:270:0.125)
+      arc (270:360:0.202)
+      arc (0:90:0.327)
+      arc (90:180:0.529)
+      arc (180:270:0.856)
+      arc (270:360:1.385)
+      -- ++(0.8,0);
+  \end{tikzpicture}%
+}
+
+\newcommand{\goldenspiralleftcurly}[1][0.12]{%
+  \begin{tikzpicture}[scale=#1, rotate=180]
+    \draw[line width=0.4pt]
+      (0,0) arc (180:270:0.125)
+      arc (270:360:0.202)
+      arc (0:90:0.327)
+      arc (90:180:0.529)
+      arc (180:270:0.856)
+      arc (270:337:1.385)
+      arc (157:82:0.856)
+      arc (82:7:0.529);
+  \end{tikzpicture}%
+}
+\newcommand{\goldenspiralrightcurly}[1][0.12]{%
+  \begin{tikzpicture}[scale=#1, rotate=180, xscale=-1]
+    \draw[line width=0.4pt]
+      (0,0) arc (180:270:0.125)
+      arc (270:360:0.202)
+      arc (0:90:0.327)
+      arc (90:180:0.529)
+      arc (180:270:0.856)
+      arc (270:337:1.385)
+      arc (157:82:0.856)
+      arc (82:7:0.529);
+  \end{tikzpicture}%
+}
+
+$if(page-ornament-size-small)$
+\newcommand{\pageornamentsize}{0.10}
+\newcommand{\pageornamentraise}{0.12em}
+\newcommand{\pageornamentkern}{0.6em}
+$elseif(page-ornament-size-large)$
+\newcommand{\pageornamentsize}{0.15}
+\newcommand{\pageornamentraise}{0em}
+\newcommand{\pageornamentkern}{1em}
+$else$
+\newcommand{\pageornamentsize}{0.12}
+\newcommand{\pageornamentraise}{0.08em}
+\newcommand{\pageornamentkern}{0.8em}
+$endif$
+
+$if(page-ornament-spiral-straight)$
+\newcommand{\pagenumberornament}{%
+  \raisebox{\pageornamentraise}{\goldenspiralleft[\pageornamentsize]}%
+  \kern\pageornamentkern\thepage\kern\pageornamentkern%
+  \raisebox{\pageornamentraise}{\goldenspiralright[\pageornamentsize]}%
+}
+$elseif(page-ornament-spiral-curly)$
+\newcommand{\pagenumberornament}{%
+  \raisebox{\pageornamentraise}{\goldenspiralleftcurly[\pageornamentsize]}%
+  \kern\pageornamentkern\thepage\kern\pageornamentkern%
+  \raisebox{\pageornamentraise}{\goldenspiralrightcurly[\pageornamentsize]}%
+}
+$elseif(page-ornament-wasy-hexagon)$
+\newcommand{\pagenumberornament}{%
+  \wasyhexagon\kern0.5em\thepage\kern0.5em\wasyhexagon%
+}
+$elseif(page-ornament-wasy-star)$
+\newcommand{\pagenumberornament}{%
+  \wasyhexstar\kern0.5em\thepage\kern0.5em\wasyhexstar%
+}
+$elseif(page-ornament-wasy-sun)$
+\newcommand{\pagenumberornament}{%
+  \wasysun\kern0.5em\thepage\kern0.5em\wasysun%
+}
+$elseif(page-ornament-wasy-verhexagon)$
+\newcommand{\pagenumberornament}{%
+  \wasyvarhexagon\kern0.5em\thepage\kern0.5em\wasyvarhexagon%
+}
+$elseif(page-ornament-adforn-fleuron)$
+\newcommand{\pagenumberornament}{%
+  \adforn{21}\kern0.5em\thepage\kern0.5em\reflectbox{\adforn{21}}%
+}
+$elseif(page-ornament-adforn-leaf)$
+\newcommand{\pagenumberornament}{%
+  \reflectbox{\adforn{36}}\kern0.5em\thepage\kern0.5em\adforn{36}%
+}
+$elseif(page-ornament-adforn-vine)$
+\newcommand{\pagenumberornament}{%
+  \reflectbox{\adforn{34}}\kern0.5em\thepage\kern0.5em\adforn{34}%
+}
+$else$
+\newcommand{\pagenumberornament}{\thepage}
+$endif$
+
+\pagestyle{fancy}
+\fancyhf{}
+
+$if(page-style-footer)$
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\small\pagenumberornament}
+$if(draft)$
+\fancyfoot[R]{\small\textcolor{gray}{DRAFT}}
+$endif$
+$else$
+$if(twoside)$
+\fancyhead[LE,RO]{\small\thepage}
+\fancyhead[RE]{\small\leftmark}
+\fancyhead[LO]{\small\rightmark}
+$else$
+\fancyhead[L]{\small\leftmark}
+\fancyhead[R]{\small\thepage}
+$endif$
+$if(draft)$
+\fancyfoot[C]{\small\textcolor{gray}{DRAFT - \today}}
+$endif$
+\renewcommand{\headrulewidth}{0.4pt}
+$endif$
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+$if(page-style-footer)$
+  \fancyfoot[C]{\small\pagenumberornament}
+$else$
+$if(twoside)$
+  \fancyfoot[LE,RO]{\small\thepage}
+$else$
+  \fancyfoot[C]{\small\thepage}
+$endif$
+$endif$
+$if(draft)$
+  \fancyfoot[R]{\small\textcolor{gray}{DRAFT}}
+$endif$
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+\fancypagestyle{blankpage}{%
+  \fancyhf{}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \renewcommand{\footrulewidth}{0pt}%
+}
+$if(all-page-folios)$
+$else$
+\makeatletter
+\def\cleardoublepage{\clearpage
+  \if@twoside
+    \ifodd\c@page\else
+      \hbox{}\thispagestyle{blankpage}\newpage
+      \if@twocolumn\hbox{}\newpage\fi
+    \fi
+  \fi}
+\makeatother
+$endif$
+
+\usepackage{titlesec}
+
+\newcommand{\chapterornament}{%
+$if(ornament-hexagon)$\wasyhexagon$elseif(ornament-varhexagon)$\wasyvarhexagon$elseif(ornament-star)$\wasyhexstar$elseif(ornament-sun)$\wasysun$elseif(ornament-square)$\wasySquare$elseif(ornament-fleuron)$\adforn{21}$else$\wasyhexagon$endif$%
+}
+
+$if(chapter-style-technical)$
+\titleformat{\chapter}[display]
+  {\headingfont\bfseries}
+  {\fontsize{60}{60}\selectfont\thechapter}
+  {0pt}
+  {\titlerule[1pt]\vspace{6pt}\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+
+$elseif(chapter-style-bold)$
+\titleformat{\chapter}[display]
+  {\headingfont\centering}
+  {\textcolor{gray!50}{\fontsize{80}{80}\selectfont\thechapter}}
+  {-10pt}
+  {\huge\scshape}
+\titlespacing*{\chapter}{0pt}{-30pt}{50pt}
+
+$elseif(chapter-style-elegant)$
+\titleformat{\chapter}[display]
+  {\headingfont}
+  {\large\itshape Chapter \thechapter}
+  {12pt}
+  {\centerline{\fontsize{36}{36}\selectfont\chapterornament}\vspace{12pt}\huge\bfseries}
+  [\nobreak\vspace{4pt}\nobreak\titlerule]
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+
+$elseif(chapter-style-canonical)$
+\titleformat{\chapter}[display]
+  {\headingfont\centering}
+  {\small\scshape CHAPTER \thechapter}
+  {12pt}
+  {{\fontsize{36}{36}\selectfont\chapterornament}\\[12pt]\huge\bfseries}
+\titlespacing*{\chapter}{0pt}{-10pt}{50pt}
+
+$else$
+\titleformat{\chapter}[display]
+  {\headingfont\huge\bfseries}
+  {\chaptertitlename\ \thechapter}
+  {20pt}
+  {\Huge}
+\titlespacing*{\chapter}{0pt}{-30pt}{40pt}
+$endif$
+
+$if(section-style-technical)$
+\titleformat{\section}
+  {\headingfont\Large\bfseries}
+  {\thesection}
+  {0.6em}
+  {}
+\titlespacing*{\section}{0pt}{3.2ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+
+\titleformat{\subsection}
+  {\headingfont\large\bfseries\itshape}
+  {\thesubsection}
+  {0.6em}
+  {}
+\titlespacing*{\subsection}{0pt}{2.6ex plus 1ex minus .2ex}{0.8ex plus .2ex}
+
+\titleformat{\subsubsection}
+  {\headingfont\normalsize\bfseries\itshape}
+  {\thesubsubsection}
+  {0.6em}
+  {}
+\titlespacing*{\subsubsection}{0pt}{1.8ex plus .8ex minus .2ex}{0.6ex plus .2ex}
+
+$elseif(section-style-scholarly)$
+\titleformat{\section}
+  {\headingfont\LARGE\bfseries}
+  {\thesection}
+  {0.6em}
+  {}
+  [\nobreak\vspace{4pt}\nobreak{\color{black!60}\titlerule[0.4pt]}]
+\titlespacing*{\section}{0pt}{3.2ex plus 1ex minus .2ex}{1.6ex plus .2ex}
+
+\titleformat{\subsection}
+  {\headingfont\Large\bfseries}
+  {\thesubsection}
+  {0.6em}
+  {}
+\titlespacing*{\subsection}{0pt}{2.4ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+
+\titleformat{\subsubsection}
+  {\headingfont\large\bfseries\itshape}
+  {\thesubsubsection}
+  {0.6em}
+  {}
+\titlespacing*{\subsubsection}{0pt}{1.8ex plus .8ex minus .2ex}{0.8ex plus .2ex}
+
+$elseif(section-style-literary)$
+\titleformat{\section}
+  {\headingfont\Large\scshape}
+  {\thesection}
+  {0.8em}
+  {}
+\titlespacing*{\section}{0pt}{3.2ex plus 1ex minus .2ex}{1.4ex plus .2ex}
+
+\titleformat{\subsection}[runin]
+  {\headingfont\itshape}
+  {\thesubsection}
+  {0.5em}
+  {}
+  [.]
+\titlespacing*{\subsection}{0pt}{1.6ex plus .6ex minus .2ex}{0.6em}
+
+\titleformat{\subsubsection}[runin]
+  {\headingfont\itshape}
+  {\thesubsubsection}
+  {0.5em}
+  {}
+  [.]
+\titlespacing*{\subsubsection}{0pt}{1.2ex plus .4ex minus .2ex}{0.6em}
+
+$elseif(section-style-editorial)$
+\titleformat{\section}
+  {\headingfont\LARGE\bfseries}
+  {\thesection}
+  {0.6em}
+  {}
+  [\nobreak\vspace{3pt}\nobreak{\titlerule[0.6pt]}]
+\titlespacing*{\section}{0pt}{3.0ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\titleformat{\subsection}
+  {\headingfont\Large\bfseries}
+  {\thesubsection}
+  {0.6em}
+  {}
+\titlespacing*{\subsection}{0pt}{2.2ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+
+\titleformat{\subsubsection}
+  {\headingfont\large\bfseries}
+  {\thesubsubsection}
+  {0.6em}
+  {}
+\titlespacing*{\subsubsection}{0pt}{1.8ex plus .8ex minus .2ex}{0.8ex plus .2ex}
+
+$else$
+\titleformat{\section}
+  {\headingfont\Large\bfseries}
+  {\thesection}
+  {1em}
+  {}
+\titleformat{\subsection}
+  {\headingfont\large\bfseries}
+  {\thesubsection}
+  {1em}
+  {}
+$endif$
+
+\makeatletter
+\renewcommand*\l@part[2]{%
+  \ifnum \c@tocdepth >-2\relax
+    \addpenalty{-\@highpenalty}%
+    \addvspace{2.25em \@plus\p@}%
+    \setlength\@tempdima{3em}%
+    \begingroup
+      \parindent \z@ \rightskip \@pnumwidth
+      \parfillskip -\@pnumwidth
+      {\leavevmode
+$if(part-overview)$
+       \large \bfseries #1\hfil
+$else$
+$if(no-part-pages)$
+       \large \bfseries #1\hfil
+$else$
+       \large \bfseries Part~#1\hfil
+$endif$
+$endif$
+       \hb@xt@\@pnumwidth{\hss #2%
+                           \kern-\p@\kern\p@}}\par
+       \nobreak
+         \global\@nobreaktrue
+         \everypar{\global\@nobreakfalse\everypar{}}%
+    \endgroup
+  \fi}
+\makeatother
+
+$if(no-part-pages)$
+\makeatletter
+\renewcommand\part{%
+  \secdef\@nopartpage\@spart}
+\newcommand\@nopartpage[2][]{%
+  \refstepcounter{part}%
+  \addcontentsline{toc}{part}{\partname\nobreakspace\thepart\hspace{1em}#2}%
+  \partmark{#1}%
+}
+\makeatother
+$endif$
+
+$if(part-overview)$
+\makeatletter
+\renewcommand\part{%
+  \if@openright\cleardoublepage\else\clearpage\fi
+  \thispagestyle{$if(all-page-folios)$plain$else$blankpage$endif$}%
+  \secdef\@part\@spart}
+\def\@part[#1]#2{%
+  \ifnum \c@secnumdepth >-2\relax
+    \refstepcounter{part}%
+    \addcontentsline{toc}{part}{\partname\nobreakspace\thepart\hspace{1em}#1}%
+  \else
+    \addcontentsline{toc}{part}{#1}%
+  \fi
+  \markboth{}{}%
+  {\centering
+    \vspace*{18\p@}%
+    {\fontsize{32}{32}\selectfont\chapterornament\par}%
+    \vskip 26\p@
+    \interlinepenalty\@M
+    \normalfont
+    \ifnum \c@secnumdepth >-2\relax
+      \huge\bfseries \partname\nobreakspace\thepart\par
+      \vskip 14\p@
+    \fi
+    \Huge\bfseries #2\par}%
+  \vskip 34\p@\par}
+\makeatother
+$endif$
+
+$if(toc-depth)$
+\setcounter{tocdepth}{$toc-depth$}
+$else$
+\setcounter{tocdepth}{1}
+$endif$
+
+$if(numberedsections)$
+$else$
+\setcounter{secnumdepth}{-1}
+$endif$
+
+\usepackage{xurl}
+
+\usepackage[
+  colorlinks=true,
+$if(digital-edition)$
+  linkcolor=blue!55!black,
+  citecolor=blue!55!black,
+  linktoc=all,
+$else$
+  linkcolor=black,
+  citecolor=black,
+$endif$
+  urlcolor=blue!70!black,
+  breaklinks=true,
+$if(title)$
+  pdftitle={$title$},
+$endif$
+$if(author)$
+  pdfauthor={$author$},
+$endif$
+$if(draft)$
+$if(reviewer)$
+  pdfsubject={DRAFT for $reviewer$},
+$else$
+  pdfsubject={DRAFT - Not for distribution},
+$endif$
+$if(draftid)$
+  pdfkeywords={$draftid$},
+$endif$
+$endif$
+  pdfcreator={Pandoc},
+  pdfproducer={XeLaTeX}
+]{hyperref}
+
+\usepackage{bookmark}
+
+\usepackage{listings}
+
+\definecolor{codebg}{gray}{0.97}
+\definecolor{codecomment}{gray}{0.45}
+\definecolor{codestring}{gray}{0.35}
+\definecolor{codekeyword}{gray}{0.0}
+
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\small\ttfamily,
+  breakatwhitespace=false,
+  breaklines=true,
+  captionpos=b,
+  commentstyle=\color{codecomment}\itshape,
+  frame=single,
+  framerule=0.5pt,
+  keepspaces=true,
+  keywordstyle=\color{codekeyword}\bfseries,
+  numbers=none,
+  numbersep=5pt,
+  numberstyle=\tiny\color{codecomment},
+  rulecolor=\color{black!30},
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  stepnumber=1,
+  stringstyle=\color{codestring},
+  tabsize=2,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  aboveskip=1em,
+  belowskip=1em
+}
+
+$if(highlighting-macros)$
+$highlighting-macros$
+\usepackage{framed}
+\definecolor{shadecolor}{gray}{0.97}
+\newlength{\bookbodysize}
+\newlength{\bookbodyleading}
+\newlength{\bookcodeblocksize}
+\newlength{\bookcodeblockleading}
+\makeatletter
+\AtBeginDocument{%
+  \setlength{\bookbodysize}{\f@size pt}%
+  \setlength{\bookbodyleading}{\baselineskip}%
+  \setlength{\bookcodeblocksize}{\dimexpr$if(codeblockfontratio)$$codeblockfontratio$$else$$if(codescale)$$codescale$$else$0.85$endif$$endif$\bookbodysize\relax}%
+  \setlength{\bookcodeblockleading}{\dimexpr$if(codescale)$$codescale$$else$0.85$endif$\bookbodyleading\relax}%
+}
+\makeatother
+\renewenvironment{Shaded}{%
+  \begin{snugshade}%
+  \setstretch{1.0}\fontsize{\bookcodeblocksize}{\bookcodeblockleading}\selectfont%
+}{%
+  \end{snugshade}%
+}
+$endif$
+
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{calc}
+\newcounter{none} %
+
+\usepackage{enumitem}
+\setlist[itemize]{nosep, left=0pt}
+\setlist[enumerate]{nosep, left=0pt}
+
+\usepackage{csquotes}
+$if(quote-style-italic)$
+\renewenvironment{quote}
+  {\list{}{\rightmargin=3em\leftmargin=3em}\item\relax\itshape}
+  {\endlist}
+$elseif(quote-style-plain)$
+\renewenvironment{quote}
+  {\list{}{\rightmargin=3em\leftmargin=3em}\item\relax}
+  {\endlist}
+$elseif(quote-style-small)$
+\renewenvironment{quote}
+  {\list{}{\rightmargin=3em\leftmargin=3em}\item\relax\small}
+  {\endlist}
+$elseif(quote-style-border)$
+\usepackage[framemethod=tikz]{mdframed}
+\mdfdefinestyle{quoteborderstyle}{%
+  linewidth=0.8pt,
+  linecolor=black,
+  topline=false,
+  bottomline=false,
+  rightline=false,
+  leftline=true,
+  innerleftmargin=0.8em,
+  innerrightmargin=0em,
+  innertopmargin=0.2em,
+  innerbottommargin=0.2em,
+  skipabove=0.8\baselineskip,
+  skipbelow=0.8\baselineskip,
+  leftmargin=3em,
+  rightmargin=3em
+}
+\renewenvironment{quote}
+  {\begin{mdframed}[style=quoteborderstyle]}
+  {\end{mdframed}}
+$elseif(quote-style-dash)$
+\renewenvironment{quote}
+  {\list{}{\rightmargin=3em\leftmargin=3em}\item\relax\leavevmode\llap{\textemdash\hspace{0.5em}}}
+  {\endlist}
+$elseif(quote-style-guillemet)$
+\renewenvironment{quote}
+  {\list{}{\rightmargin=3em\leftmargin=3em}\item\relax\leavevmode\llap{»\hspace{0.5em}}}
+  {\endlist}
+$elseif(quote-style-quote)$
+\renewenvironment{quote}
+  {\list{}{\rightmargin=3em\leftmargin=3em}\item\relax\leavevmode\llap{"\hspace{0.3em}}}
+  {\endlist}
+$else$
+\renewenvironment{quote}
+  {\list{}{\rightmargin=1em\leftmargin=1em}\item\relax\itshape}
+  {\endlist}
+$endif$
+
+\usepackage{tikz}
+\usepackage{atbegshi}
+$if(draft)$
+\newcommand{\draftnote}{\centering\small\textit{Draft generated: \today}\par\vspace{1em}}
+\newcommand{\draftfooter}{DRAFT - \today}
+$if(reviewer)$
+\newcommand{\reviewertext}{This manuscript is printed for $reviewer$ and may be used only for one-time review.}
+$else$
+\newcommand{\reviewertext}{This manuscript is printed for one-time review only.}
+$endif$
+\AtBeginShipout{%
+  \AtBeginShipoutUpperLeft{%
+    \begin{tikzpicture}[remember picture,overlay]
+      \node[rotate=45,scale=6,text opacity=0.15,gray] at (current page.center) {DRAFT};
+      $if(author)$
+      \node[rotate=-90,anchor=north,font=\tiny,text opacity=0.6,gray,align=left,text width=8in]
+        at ([xshift=-3mm]current page.east)
+        {Copyright \textcopyright\ \the\year\ by $author$. All rights reserved.
+         No part of this book may be reproduced without written permission.
+         \reviewertext\ The manuscript must be destroyed after review.};
+      $endif$
+    \end{tikzpicture}%
+  }%
+}
+$else$
+\newcommand{\draftnote}{}
+\newcommand{\draftfooter}{}
+$endif$
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+$if(title)$
+\title{$title$}
+$endif$
+$if(author)$
+\author{$author$}
+$endif$
+$if(date)$
+\date{$date$}
+$endif$
+
+\begin{document}
+
+$if(coverfront)$
+\thispagestyle{empty}%
+\begin{tikzpicture}[remember picture, overlay]
+  \node at (current page.center)
+    {\includegraphics[width=\paperwidth,height=\paperheight]{$coverfront$}};
+\end{tikzpicture}%
+\newpage
+$endif$
+
+$if(title)$
+\begin{titlepage}
+  \centering
+  \vspace*{2in}
+  {\Huge\bfseries $title$\par}
+  \vspace{1in}
+  $if(subtitle)$
+  {\Large $subtitle$\par}
+  \vspace{0.5in}
+  $endif$
+  $if(author)$
+  {\large $author$\par}
+  $endif$
+  \vfill
+  \draftnote
+\end{titlepage}
+$endif$
+
+$if(toc)$
+\tableofcontents
+\newpage
+$endif$
+
+$body$
+
+$if(coverback)$
+\clearpage
+\thispagestyle{empty}%
+\begin{tikzpicture}[remember picture, overlay]
+  \node at (current page.center)
+    {\includegraphics[width=\paperwidth,height=\paperheight]{$coverback$}};
+\end{tikzpicture}%
+$endif$
+
+\end{document}

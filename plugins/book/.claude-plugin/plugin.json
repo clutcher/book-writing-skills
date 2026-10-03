@@ -1,0 +1,21 @@
+{
+  "name": "book",
+  "description": "Write, check, review and publish a non-fiction book: one config file, one layout, one workflow for findings.",
+  "version": "0.3.0",
+  "license": "MIT",
+  "homepage": "https://github.com/clutcher/book-writing-skills",
+  "author": {
+    "name": "Igor Zarvanskyi"
+  },
+  "keywords": [
+    "book",
+    "writing",
+    "fact-check",
+    "citations",
+    "pdf",
+    "epub",
+    "kdp",
+    "cover",
+    "sales-text"
+  ]
+}

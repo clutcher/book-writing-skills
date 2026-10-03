@@ -1,0 +1,10 @@
+version: 1
+book:
+  title: A Small Bread Book
+  author: Sam Example
+manuscript:
+  dir: manuscript
+vocabulary:
+  glossary: vocabulary/glossary.md
+  location_pattern: '^(?:§(?P<chapter>\d+)|(?P<file>[A-Za-z][\w-]*))'
+work: .book

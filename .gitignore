@@ -1,0 +1,24 @@
+# Deny by default at the root: publishing a file here means adding a line here.
+# Under /plugins/ the tree is re-included whole, so a new file there is tracked at once.
+/*
+
+!/.gitignore
+!/LICENSE
+!/README.md
+!/CLAUDE.md
+!/.claude-plugin/
+!/plugins/
+!/tools/
+
+# Local-only workspace, already covered by the deny line above.
+/.workspace/
+
+# Python bytecode.
+__pycache__/
+*.py[cod]
+
+# Editor and OS noise.
+.DS_Store
+*~
+*.swp
+.idea/

@@ -1,0 +1,47 @@
+extends: substitution
+message: "Use '%s' instead of '%s' (rule 5.5, plain English)."
+level: warning
+ignorecase: true
+action:
+  name: replace
+swap:
+  utilize: use
+  utilizes: uses
+  utilized: used
+  utilizing: using
+  utilization: use
+  facilitate: help
+  facilitates: helps
+  facilitated: helped
+  facilitating: helping
+  commence: begin
+  commences: begins
+  commenced: began
+  commencing: beginning
+  approximately: about
+  subsequently: then
+  endeavor: try
+  endeavors: tries
+  endeavored: tried
+  endeavoring: trying
+  obtain: get
+  obtains: gets
+  obtained: got
+  obtaining: getting
+  additional: more
+  exhibits: shows
+  exhibited: showed
+  "in order to": to
+  "due to the fact that": because
+  "at this point in time": now
+  "the majority of": most
+  "in spite of the fact that": although
+  "in the event that": if
+  "with regard to": about
+  "with respect to": about
+  "in regards to": about
+  "prior to": before
+  "subsequent to": after
+  "in close proximity to": near
+  "for the purpose of": for
+  "a number of": several

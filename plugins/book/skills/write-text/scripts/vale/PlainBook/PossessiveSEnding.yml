@@ -1,0 +1,7 @@
+extends: existence
+message: "Possessive on a word that ends in s: '%s' reads as s's and is hard for readers of English as a second language. Rephrase with 'of' ('the class's name' -> 'the name of the class') (rule 5.8)."
+level: warning
+ignorecase: false
+nonword: true
+tokens:
+  - '\b[A-Za-z]+s''s\b'

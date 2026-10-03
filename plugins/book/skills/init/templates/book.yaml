@@ -1,0 +1,26 @@
+version: 1
+
+book:
+  title: {{title}}
+  subtitle: null
+  author: {{author}}
+  language: en-US                # BCP 47 code of the book's language
+  format: 6x9                    # trim size in inches, or a KDP name
+  font: latin-modern             # cochineal garamond cormorant-garamond crimson-pro baskerville palatino latin-modern
+  description: null              # the blurb stores show
+  publication_date: null         # YYYY, the book's date, not the build's
+  epub_identifier: null          # set once (the ebook ISBN), then never change it
+
+sources:
+  backup: null                   # a private folder outside the book for source files that
+                                 # cannot be downloaded again; the collect-sources skill fills it
+
+# Words the book makes up, or gives its own meaning. The write-text skill counts how often
+# the reader meets them.
+# terms:
+#   families:
+#     - {term: example, role: primary, also: [examples]}
+#   compounds: [example word]
+
+# Every other key, its default and what it does: the init skill, references/book-yaml.md.
+# Check this file with: /book:run-checks setup

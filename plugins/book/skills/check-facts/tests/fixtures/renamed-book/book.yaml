@@ -1,0 +1,19 @@
+version: 1
+book:
+  title: A Fixture Book With Its Own Names
+  author: Sam Example
+manuscript:
+  dir: text
+  order: list
+  files: [ch01-reading.md, zz-bibliography.md]
+  chapter_pattern: '^ch(\d+)-'
+  references: text/zz-bibliography.md
+sources:
+  list: evidence/bank.md
+  quotes: evidence/says.md
+  files: evidence/cache
+  origin: evidence/origin
+  backup: null
+reasons: notes
+work:
+  dir: .state

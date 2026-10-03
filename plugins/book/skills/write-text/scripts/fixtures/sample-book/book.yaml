@@ -1,0 +1,31 @@
+version: 1
+book:
+  title: A Sample Book
+  author: Sam Writer
+manuscript:
+  dir: manuscript
+  references: manuscript/900-references.md
+terms:
+  families:
+    - {term: lean, role: primary, also: [leanness]}
+    - {term: rich, role: antonym, also: [richer]}
+  compounds: [lean dough, rich dough, lean rise, rich rise]
+  watch_words:
+    container_terms:
+      book_terms: [two habits]
+      outside_names: [Hartfield]
+    people:
+      aliases:
+        "Rivera, M.L.": [Maria Rivera]
+        "Okafor, N.": [Nkem Okafor]
+      eponyms:
+        Rivera: ['Rivera\s+rule']
+    word_sense:
+      name: counted flavours
+      reason: the book does not describe bread as a list of separate flavours
+      words:
+        - [flavour, flavours]
+        - [note, notes]
+      scope_targets: [loaf, crust, dish]
+author:
+  voice: author/voice.md

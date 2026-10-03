@@ -1,0 +1,7 @@
+extends: existence
+message: "Avoid wrapping a phrase in a pair of dashes: '%s'. Use commas, a colon or a separate sentence instead (rule 9.1)."
+level: warning
+nonword: true
+tokens:
+  - '—[^—\n]{1,80}—'
+  - '--[^-\n]{1,80}--'

@@ -1,0 +1,4 @@
+extends: existence
+message: "Passive: %s"
+tokens:
+  - was done

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "book-writing-skills",
+  "description": "Skills for writing a non-fiction book with Claude Code: set up the book, write and check the text, keep sources and quotes honest, review the book, build print PDF and EPUB, make the cover and the sales text",
+  "owner": {
+    "name": "Igor Zarvanskyi"
+  },
+  "plugins": [
+    {
+      "name": "book",
+      "description": "Write, check, review and publish a non-fiction book: one config file, one layout, one workflow for findings",
+      "version": "0.3.0",
+      "author": {
+        "name": "Igor Zarvanskyi"
+      },
+      "source": "./plugins/book",
+      "category": "productivity"
+    }
+  ]
+}

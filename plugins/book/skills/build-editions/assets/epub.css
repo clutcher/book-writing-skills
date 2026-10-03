@@ -1,0 +1,325 @@
+body {
+  widows: 2;
+  orphans: 2;
+
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+code, pre, a.uri, h1, h2, h3 {
+  -webkit-hyphens: none;
+  hyphens: none;
+}
+
+p {
+  text-indent: 1.2em;
+  margin: 0;
+}
+
+h1 + p, h2 + p, h3 + p, blockquote + p,
+pre + p, div.sourceCode + p, table + p, div.center p {
+  text-indent: 0;
+}
+
+h1, h2, h3 {
+  font-weight: bold;
+  page-break-after: avoid;
+  break-after: avoid;
+  text-indent: 0;
+}
+
+h1 {
+  font-size: 1.6em;
+  margin: 2em 0 1em;
+  text-align: left;
+}
+
+h1.chapter {
+  text-align: center;
+}
+
+h1.part {
+  text-align: center;
+  font-size: 1.9em;
+  margin: 3.5em 0 1.5em;
+}
+
+section.part > p {
+  text-indent: 0;
+  text-align: center;
+  font-style: italic;
+  margin: 0 1.5em;
+}
+
+h2 { font-size: 1.15em; margin: 1.8em 0 0.6em; }
+h3 { margin: 1.4em 0 0.4em; font-size: 1em; font-style: italic; }
+
+pre {
+  margin: 1em 0;
+  padding: 0;
+  padding-left: 0.6em;
+  font-size: 0.80em;
+  line-height: 1.35;
+  text-align: left;
+  text-indent: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border-left: 3px solid #999;
+}
+
+pre.ascii {
+  white-space: pre;
+  padding-left: 0;
+  border-left: none;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: normal;
+  src: url("../fonts/JetBrainsMono-Regular.subset.ttf");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: bold;
+  src: url("../fonts/JetBrainsMono-Bold.subset.ttf");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: italic;
+  font-weight: normal;
+  src: url("../fonts/JetBrainsMono-Italic.subset.ttf");
+}
+
+code, pre {
+  font-family: "JetBrains Mono", monospace;
+}
+
+p code {
+  font-size: 0.90em;
+}
+
+code span.kw, code span.cf, code span.dt {
+  font-weight: bold;
+}
+
+code span.co {
+  font-style: italic;
+}
+
+pre.sourceCode a {
+  text-decoration: none;
+  color: inherit;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  font-size: 0.85em;
+  width: 100%;
+}
+
+th, td {
+  padding: 0.25em 0.4em;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #999;
+}
+
+th {
+  font-weight: bold;
+  border-bottom: 1.5px solid #333;
+}
+
+blockquote {
+  margin: 1.2em 1.5em;
+  font-style: italic;
+}
+
+blockquote p { text-indent: 0; }
+
+h1.fm-heading {
+  display: none;
+}
+
+.front-matter {
+  page-break-before: always;
+  break-before: page;
+  page-break-after: always;
+  break-after: page;
+}
+
+div.center {
+  text-align: center;
+  margin: 3em 0;
+}
+
+div.center p { text-indent: 0; text-align: center; }
+
+.dedication, .epigraph {
+  margin-top: 25%;
+  margin-top: 30vh;
+  text-align: center;
+  font-style: italic;
+}
+
+.dedication p, .epigraph p { text-indent: 0; text-align: center; }
+
+.copyright-page p {
+  font-size: 0.85em;
+  text-indent: 0;
+  margin-bottom: 0.5em;
+}
+
+div.emblem {
+  text-align: center;
+  margin: 2.5em 0 0;
+
+  page-break-before: avoid;
+  break-before: avoid;
+}
+
+div.emblem img {
+  width: 20%;
+  max-width: 120px;
+  height: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  div.emblem img {
+    filter: invert(1);
+  }
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+ul, ol { margin: 0.8em 0; }
+li { margin-bottom: 0.3em; }
+
+a.uri, code {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+section.bibliography > p {
+  text-indent: -1.2em;
+  padding-left: 1.2em;
+  margin-bottom: 0.45em;
+}
+
+a.citation {
+  text-decoration: underline;
+  color: inherit;
+}
+
+/* ==========================================================================
+   FONT LICENCE -- everything below this line is verbatim licence text.
+   Do not edit, reflow, or "tidy" it.
+
+   The three JetBrains Mono faces embedded by this stylesheet are redistributed
+   inside every copy of the book, and the OFL asks that its terms travel with
+   them. Pandoc offers no way to add a plain file to an EPUB, so the
+   stylesheet is the carrier: it is the one file guaranteed to be in the same
+   archive as the fonts it loads.
+   assets/fonts/OFL.txt is the source of this text; keep the two identical.
+   ==========================================================================
+
+Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://openfontlicense.org
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
+*/

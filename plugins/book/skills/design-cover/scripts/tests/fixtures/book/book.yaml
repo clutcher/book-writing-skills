@@ -1,0 +1,13 @@
+version: 1
+book:
+  title: Plain Example Book
+  subtitle: A Fixture for the Cover Checks
+  author: Ana Example
+  format: 6x9
+  pages: 120
+cover:
+  design: cover/design.py
+  final: cover/final
+  paper: bw-white
+sales_text:
+  back_cover: sales-text/back-cover.md

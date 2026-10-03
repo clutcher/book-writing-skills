@@ -1,0 +1,2 @@
+# Sources to download by hand: Key | Title | Authors | Year | where to look
+Wal-- | A living catalog | Walsh, K. | -- | https://catalog.example.org/v1/

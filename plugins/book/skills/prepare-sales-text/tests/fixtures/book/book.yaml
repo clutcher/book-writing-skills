@@ -1,0 +1,15 @@
+version: 1
+book:
+  title: Slow Bread
+  subtitle: Foundations of Good Starters
+  author: Sam Example
+  description: Most home loaves come out flat. This book shows two habits that make bread rise well, from one loaf to a whole bakery. Recipes use rye and wheat.
+manuscript:
+  dir: manuscript
+sales_text:
+  retired_phrases:
+    - "bread is the staff of life"
+  shared_spans:
+    - "from one loaf to a whole bakery"
+  contents_skip:
+    - "030-*.md"

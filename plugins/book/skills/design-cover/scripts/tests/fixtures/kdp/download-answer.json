@@ -1,0 +1,1 @@
+{"_nested_scripter":[{"lookup":["A"],"actions":[{"invokee":"trigger","args":["cover-template-download:success","https://cover-templates.example.com/PAPERBACK_6.000x9.000_120_BW_WHITE_en_US.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600&X-Amz-Signature=0000"]}]}]}

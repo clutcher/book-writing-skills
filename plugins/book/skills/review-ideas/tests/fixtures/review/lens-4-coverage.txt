@@ -1,0 +1,4 @@
+
+## Coverage log
+
+- **Fully checked:** both files.

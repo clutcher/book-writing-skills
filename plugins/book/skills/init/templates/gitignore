@@ -1,0 +1,23 @@
+# The source library: a copy of every source, restored by the collect-sources skill
+{{sources_library}}/
+
+# Work state: runs, build output, caches, sources to add
+{{work_dir}}/
+
+# Vale packages that vale sync downloads, and the copy of the base style
+{{vale_dir}}/PlainBook/
+{{vale_dir}}/write-good/
+{{vale_dir}}/proselint/
+{{vale_dir}}/alex/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editors and systems
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*~
+*.swp

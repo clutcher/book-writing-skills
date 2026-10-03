@@ -1,0 +1,19 @@
+version: 1
+book:
+  title: A Small Test Book
+  subtitle: Fixture for the readers-review self-check
+  author: Test Author
+readers_review:
+  sources_for_reviewer: review-input/sources-for-reviewer.md
+  main_metaphor: "the river image in the title"
+  key_sources: ["[Abc20]", "[DE21]"]
+  similar_books: ["First Comparable Book", "Second Comparable Book"]
+  skills_off: ["some-other-writing-skill"]
+  lenses:
+    - Thesis and argument
+    - Correctness and evidence
+    - Strengths to protect
+    - name: Legal risk
+      question: Could any passage bring a legal claim?
+      weight: major
+      detail: Check long quotes, named people and trademarks.

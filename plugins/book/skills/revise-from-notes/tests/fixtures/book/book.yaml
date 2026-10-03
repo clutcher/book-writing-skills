@@ -1,0 +1,7 @@
+version: 1
+book:
+  title: A Small Book
+  author: Sam Example
+manuscript:
+  dir: manuscript
+  front_matter: ["0[0-9][0-9]-*.md"]

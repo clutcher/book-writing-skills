@@ -1,0 +1,18 @@
+extends: existence
+message: "Weak modifier '%s' weakens the statement (rule 4.12). Remove or replace with substance."
+level: warning
+ignorecase: true
+nonword: false
+tokens:
+  - '\bobviously\b'
+  - '\bessentially\b'
+  - '\bbasically\b'
+  - '\bactually\b'
+  - '\bliterally\b'
+  - '\bsomewhat\b'
+  - '\b(?:is|are|was|were|feels|felt|seems|seemed|looks|looked|gets|got|becomes|became)\s+(?:kind|sort) of\b'
+  - '\bin some sense\b'
+  - '\bin a way\b'
+  - '\bin some way\b'
+  - '\bneedless to say\b'
+  - '\bit goes without saying\b'

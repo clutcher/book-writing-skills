@@ -1,0 +1,26 @@
+version: 1
+book:
+  title: A Small Test Book
+  subtitle: Built From Fixtures
+  author: Ada Example
+  language: en-GB
+  accessibility_summary: A short test summary.
+  format: 5x8
+  font: latin-modern
+  font_size: 11pt
+  chapter_style: canonical
+  part_pages: true
+  part_overview: true
+  epub_identifier: 978-0-00-000000-2
+  publication_date: "2030"
+  publisher: Test Press
+  subjects: Testing, Books
+  latex_commands_to_drop: [enlargethispage]
+  language_codes:
+    welsh: cy
+  heading_types:
+    Foreword: foreword
+  emblem_alt: Test press emblem
+manuscript:
+  dir: manuscript
+  references: manuscript/900-references.md

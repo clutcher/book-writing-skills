@@ -1,0 +1,8 @@
+version: 1
+book:
+  title: A Standard Fixture Book
+  author: Sam Example
+manuscript:
+  dir: manuscript
+sources:
+  backup: null
