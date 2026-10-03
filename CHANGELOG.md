@@ -3,6 +3,39 @@
 The plugin is in early 0.x versions: names, modes and config keys may still change between
 versions. A change that needs work in an existing book is named here.
 
+## 0.5.0
+
+Research papers, next to books.
+
+- New top-level `book.yaml` key `kind`: `book` (the default) or `paper`. A paper's settings live
+  under `paper:` (authors, abstract, template, engine, anonymous, arxiv_category,
+  abstract_max_words, format); every key and its default is in
+  `plugins/book/skills/init/references/book-yaml.md`.
+- `/book:init new paper` writes a starter paper (abstract, introduction with a numbered
+  contribution list, related work, method, results, threats to validity, conclusion,
+  references), with no cover and no sales text. It works in a folder that already holds other
+  files and never writes over one.
+- build-editions: a `paper` edition (pandoc to a kept `.tex`, then xelatex or pdflatex),
+  `--anonymous` for double-blind review, and `--arxiv` for the arXiv source bundle. New check
+  `arxiv-bundle-check.py` compiles the bundle in a clean folder.
+- build-editions: four built-in paper templates, chosen by `paper.template`: `article` (the
+  default), `acm` (`acmart` sigconf), `ieee` (`IEEEtran` conference) and `lncs` (`llncs`). The
+  author switches venue by changing that one key; each builds with xelatex and pdflatex, and an
+  anonymous build leaves out every author (`acm` also turns on the class's `anonymous,review`).
+  Any other value, a template file included, is a `wrong-value` defect; a new venue is added
+  to the plugin as a new built-in template. Citations keep their alpha labels in every template.
+- New tool key `tools.paper_tex_image`, full TeX Live 2025 pinned by digest
+  (`texlive/texlive:TL2025-historic`, 2.6 GB, pulled on the first paper build). Every paper
+  PDF and every arXiv bundle check compiles there, with the same classes arXiv has; the pandoc
+  step stays in `tools.pandoc_image`, and a paper never uses `tools.pandoc_volume`.
+- write-text: a paper voice profile (`profiles/paper-voice.md`) and paper rules (section 13);
+  new check `paper-check.py` (abstract length, contribution list, every figure and table
+  referenced, a threats-to-validity section).
+- run-checks: a paper skips the cover and sales-text groups and runs the two paper checks.
+- review-text and review-ideas read a paper as sections, not chapters.
+
+Nothing changes for a book: `kind` defaults to `book`.
+
 ## 0.4.0
 
 One folder layout, one config file, current names only.

@@ -8,7 +8,7 @@ This rule is for Claude sessions in this repository: the maintainer handles git.
 
 ## What it is
 
-A Claude Code plugin marketplace with one plugin, `book` (install id `book@book-writing-skills`): skills that help anyone write, check, review and publish a non-fiction book. Nothing in a skill may assume one particular book, author, folder layout or machine.
+A Claude Code plugin marketplace with one plugin, `book` (install id `book@book-writing-skills`): skills that help anyone write, check, review and publish a non-fiction book, or a research paper for arXiv (`kind: paper` in `book.yaml`). Nothing in a skill may assume one particular book, author, folder layout or machine.
 
 ```
 .claude-plugin/marketplace.json

@@ -27,11 +27,25 @@ KIND_OTHER = "other"
 MANUSCRIPT_KINDS = (KIND_FRONT_MATTER, KIND_PART, KIND_CHAPTER, KIND_REFERENCES,
                     KIND_BACK_MATTER, KIND_OTHER)
 
+KIND_BOOK = "book"
+KIND_PAPER = "paper"
+DOCUMENT_KINDS = (KIND_BOOK, KIND_PAPER)
+
+PAPER_BUILT_IN_TEMPLATE = "article"
+PAPER_BUILT_IN_TEMPLATES = ("article", "acm", "ieee", "lncs")
+PAPER_ENGINES = ("xelatex", "pdflatex")
+PAPER_FORMATS = ("a4", "letter")
+PAPER_FRONT_MATTER = ["00[0-9]-*.md"]
+PAPER_AUTHOR_FIELDS = ("name", "affiliation", "email")
+PUBLISHING_KEY_PREFIXES = ("publishing.", "cover.", "sales_text.")
+
 CHAPTER_PATTERN = r"(?:^|-)chapter-(\d+)\.md$"
 PART_PATTERN = r"^(\d+-)?part-[\w-]+\.md$"
 
 BIBTEX_IMAGE = ("blang/latex:ubuntu@sha256:"
                 "2c32abc3555a01e180528d542955e2730f7f3793cdeba49b1655de9b897cbafb")
+PAPER_TEX_IMAGE = ("texlive/texlive:TL2025-historic@sha256:"
+                   "7056390eac37715fd3e01875037ceb4016cb17d44c611f7bbbfa7a012007979f")
 GLOSSARY_HEADING_SEPARATOR = " -- "
 GLOSSARY_LOCATION_PATTERN = r"^(?:Ch(?:apter)?\.?\s*(?P<chapter>\d+)\b|(?P<file>[A-Za-z][\w-]*))"
 
@@ -51,6 +65,7 @@ BOOK_KEYS = frozenset((
 
 SHARED_DEFAULTS = {
     "version": 1,
+    "kind": KIND_BOOK,
     "book": {"language": "en-US", "accessibility_summary": None, "format": "6x9"},
     "manuscript": {
         "dir": "manuscript",
@@ -128,11 +143,22 @@ SHARED_DEFAULTS = {
         "term_phases": None,
         "words_per_page": None,
     },
+    "paper": {
+        "authors": [],
+        "abstract": "manuscript/010-abstract.md",
+        "template": PAPER_BUILT_IN_TEMPLATE,
+        "engine": "xelatex",
+        "anonymous": False,
+        "arxiv_category": None,
+        "abstract_max_words": 250,
+        "format": "a4",
+    },
     "tools": {
         "pandoc_image": "pandoc/extra:3.8.3",
         "pandoc_volume": "book-to-pdf-texlive",
         "vale_image": "jdkato/vale:v3.14.2",
         "bibtex_image": BIBTEX_IMAGE,
+        "paper_tex_image": PAPER_TEX_IMAGE,
         "render_image": None,
         "epubcheck": "5.1.0",
     },
@@ -211,8 +237,8 @@ PATH_KEYS = (
     "readers_review.room", "readers_review.sources_for_reviewer",
 )
 
-TOOL_KEYS = ("pandoc_image", "pandoc_volume", "vale_image", "bibtex_image", "render_image",
-             "epubcheck")
+TOOL_KEYS = ("pandoc_image", "pandoc_volume", "vale_image", "bibtex_image", "paper_tex_image",
+             "render_image", "epubcheck")
 
 METADATA_PATH_KEYS = ("cover_front", "cover_back", "ebook_cover")
 
@@ -899,8 +925,28 @@ class ToolSettings:
     pandoc_volume: str
     vale_image: str
     bibtex_image: str
+    paper_tex_image: str
     render_image: str
     epubcheck: str
+
+
+@dataclass
+class PaperAuthor:
+    name: str
+    affiliation: str = None
+    email: str = None
+
+
+@dataclass
+class PaperSettings:
+    authors: list
+    abstract: Path
+    template: str
+    engine: str
+    anonymous: bool
+    arxiv_category: str
+    abstract_max_words: int
+    format: str
 
 
 @dataclass
@@ -920,7 +966,9 @@ class BookConfig:
     config_file: Path
     source: str
     version: int
+    kind: str
     book: BookMetadata
+    paper: PaperSettings
     manuscript: ManuscriptSettings
     terms: Terms
     thinking: ThinkingSettings
@@ -988,6 +1036,10 @@ class BookConfig:
         }
 
     @property
+    def is_paper(self):
+        return self.kind == KIND_PAPER
+
+    @property
     def trim(self):
         return self.cover.trim or self.book.get("format")
 
@@ -1024,6 +1076,8 @@ def _build(settings, root, config_file, source, key_origins):
                                     sales_text=path("publishing.sales_text"))
     cover_final = path("cover.final") or _cover_default(publishing.cover, "final")
     book_values = _with_shipped_cover(settings.get("book") or {}, cover_final, root)
+    kind = str(settings.get("kind") or KIND_BOOK).strip().lower()
+    paper = _paper_settings(settings.get("paper") or {}, root, book_values.get("author"))
     terms = settings.get("terms") or {}
     families = []
     for family in terms.get("families") or []:
@@ -1036,15 +1090,17 @@ def _build(settings, root, config_file, source, key_origins):
         config_file=config_file,
         source=source,
         version=settings.get("version"),
+        kind=kind,
         book=BookMetadata(book_values, root),
+        paper=paper,
         manuscript=ManuscriptSettings(
             dir=path("manuscript.dir"),
             order=manuscript.get("order") or "natural",
             files=_as_list(manuscript.get("files")),
             chapter_pattern=manuscript.get("chapter_pattern") or CHAPTER_PATTERN,
             part_pattern=manuscript.get("part_pattern") or PART_PATTERN,
-            front_matter=_as_list(manuscript.get("front_matter")),
-            back_matter=_as_list(manuscript.get("back_matter")),
+            front_matter=_front_matter_patterns(manuscript, kind, paper, key_origins),
+            back_matter=_back_matter_patterns(manuscript, kind, key_origins),
             references=path("manuscript.references"),
             summary_heading=manuscript.get("summary_heading") or "Summary",
         ),
@@ -1096,6 +1152,68 @@ def _build(settings, root, config_file, source, key_origins):
         settings=settings,
         key_origins=key_origins,
     )
+
+
+def _set_by_the_book(key_origins, dotted_key):
+    return key_origins.get(dotted_key, SOURCE_DEFAULTS) != SOURCE_DEFAULTS
+
+
+def _front_matter_patterns(manuscript, kind, paper, key_origins):
+    if kind != KIND_PAPER or _set_by_the_book(key_origins, "manuscript.front_matter"):
+        return _as_list(manuscript.get("front_matter"))
+    patterns = list(PAPER_FRONT_MATTER)
+    if paper.abstract is not None:
+        patterns.append(paper.abstract.name)
+    return patterns
+
+
+def _back_matter_patterns(manuscript, kind, key_origins):
+    if kind != KIND_PAPER or _set_by_the_book(key_origins, "manuscript.back_matter"):
+        return _as_list(manuscript.get("back_matter"))
+    return []
+
+
+def _paper_settings(paper, root, book_author):
+    defaults = SHARED_DEFAULTS["paper"]
+    template = str(paper.get("template") or PAPER_BUILT_IN_TEMPLATE).strip()
+    return PaperSettings(
+        authors=_paper_authors(paper.get("authors"), book_author),
+        abstract=_resolve(root, paper.get("abstract")),
+        template=template,
+        engine=str(paper.get("engine") or defaults["engine"]).strip().lower(),
+        anonymous=paper.get("anonymous") is True,
+        arxiv_category=paper.get("arxiv_category") or None,
+        abstract_max_words=_whole_number(paper.get("abstract_max_words"),
+                                         defaults["abstract_max_words"]),
+        format=str(paper.get("format") or defaults["format"]).strip().lower(),
+    )
+
+
+def _paper_authors(written, book_author):
+    authors = [author for author in (_paper_author(item) for item in _as_list(written))
+               if author is not None]
+    if authors or not book_author:
+        return authors
+    return [PaperAuthor(str(book_author))]
+
+
+def _paper_author(item):
+    if isinstance(item, str) and item.strip():
+        return PaperAuthor(item.strip())
+    if isinstance(item, dict) and str(item.get("name") or "").strip():
+        return PaperAuthor(**{name: _text_or_none(item.get(name))
+                              for name in PAPER_AUTHOR_FIELDS})
+    return None
+
+
+def _text_or_none(value):
+    return None if value is None or str(value).strip() == "" else str(value).strip()
+
+
+def _whole_number(value, fallback):
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        return fallback
+    return value
 
 
 def _cmyk_limit(value):
@@ -1239,6 +1357,8 @@ def natural_sort_key(text):
 def classify(path, config=None):
     config = config or load_config()
     path = Path(path)
+    if config.is_paper:
+        return _classify_paper_file(path, config)
     name = path.name
     if config.manuscript.references and path.resolve() == config.manuscript.references:
         return KIND_REFERENCES, None
@@ -1254,6 +1374,41 @@ def classify(path, config=None):
     return KIND_OTHER, None
 
 
+def _classify_paper_file(path, config):
+    kind = _paper_file_kind(path, config)
+    if kind != KIND_CHAPTER:
+        return kind, None
+    return KIND_CHAPTER, _paper_section_number(path, config)
+
+
+def _paper_file_kind(path, config):
+    resolved = path.resolve()
+    if config.manuscript.references and resolved == config.manuscript.references:
+        return KIND_REFERENCES
+    if config.paper.abstract and resolved == config.paper.abstract:
+        return KIND_FRONT_MATTER
+    if _matches_any(path.name, config.manuscript.front_matter):
+        return KIND_FRONT_MATTER
+    if _matches_any(path.name, config.manuscript.back_matter):
+        return KIND_BACK_MATTER
+    return KIND_CHAPTER
+
+
+def _paper_section_number(path, config):
+    try:
+        ordered = _ordered_manuscript_paths(config)
+    except ConfigError:
+        return None
+    sections = [candidate.resolve() for candidate in ordered
+                if _paper_file_kind(candidate, config) == KIND_CHAPTER]
+    resolved = path.resolve()
+    return sections.index(resolved) + 1 if resolved in sections else None
+
+
+def _matches_any(name, patterns):
+    return any(fnmatch.fnmatch(name, pattern) for pattern in patterns)
+
+
 def chapter_number(path, config=None):
     kind, number = classify(path, config)
     return number if kind == KIND_CHAPTER else None
@@ -1261,6 +1416,17 @@ def chapter_number(path, config=None):
 
 def manuscript_files(config=None, kinds=None):
     config = config or load_config()
+    paths = _ordered_manuscript_paths(config)
+    wanted = set(_as_list(kinds)) if kinds else None
+    result = []
+    for path in paths:
+        kind, number = classify(path, config)
+        if wanted is None or kind in wanted:
+            result.append(ManuscriptFile(path, kind, number))
+    return result
+
+
+def _ordered_manuscript_paths(config):
     folder = config.manuscript.dir
     if config.manuscript.order == "list":
         paths = [_resolve(folder, name) for name in config.manuscript.files]
@@ -1274,13 +1440,7 @@ def manuscript_files(config=None, kinds=None):
     else:
         raise ConfigError(f"manuscript.order must be 'natural' or 'list', "
                           f"not {config.manuscript.order!r}")
-    wanted = set(_as_list(kinds)) if kinds else None
-    result = []
-    for path in paths:
-        kind, number = classify(path, config)
-        if wanted is None or kind in wanted:
-            result.append(ManuscriptFile(path, kind, number))
-    return result
+    return paths
 
 
 def _shell_name(prefix, dotted_key):
@@ -1309,7 +1469,28 @@ def shell_paths(config):
         lines.append(f"{_shell_name('BOOK_', key)}={shlex.quote(_plain(value))}")
     for key, value in vars(config.tools).items():
         lines.append(f"{_shell_name('BOOK_TOOLS_', key)}={shlex.quote(_plain(value))}")
+    for name, value in shell_paper_values(config).items():
+        lines.append(f"{name}={shlex.quote(value)}")
     return "\n".join(lines)
+
+
+def shell_paper_values(config):
+    paper = config.paper
+    return {
+        "BOOK_KIND": config.kind,
+        "PAPER_TEMPLATE": paper.template,
+        "PAPER_ENGINE": paper.engine,
+        "PAPER_ANONYMOUS": _plain(paper.anonymous),
+        "PAPER_FORMAT": paper.format,
+        "PAPER_ABSTRACT": _plain(paper.abstract),
+        "PAPER_AUTHORS": _plain(paper_authors_data(paper)),
+        "PAPER_ARXIV_CATEGORY": _plain(paper.arxiv_category),
+        "PAPER_ABSTRACT_MAX_WORDS": _plain(paper.abstract_max_words),
+    }
+
+
+def paper_authors_data(paper):
+    return [vars(author) for author in paper.authors]
 
 
 def shell_metadata(config):
@@ -1329,7 +1510,11 @@ def as_dict(config):
         "config_file": _plain(config.config_file) or None,
         "source": config.source,
         "version": config.version,
+        "kind": config.kind,
         "book": config.book.values,
+        "paper": {**{key: _plain(value) or None if isinstance(value, Path) else value
+                     for key, value in vars(config.paper).items() if key != "authors"},
+                  "authors": paper_authors_data(config.paper)},
         "paths": {key: _plain(value) or None for key, value in config.resolved_paths().items()},
         "manuscript": {
             "order": config.manuscript.order,
@@ -1354,6 +1539,7 @@ def as_dict(config):
 
 def _show(config):
     print(f"root            {config.root}")
+    print(f"kind            {config.kind}")
     print(f"read from       {config.source}"
           + (f"  ({config.config_file})" if config.config_file else ""))
     print("\npaths")
@@ -1379,6 +1565,7 @@ def _show(config):
 
 CHECK_CLASSES = {
     "unknown-key": "defect",
+    "wrong-value": "defect",
     "missing-path": "informational",
     "no-config-file": "informational",
 }
@@ -1393,10 +1580,55 @@ def _check(config, output_format):
             report.add(key, "unknown-key", f"{name}: no script reads '{key}'")
     else:
         report.add("-", "no-config-file", f"no book.yaml found; using {config.source}")
-    for key, value in config.resolved_paths().items():
+    for key, message in wrong_values(config):
+        report.add(key, "wrong-value", message)
+    for key, value in _paths_to_check(config).items():
         if value is not None and not value.exists():
             report.add(key, "missing-path", str(value))
     return report.emit(output_format)
+
+
+def _paths_to_check(config):
+    paths = config.resolved_paths()
+    if not config.is_paper:
+        return paths
+    kept = {key: value for key, value in paths.items()
+            if not key.startswith(PUBLISHING_KEY_PREFIXES)}
+    kept["paper.abstract"] = config.paper.abstract
+    return kept
+
+
+def wrong_values(config):
+    paper = config.settings.get("paper") or {}
+    found = []
+    if config.kind not in DOCUMENT_KINDS:
+        found.append(("kind", f"kind must be one of {', '.join(DOCUMENT_KINDS)}, "
+                              f"not {config.settings.get('kind')!r}"))
+    if config.paper.engine not in PAPER_ENGINES:
+        found.append(("paper.engine", f"paper.engine must be one of {', '.join(PAPER_ENGINES)}, "
+                                      f"not {paper.get('engine')!r}"))
+    if config.paper.format not in PAPER_FORMATS:
+        found.append(("paper.format", f"paper.format must be one of {', '.join(PAPER_FORMATS)}, "
+                                      f"not {paper.get('format')!r}"))
+    if config.paper.template not in PAPER_BUILT_IN_TEMPLATES:
+        found.append(("paper.template", f"paper.template must be one of "
+                                        f"{', '.join(PAPER_BUILT_IN_TEMPLATES)}, not "
+                                        f"{config.paper.template!r}; a venue not in this list is "
+                                        f"added to the plugin as a new built-in template"))
+    if _whole_number(paper.get("abstract_max_words"), None) is None:
+        found.append(("paper.abstract_max_words", f"paper.abstract_max_words must be a whole "
+                                                  f"number above 0, not "
+                                                  f"{paper.get('abstract_max_words')!r}"))
+    if not isinstance(paper.get("anonymous"), bool):
+        found.append(("paper.anonymous", f"paper.anonymous must be true or false, "
+                                         f"not {paper.get('anonymous')!r}"))
+    authors = paper.get("authors")
+    if authors is not None and not isinstance(authors, list):
+        found.append(("paper.authors", "paper.authors must be a list"))
+    for item in authors if isinstance(authors, list) else []:
+        if _paper_author(item) is None:
+            found.append(("paper.authors", f"every paper author needs a name, got {item!r}"))
+    return found
 
 
 def main(argv=None):

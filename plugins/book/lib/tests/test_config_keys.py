@@ -255,6 +255,13 @@ class ToolKeysTest(unittest.TestCase):
         # then
         self.assertRegex(image, r"^blang/latex:ubuntu@sha256:[0-9a-f]{64}$")
 
+    def test_should_pin_the_paper_tex_image_to_tex_live_2025_by_digest(self):
+        # when
+        image = load_config(start=NEW_BOOK).tools.paper_tex_image
+
+        # then
+        self.assertRegex(image, r"^texlive/texlive:TL2025-historic@sha256:[0-9a-f]{64}$")
+
     def test_should_print_tool_settings_when_paths_are_asked_for_shell(self):
         # when
         result = run_script("book_config.py", "paths", "--shell", cwd=NEW_BOOK)

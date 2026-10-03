@@ -148,6 +148,20 @@ def check_default_lenses(check, work):
                  code == 2 and "no lens report" in output, output)
 
 
+def check_paper_room(check, work):
+    paper = work / "paper"
+    room = work / "paper-readers-review"
+    shutil.copytree(FIXTURES_DIR / "book", paper)
+    code, output = run(CLEAN_ROOM, "--set", "kind=paper", "setup", "--fix", cwd=paper)
+    check.expect("setup for a paper exits 0", code == 0, output)
+    if code != 0:
+        return
+    back_cover = (room / "book" / "back-cover.md").read_text(encoding="utf-8")
+    facts = (room / "book" / "facts.md").read_text(encoding="utf-8")
+    check.expect("a paper room says a paper has no back cover", "A paper has no back cover" in back_cover)
+    check.expect("a paper room says it is a paper", "a research paper" in facts, facts)
+
+
 def check_state_progress(check, room):
     fixtures = FIXTURES_DIR / "review"
     review = room / "review"
@@ -285,6 +299,7 @@ def main(argv=None):
         checks_file.write_text("citation checks: clean\n", encoding="utf-8")
         check_setup(check, book, room, checks_file)
         check_default_lenses(check, work)
+        check_paper_room(check, work)
         check_folder_that_is_not_a_room(check, book, work)
         if room.is_dir():
             check_refresh_without_results(check, book, room, checks_file)

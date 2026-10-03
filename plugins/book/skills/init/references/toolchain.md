@@ -48,4 +48,6 @@ Vale needs no local install: it runs in Docker from `tools.vale_image`. BibTeX n
   moved or removed without `sudo`; the author removes it by hand.
 - **Images are pulled on first use** by the script that needs them. `--pull` fetches them all at
   once, which is worth doing before working offline. The pandoc image's TeX packages and fonts
-  live in the Docker volume `tools.pandoc_volume`, which the build fills itself.
+  live in the Docker volume `tools.pandoc_volume`, which the build fills itself. A paper also
+  needs `tools.paper_tex_image`, full TeX Live 2025 (2.6 GB) as on arXiv; the check lists it
+  for a paper only.

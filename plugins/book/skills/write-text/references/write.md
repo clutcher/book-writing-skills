@@ -8,8 +8,9 @@ This workflow applies the style guide to write new content or rewrite existing c
 
 The one-liners of every rule are in `SKILL.md`, which is already in context. Before writing:
 
-- Read the book's **voice profile** (`rules.voice`, or `profiles/default.md`). Rules marked "per
-  the voice profile" take their form and numbers from it.
+- Read the book's **voice profile** (`rules.voice`, or `profiles/default.md`;
+  `profiles/paper-voice.md` for a paper). Rules marked "per the voice profile" take their form
+  and numbers from it. For a paper, `SKILL.md` under "A book or a paper" says which rules change.
 - Read the decisions index (`decisions.py index`) and open the entries for the chapter or
   topic (`decisions.py show ID`): a decided wording or a rejected option is not yours to change.
 - For any hard case, read the full rule in `references/rules-explained.md`: a connector or causal
@@ -218,6 +219,7 @@ python3 $SCRIPTS/ascii-normalize.py <file>                            # non-ASCI
 python3 $SCRIPTS/unclear-this-check.py <file>                         # dangling "This/That/These/Those/The + noun"
 python3 $SCRIPTS/word-for-two-things-check.py <file>                  # container-word drift
 python3 $SCRIPTS/term-density-check.py                                # when a coined term was touched
+python3 $SCRIPTS/paper-check.py                                       # a paper: abstract, contributions, figures, threats
 ```
 
 When the text contains citations, run the check-facts skill's reference checks as well.

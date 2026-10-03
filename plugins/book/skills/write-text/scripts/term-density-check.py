@@ -28,6 +28,8 @@ chapter files for a book whose names the config does not match.
 `--all-kinds` also lists the usage and drift guards.
 
 The research behind every threshold is in `references/coined-terms.md` of this skill.
+A paper (`kind: paper`) says SKIPPED: it defines each term once, before its first use, and
+has no learning path; --first-use and --terms still run on a paper.
 The report is advisory: the exit code is 0 unless the check could not run (2).
 """
 
@@ -41,8 +43,8 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 
-from book_files import (ConfigError, SAMPLE_BOOK, add_config_arguments, config_for_targets,
-                        natural_sort_key, tool_failed)
+from book_files import (ConfigError, FIXTURES_DIR, SAMPLE_BOOK, add_config_arguments,
+                        config_for_targets, natural_sort_key, tool_failed)
 from book_config import TermFamily
 
 WORDS_PER_PAGE = 390
@@ -53,6 +55,8 @@ LEARNING_MAX = 15
 ANTONYM_WINDOW = 100
 MAX_PER_PARAGRAPH = 2
 WITHIN_CHAPTER_DESERT = 3000
+PAPER_SKIP = ("SKIPPED   a paper defines each term once, before its first use; the learning path "
+              "of coined terms (rules 3.9-3.14) is for a book. --first-use still runs")
 
 
 FUNCTION_WORDS_AFTER = {
@@ -1247,6 +1251,9 @@ def run(argv):
         path = options.path or str(config.manuscript.dir)
         if options.first_use:
             return run_first_use(options, config, path)
+        if config.is_paper and not options.terms:
+            print(PAPER_SKIP)
+            return 0
         compounds = []
         run_compound_drift = True
         if options.terms:
@@ -1320,6 +1327,12 @@ def self_test():
         failures.append("--first-use did not find the bold first use of 'float test'")
     if "rich dough [definition sentence] | first use:" not in output.getvalue():
         failures.append("--first-use did not read the qualified heading located at 'Chapter 1'")
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        exit_code = run(["--config", str(FIXTURES_DIR / "sample-paper" / "book.yaml"),
+                         "--set", "terms.families=[{term: dawn watering, role: primary}]"])
+    if exit_code != 0 or not output.getvalue().startswith("SKIPPED   a paper"):
+        failures.append("a paper with coined terms did not say SKIPPED")
     failures.extend(glossary_without_term_headings_failures())
     failures.extend(several_antonym_pairs_failures())
     for line in failures:

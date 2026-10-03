@@ -1,0 +1,7 @@
+version: 1
+kind: paper
+book:
+  title: Watering Small Gardens
+  author: Sam Writer
+paper:
+  abstract_max_words: 40

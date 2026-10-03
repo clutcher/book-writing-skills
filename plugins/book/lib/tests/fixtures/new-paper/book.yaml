@@ -1,0 +1,12 @@
+# A small paper used by the tests.
+version: 1
+kind: paper
+book:
+  title: "Watering Small Gardens: A Field Study"
+  author: Sam Example
+paper:
+  authors:
+    - {name: Sam Example, affiliation: Garden School, email: sam@example.org}
+    - name: Lee Sample
+  arxiv_category: cs.SE
+  abstract_max_words: 200

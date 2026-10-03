@@ -3,7 +3,8 @@
 
 With no path, every manuscript file of the book is checked. The numbers (sentence and paragraph
 limits, the fronted-inversion floor) come from the voice profile: the book's `rules.voice` file,
-else `profiles/default.md` in this skill; `--set writing.<key>=VALUE` overrides one.
+else `profiles/default.md` in this skill (`profiles/paper-voice.md` for a paper);
+`--set writing.<key>=VALUE` overrides one.
 
 Modes:
     (default)       sentence and paragraph limits (rules 3.4, 3.6)
@@ -16,7 +17,8 @@ Modes:
                     pass the whole manuscript, because a gap can cross a chapter boundary
 
 The scan skips headings, code blocks (a paragraph boundary), tables, list items and bibliography
-lines. Short questions and lead-ins ending in ":" may run short. Quoted text is not counted.
+lines. Short questions and lead-ins ending in ":" may run short, and a paragraph that ends in
+":" leads into a list, so it has no paragraph length. Quoted text is not counted.
 Exit codes: 0 clean, 1 findings, 2 the check could not run.
 """
 
@@ -30,7 +32,7 @@ from typing import List, Tuple, NamedTuple
 
 sys.dont_write_bytecode = True
 
-from book_files import (ConfigError, SAMPLE_BOOK, add_config_arguments,
+from book_files import (ConfigError, FIXTURES_DIR, SAMPLE_BOOK, add_config_arguments,
                         coined_words, config_for_targets, is_english_book, markdown_files,
                         skipped_for_language, tool_failed)
 from citation_key import BIB_ENTRY
@@ -1015,6 +1017,10 @@ def is_short_acceptable(sentence: str, word_count: int) -> bool:
     return False
 
 
+def is_lead_in(paragraph: str) -> bool:
+    return paragraph.rstrip().endswith(':')
+
+
 def is_paragraph_length_exempt(filepath: str) -> bool:
     if EXEMPT_FILES and Path(filepath).resolve() in EXEMPT_FILES:
         return True
@@ -1045,7 +1051,7 @@ def analyze_file(filepath: str) -> Tuple[List[Issue], List[Paragraph]]:
         para_sentences = split_paragraph_into_sentences(para_text, para_line)
         sentence_count = len(para_sentences)
 
-        is_countable = is_prose
+        is_countable = is_prose and not is_lead_in(para_text)
 
         paragraphs.append(Paragraph(
             text=para_text,
@@ -1529,6 +1535,8 @@ def self_test() -> int:
          'SKIPPED'),
         (['--config', str(SAMPLE_BOOK / 'book.yaml'), '--set', 'thinking.argument=manuscript',
           chapter], 0, 'OK'),
+        (['--config', str(FIXTURES_DIR / 'sample-paper' / 'book.yaml'),
+          str(FIXTURES_DIR / 'sample-paper' / 'manuscript' / '020-introduction.md')], 0, 'OK'),
     ]
     for arguments, expected_exit, expected_text in cases:
         output = io.StringIO()

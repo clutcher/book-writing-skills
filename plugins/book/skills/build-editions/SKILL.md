@@ -4,14 +4,18 @@ description: >-
   Builds the book from its Markdown manuscript into a print PDF for a KDP paperback, a PDF for
   screens and a checked EPUB 3 for ebook stores and Kindle. Use it when the author asks to
   build, make or export the book, a PDF, an EPUB or a Kindle file, a draft or a reviewer copy,
-  one chapter as PDF, or a copy that shows what changed since the last review. For the cover
-  files use design-cover; for the store texts use prepare-sales-text.
-argument-hint: "[all|print|digital|epub] [--final|--reviewer-copy NAME|--changes-since COMMIT]"
+  one chapter as PDF, or a copy that shows what changed since the last review. For a paper
+  (kind: paper) it builds the paper PDF and its LaTeX source, an anonymous copy for
+  double-blind review, and the arXiv source bundle, checked by compiling it in a clean folder.
+  For the cover files use design-cover; for the store texts use prepare-sales-text.
+argument-hint: "[all|print|digital|epub|paper] [--final|--reviewer-copy NAME|--changes-since COMMIT|--arxiv|--anonymous]"
 ---
 
 # Build editions
 
 Turn the manuscript into book files with pandoc, XeLaTeX and the EPUB writer, all in Docker.
+For a paper (`kind: paper` in `book.yaml`) it makes the paper PDF, its LaTeX source and, when
+asked, the arXiv source bundle.
 
 Scripts live in `${CLAUDE_PLUGIN_ROOT}/skills/build-editions/scripts/`. Below, `build-book.sh` means
 `${CLAUDE_PLUGIN_ROOT}/skills/build-editions/scripts/build-book.sh`.
@@ -24,6 +28,7 @@ Scripts live in `${CLAUDE_PLUGIN_ROOT}/skills/build-editions/scripts/`. Below, `
 | `print` | `build-book.sh --edition print` | KDP paperback interior: two-sided, gutter margins |
 | `digital` | `build-book.sh --edition digital` | screen PDF: one-sided, centred text block, live links, covers bound in |
 | `epub` | `build-book.sh --edition epub` | EPUB 3 whose text flows to fit the screen, checked with epubcheck |
+| `paper` | `build-book.sh` in a paper | research article PDF and its `.tex`; the only edition of a paper ([below](#the-paper-edition)) |
 
 Flags that work with any mode:
 
@@ -32,6 +37,8 @@ Flags that work with any mode:
 | `--final` | no draft marks, no protection, fixed file name |
 | `--reviewer-copy "Name"` | draft with the reviewer's name and PDF protection |
 | `--changes-since <commit>` | PDF with everything new since that commit on a yellow background |
+
+`--reviewer-copy` and `--changes-since` are for a book only.
 
 Always build drafts while working. Build `--final` only when the author asks for the file that
 ships.
@@ -112,6 +119,51 @@ the file is not fit to publish; a draft gets the same list. An all-editions run 
 at the end for all three files. The text searched for is `book.placeholder_text`
 (default `TO BE ASSIGNED`).
 
+## The paper edition
+
+When `book.yaml` says `kind: paper`, the default edition and `all` build `paper`; `print`,
+`digital` and `epub` are refused with a message, because a paper has none of them.
+
+| Flag | Output |
+|------|--------|
+| (none) | `title-lastname-draft-TIMESTAMP.pdf` and `.tex` (the draft has no marks; only its name says draft) |
+| `--final` | `title-lastname.pdf` and `title-lastname.tex` |
+| `--anonymous` | no author, affiliation or email in the PDF or the `.tex`; the names end in `-anonymous` (also `paper.anonymous: true`) |
+| `--arxiv` | also `title-lastname-arxiv.tar.gz`, the arXiv source bundle, then checks it |
+
+How it is built: pandoc (in `tools.pandoc_image`) writes the `.tex` from the built-in template
+that `paper.template` names, and the `.tex` stays in the output folder beside the PDF. The
+author changes venue by changing that one key:
+
+| `paper.template` | Class | Template file in `assets/templates/` |
+|------------------|-------|--------------------------------------|
+| `article` (default) | LaTeX `article`, one column | `paper-article.tex` |
+| `acm` | `acmart`, `sigconf`; anonymous adds the class options `anonymous,review` | `paper-acm.tex` |
+| `ieee` | `IEEEtran`, `conference`; anonymous leaves out the author block | `paper-ieee.tex` |
+| `lncs` | `llncs`, `runningheads`; anonymous leaves out authors and institutes | `paper-lncs.tex` |
+
+Any other value is refused. A venue not in the list is added to the plugin as a new built-in
+template, never kept as a template file in one paper. latexmk then runs `paper.engine`
+(`xelatex` or `pdflatex`) in `tools.paper_tex_image`, full TeX Live 2025 as on arXiv, in a
+build folder that holds only the `.tex` and the images it uses. Every template builds with
+both engines. The abstract file (`paper.abstract`) fills the abstract
+field and is never part of the body. Each section file starts with one `#` heading, which
+becomes a numbered `\section`; `##` becomes `\subsection`. The references heading is left
+unnumbered. Images are written relative to the manuscript folder, as `images/plot.pdf` for
+`manuscript/images/plot.pdf`. `[Key]` citations link to the references file as in the screen
+PDF of a book. The paper size is `paper.format` (`a4` or `letter`); `paper.arxiv_category` is
+shown in the build report only.
+
+**The arXiv bundle.** arXiv takes TeX source, not a PDF made from TeX, and compiles it itself
+with pdflatex, xelatex or DVI latex (not lualatex), on TeX Live 2025 by default. The bundle
+holds the main `.tex`, the images it uses and a `.bbl` named like the main `.tex` when there is
+one; never `.aux`, `.log`, the PDF or a hidden file. A file name with a space stops the build.
+The templates set no `\pdfoutput`: arXiv says not to use it to change the output format.
+After writing the bundle the build runs `arxiv-bundle-check.py` on it, which unpacks it into a
+clean folder, compiles it in `tools.paper_tex_image` with no network and checks those rules.
+arXiv has the classes `acmart`, `IEEEtran` and `llncs`, so a venue bundle needs no class file. Upload the bundle; never
+upload the PDF to arXiv.
+
 ## Before you build
 
 - Read the index of the book's decisions file when it exists (`rules.decisions` in
@@ -126,6 +178,10 @@ at the end for all three files. The text searched for is `book.placeholder_text`
 
 - Docker, running. The image is `tools.pandoc_image` (pinned, default `pandoc/extra:3.8.3`);
   fonts and TeX packages are installed once into the Docker volume `tools.pandoc_volume`.
+  A paper compiles in `tools.paper_tex_image` instead (pinned, default
+  `texlive/texlive:TL2025-historic` by digest): full TeX Live 2025, as arXiv has it, with the
+  venue classes. It is 2.6 GB; the first paper build pulls it once and needs the network for
+  that. The paper edition never uses the volume.
 - bash 3.2 or newer for `build-book.sh` and the two settings files it sources: it starts
   pandoc and XeLaTeX in Docker and passes many settings through, and bash is on Linux and
   macOS already. On Windows the build needs WSL (Git Bash is not enough: it rewrites the
@@ -146,6 +202,7 @@ A missing optional tool makes that one step say `SKIPPED` and why; it never fail
 | Cache | Location | Cost when cold |
 |-------|----------|----------------|
 | TeX Live packages and fonts | Docker volume `tools.pandoc_volume` | minutes, once |
+| full TeX Live 2025, for a paper | Docker image `tools.paper_tex_image` | one 2.6 GB pull |
 | fontconfig index | `.fontconfig-cache/` inside that volume | a few seconds, once |
 | epubcheck | `~/.cache/book/build-editions/` (checked against a pinned sha256) | one download |
 
@@ -178,7 +235,11 @@ handling and limits: [changes-since.md](references/changes-since.md).
 | `diff-preprocess.py` | marks changed text for a `--changes-since` copy |
 | `code-font-check.py` | lists characters in the manuscript's code that the bundled EPUB code font lacks |
 | `key-pattern-check.py` | checks that the citation-link filter reads keys the same way `${CLAUDE_PLUGIN_ROOT}/lib/citation_key.py` does |
-| `self-check.py` | runs every script's self-test on the fixtures in `scripts/fixtures/`; needs no Docker (the steps that read settings through `build-book.sh` need bash) |
+| `paper-build.sh` | sourced by `build-book.sh`: the paper edition |
+| `paper-metadata.py` | writes the paper title block for pandoc: authors (none when anonymous) and the abstract |
+| `paper_source.py` | gathers the `.tex` and the images it uses into the build folder; writes the arXiv bundle |
+| `arxiv-bundle-check.py` | compiles an arXiv bundle in a clean folder in Docker and checks arXiv's file rules; SKIPPED without Docker or without a bundle |
+| `self-check.py` | runs every script's self-test on the fixture books and paper in `scripts/fixtures/`; needs no Docker (the steps that read settings through `build-book.sh` need bash) |
 
 Every Python script has `--help` and `--self-test`; those that read the book take
 `--config`/`--set`.

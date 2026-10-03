@@ -138,8 +138,9 @@ def named_files():
     for package_file in PACKAGE_FILES:
         if not (SCRIPTS / "vale" / "PlainBook" / f"{package_file}.yml").exists():
             missing.add(f"scripts/vale/PlainBook/{package_file}.yml")
-    if not (SKILL / "profiles" / "default.md").exists():
-        missing.add("profiles/default.md")
+    for profile in ("default.md", "paper-voice.md"):
+        if not (SKILL / "profiles" / profile).exists():
+            missing.add(f"profiles/{profile}")
     problems = [f"named but missing: {line}" for line in sorted(missing)]
     if not problems:
         print("  [OK]   every named script and reference exists")

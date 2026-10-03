@@ -5,11 +5,12 @@ Every skill runs without these tools: a check whose tool is missing prints SKIPP
 why. This check lists them all at once, so a new machine is set up in one pass instead of
 one SKIPPED line at a time.
 
-  docker            the build (all three editions), Vale, the bibliography key check
+  docker            the build (every edition), Vale, the bibliography key check
   bash              the build script (build-book.sh); on Windows it needs WSL until the
                     build runner moves to Python
   Docker images     the images pinned in book.yaml under `tools` (pandoc, Vale, BibTeX,
-                    and the cover render image when one is set); --pull fetches the missing ones
+                    for a paper the full TeX Live 2025 image (2.6 GB), and the cover render
+                    image when one is set); --pull fetches the missing ones
   tesseract         reading scanned sources (OCR)
   poppler           pdftotext, pdftoppm, pdfinfo, pdfimages, pdffonts: text from PDF sources,
                     OCR pages, page counts, scan detection
@@ -69,11 +70,14 @@ PROGRAMS = (
 )
 
 IMAGE_USES = {
-    "pandoc_image": "build-editions: all three editions",
+    "pandoc_image": "build-editions: every edition",
     "vale_image": "write-text: the Vale check",
     "bibtex_image": "check-facts: bibliography key check (key-bibtex-check.py)",
+    "paper_tex_image": "build-editions: the paper PDF and the arXiv bundle check",
     "render_image": "design-cover: drawing the cover without a local renderer",
 }
+
+PAPER_ONLY_IMAGES = ("paper_tex_image",)
 
 
 def first_found(names):
@@ -109,6 +113,8 @@ def book_images(config):
     images = []
     for key, use in IMAGE_USES.items():
         image = getattr(config.tools, key, None)
+        if key in PAPER_ONLY_IMAGES and not config.is_paper:
+            continue
         if image:
             images.append((key, image, use))
     return images

@@ -4,6 +4,11 @@ Self-contained review focused on the logical flow of ideas at every level: chapt
 
 **What this review catches:** Broken adjacency chains, premature conclusions, restatement disguised as development, weak transitions, summaries that recapitulate instead of synthesize, and forward disclosure.
 
+**For a paper** (`kind: paper`): a chapter here is one section of the paper, and the rules a
+paper turns off ("A book or a paper" in the write-text `SKILL.md`) are not findings.
+For a paper the abstract and the conclusion are the opening and the summary checked in
+Sections 4-5, and a pointer to a later section by number is not forward disclosure.
+
 ---
 
 ## How to Use This Review

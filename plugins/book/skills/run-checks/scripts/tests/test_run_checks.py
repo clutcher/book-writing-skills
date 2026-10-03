@@ -12,6 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "lib"))
 
 from command_runs import CommandResult
 
+sys.path.insert(0, str(SCRIPT.parent))
+
 
 def load_runner():
     spec = importlib.util.spec_from_file_location("run_checks", SCRIPT)
@@ -282,6 +284,83 @@ class RunChecksTest(unittest.TestCase):
         # then
         self.assertIn("no file changed since the last run",
                       self.line_of(output, "unclear-this-check.py"))
+
+    def test_shouldSkipTheArxivBundleAndThePaperCheckWhenTheBookIsNotAPaper(self):
+        # when
+        _, output = self.run_checks("text", "--no-vale", "--no-report")
+
+        # then
+        self.assertIn("a book has no arXiv bundle", self.line_of(output, "arxiv-bundle-check.py"))
+        self.assertIn("a book has no abstract", self.line_of(output, "paper-check.py"))
+
+
+class PaperChecksTest(unittest.TestCase):
+    def setUp(self):
+        self.paper = Path(tempfile.mkdtemp(prefix="run-checks-paper-test-"))
+        self.write("book.yaml", "version: 1\nkind: paper\nbook:\n  title: Watering Beds\n"
+                                "  author: Sam Example\n")
+        self.write("manuscript/010-abstract.md",
+                   "# Abstract\n\nWe watered twelve beds at dawn and at noon for one season. "
+                   "Beds watered at dawn kept more water in the soil.\n")
+        self.write("manuscript/020-introduction.md",
+                   "# Introduction\n\nMany people water a small garden in the heat of the "
+                   "day. We ask how much the time of watering changes the water the soil "
+                   "keeps.\n\nThis paper makes the following contributions:\n\n"
+                   "1. A measured comparison of dawn and noon watering on twelve beds.\n"
+                   "2. A simple rule for home gardeners, with the data that supports it.\n")
+        self.write("manuscript/030-results.md",
+                   "# Results\n\nBeds watered at dawn kept more water on every morning we "
+                   "measured. The difference was largest in the hottest weeks of the "
+                   "season.\n")
+        self.write("manuscript/900-references.md", "# References\n")
+
+    def tearDown(self):
+        shutil.rmtree(self.paper, ignore_errors=True)
+
+    def write(self, name, text):
+        path = self.paper / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    def run_checks(self, *arguments):
+        completed = subprocess.run([sys.executable, str(SCRIPT), *arguments], cwd=self.paper,
+                                   capture_output=True, encoding="utf-8", errors="replace",
+                                   stdin=subprocess.DEVNULL,
+                                   env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
+        return completed.returncode, completed.stdout
+
+    def line_of(self, output, check):
+        return next(line for line in output.splitlines() if f"] {check} " in line + " ")
+
+    def test_shouldSkipTheCoverAndSalesTextGroupsWhenTheBookIsAPaper(self):
+        # when
+        _, output = self.run_checks("all", "--no-vale", "--no-report")
+
+        # then
+        self.assertIn("[SKIP]", self.line_of(output, "color-check.py"))
+        self.assertIn("a paper has no cover", self.line_of(output, "color-check.py"))
+        self.assertIn("a paper has no sales text", self.line_of(output, "sync-check.py"))
+
+    def test_shouldFindAMissingThreatsSectionWhenThePaperHasNone(self):
+        # when
+        exit_code, output = self.run_checks("text", "--no-vale", "--no-report")
+
+        # then
+        self.assertIn("[FIND]", self.line_of(output, "paper-check.py"))
+        self.assertIn("no-threats-section 1", self.line_of(output, "paper-check.py"))
+        self.assertEqual(exit_code, 1)
+
+    def test_shouldPassThePaperCheckWhenThePaperNamesItsThreats(self):
+        # given
+        self.write("manuscript/040-threats-to-validity.md",
+                   "# Threats to Validity\n\nOne season is short, and another year could "
+                   "change the result. All beds were in one town.\n")
+
+        # when
+        _, output = self.run_checks("text", "--no-vale", "--no-report")
+
+        # then
+        self.assertIn("[OK  ]", self.line_of(output, "paper-check.py"))
 
 
 class CheckOutcomeTest(unittest.TestCase):

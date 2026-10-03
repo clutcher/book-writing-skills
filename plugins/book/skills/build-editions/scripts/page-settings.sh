@@ -11,7 +11,7 @@ KNOWN_QUOTE_STYLES="italic plain small border dash guillemet quote"
 KNOWN_PAGE_STYLES="header footer"
 KNOWN_PAGE_ORNAMENTS="none spiral-straight spiral-curly wasy-hexagon wasy-verhexagon wasy-star wasy-sun adforn-fleuron adforn-leaf adforn-vine"
 KNOWN_PAGE_ORNAMENT_SIZES="small medium large"
-KNOWN_EDITIONS="print digital epub all"
+KNOWN_EDITIONS="print digital epub paper all"
 KNOWN_TOP_LEVELS="part chapter section"
 
 fail_unless_known() {

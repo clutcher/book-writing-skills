@@ -10,6 +10,10 @@ finding when any item is DEFECT or ADVISORY (INFORMATIONAL items are counted, ne
 finding); **exit** checks are read by exit code, and exit 1 is a finding. There are no accepted
 counts.
 
+A paper (`kind: paper` in `book.yaml`) has no cover and no sales text: every check of those two
+groups says SKIPPED ("a paper has no cover", "a paper has no sales text"). The checks of the
+other groups read the paper's sections as they read chapters.
+
 ## text
 
 | Check | Skill | Reach | Grading | Needs |
@@ -24,9 +28,11 @@ counts.
 | `word-sense-check.py` | write-text | paths | exit | |
 | `person-introduction-check.py` | write-text | book | exit | |
 | `definition-check.py` | write-text | paths | exit | glossary |
-| `term-density-check.py` | write-text | book | exit | |
+| `term-density-check.py` | write-text | book | exit | coined terms; a book (it says SKIPPED itself on a paper) |
 | `glossary-check.py` | write-text | book | classes | |
+| `paper-check.py` | write-text | book | classes | a paper (it says SKIPPED itself on a book) |
 | `code-font-check.py` | build-editions | book | classes | |
+| `arxiv-bundle-check.py` | build-editions | book | classes | a paper; Docker (it says SKIPPED itself) |
 | `open-notes.py check` | revise-from-notes | book | classes | |
 | `vale-run.py` | write-text | paths | exit | Docker; off with `--no-vale` |
 

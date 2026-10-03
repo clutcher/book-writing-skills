@@ -9,7 +9,7 @@ ASSETS_DIR="$(cd "$SCRIPT_DIR/../assets" && pwd)"
 BUNDLED_TEMPLATE="$ASSETS_DIR/templates/book-template.tex"
 FILTER_DIR="$ASSETS_DIR/filters"
 
-for sourced_file in "$SCRIPT_DIR/page-settings.sh" "$SCRIPT_DIR/book-settings.sh"; do
+for sourced_file in "$SCRIPT_DIR/page-settings.sh" "$SCRIPT_DIR/book-settings.sh" "$SCRIPT_DIR/paper-build.sh"; do
     if [[ ! -f "$sourced_file" ]]; then
         echo "Error: missing $sourced_file" >&2
         exit 1
@@ -19,7 +19,8 @@ done
 
 show_help() {
     cat << 'EOF'
-Build book editions (print PDF, digital PDF, EPUB) from manuscript markdown files.
+Build book editions (print PDF, digital PDF, EPUB) from manuscript markdown files,
+or the paper edition (PDF and LaTeX source) when book.yaml says kind: paper.
 
 Usage: build-book.sh [OPTIONS] [PATH]
 
@@ -40,7 +41,13 @@ Editions:
   --edition <name>       print   KDP paperback PDF: two-sided, gutter margins
                          digital Screen PDF: one-sided, centered, live links, covers
                          epub    Reflowable EPUB 3, checked with epubcheck
-                         all     All three (default)
+                         all     All three (default for a book)
+                         paper   Research article PDF and its .tex (the only
+                                 edition of a paper, and its default)
+  --arxiv                Paper only: also write the arXiv source bundle (.tar.gz)
+                         and check that it compiles in a clean folder
+  --anonymous            Paper only: no authors, affiliations or emails, for
+                         double-blind review (default: paper.anonymous)
   --sequential           Build editions one after another; each build's output
                          arrives as it happens, which helps when one is failing
   --parallel             Build editions at the same time (default)
@@ -68,7 +75,8 @@ Options:
   --output <file>        Output file name in the output folder (letters, digits, . _ -)
   --manuscript <dir>     Manuscript folder (default: manuscript.dir from the config)
   --output-dir <dir>     Output folder (default: work.output from the config)
-  --template <file>      Custom LaTeX template file
+  --template <file>      Custom LaTeX template file (a book only; a paper names
+                         its template in paper.template)
   --pattern <glob>       Keep only the book's files whose name matches (default: *.md)
   --exclude <regex>      Leave out files matching this regex
   --format <size>        Page format (default: 6x9):
@@ -174,6 +182,8 @@ POSITIONAL_PATH=""
 SHOW_SETTINGS=false
 DIFF_FROM=""
 DIFF_TO=""
+BUILD_ARXIV=false
+ANONYMOUS_OPTION=false
 
 ORIGINAL_ARGS=("$@")
 
@@ -183,6 +193,8 @@ while [[ $# -gt 0 ]]; do
         --set)                   CONFIG_ARGS+=(--set "$2"); shift 2 ;;
         --edition)               EDITION="$2"; mark_cli edition; shift 2 ;;
         --azw3)                  BUILD_AZW3=true; shift ;;
+        --arxiv)                 BUILD_ARXIV=true; shift ;;
+        --anonymous)             ANONYMOUS_OPTION=true; shift ;;
         --all-page-folios)       ALL_PAGE_FOLIOS=true; mark_cli all-page-folios; shift ;;
         --no-all-page-folios)    ALL_PAGE_FOLIOS=false; mark_cli all-page-folios; shift ;;
         --parallel)              PARALLEL_EDITIONS=true; shift ;;
@@ -253,7 +265,6 @@ done
 
 validate_edition "$EDITION"
 validate_output_name "$OUTPUT_FILE_OVERRIDE"
-[[ "$SHOW_SETTINGS" == true && "$EDITION" == "all" ]] && EDITION="print"
 
 if [[ -n "$POSITIONAL_PATH" && ! -d "$POSITIONAL_PATH" ]]; then
     echo "Error: '$POSITIONAL_PATH' is not a folder"
@@ -264,6 +275,9 @@ START_DIR="$(cd "${POSITIONAL_PATH:-$PWD}" && pwd)"
 load_book_settings "$START_DIR"
 apply_book_defaults
 validate_settings
+resolve_edition_for_kind
+apply_paper_defaults
+[[ "$SHOW_SETTINGS" == true && "$EDITION" == "all" ]] && EDITION="print"
 
 CLEANUP_PATHS=()
 cleanup_temporary_files() {
@@ -298,6 +312,12 @@ show_settings() {
         fi
     done
     printf 'MANUSCRIPT_FILES=%s\n' "$(tr '\n' ' ' <<< "$MANUSCRIPT_FILES" | sed 's/ $//')"
+    if is_paper; then
+        for name in BOOK_KIND PAPER_TEMPLATE TEMPLATE_FILE PAPER_ENGINE PAPER_FORMAT PAPER_ANONYMOUS \
+                    PAPER_ABSTRACT PAPER_ARXIV_CATEGORY PAPER_TEX_IMAGE BUILD_ARXIV; do
+            printf '%s=%s\n' "$name" "${!name}"
+        done
+    fi
 }
 
 SETTINGS_DIR="$(mktemp -d)"
@@ -459,7 +479,9 @@ case "$EDITION" in
         ;;
 esac
 
-if [[ -z "$TEMPLATE_FILE" ]]; then
+if is_paper; then
+    TEMPLATE_FILE="$(paper_template_file)"
+elif [[ -z "$TEMPLATE_FILE" ]]; then
     TEMPLATE_FILE="$BUNDLED_TEMPLATE"
 fi
 if [[ ! -f "$TEMPLATE_FILE" ]]; then
@@ -477,7 +499,10 @@ LASTNAME_SLUG=""
 [[ -n "$BOOK_TITLE" ]] && TITLE_SLUG=$(slugify "$BOOK_TITLE")
 [[ -n "$BOOK_AUTHOR" ]] && LASTNAME_SLUG=$(slugify "$(get_lastname "$BOOK_AUTHOR")")
 
+is_paper && LASTNAME_SLUG="$(paper_name_slug)"
+
 case "$EDITION" in
+    paper)   EDITION_SUFFIX="";         OUTPUT_EXT="pdf"  ;;
     print)   EDITION_SUFFIX="";         OUTPUT_EXT="pdf"  ;;
     digital) EDITION_SUFFIX="-digital"; OUTPUT_EXT="pdf"  ;;
     epub)    EDITION_SUFFIX="";         OUTPUT_EXT="epub" ;;
@@ -485,6 +510,13 @@ esac
 
 if [[ -n "$OUTPUT_FILE_OVERRIDE" ]]; then
     OUTPUT_FILE="$FULL_OUTPUT_DIR/$OUTPUT_FILE_OVERRIDE"
+elif is_paper; then
+    BASE_NAME="$(paper_base_name "$TITLE_SLUG" "$LASTNAME_SLUG")"
+    if [[ "$DRAFT_MODE" == true ]]; then
+        OUTPUT_FILE="$FULL_OUTPUT_DIR/${BASE_NAME}-draft-${TIMESTAMP}.pdf"
+    else
+        OUTPUT_FILE="$FULL_OUTPUT_DIR/${BASE_NAME}.pdf"
+    fi
 elif [[ -n "$TITLE_SLUG" && -n "$LASTNAME_SLUG" ]]; then
     BASE_NAME="${TITLE_SLUG}-${LASTNAME_SLUG}${EDITION_SUFFIX}"
     if [[ "$DRAFT_MODE" != true ]]; then
@@ -832,6 +864,7 @@ build_epub() {
     exit 0
 }
 
+[[ "$EDITION" == "paper" ]] && build_paper
 [[ "$EDITION" == "epub" ]] && build_epub
 
 LATEX_TOC_DEPTH=$((TOC_DEPTH - 1))

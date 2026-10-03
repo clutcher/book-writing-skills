@@ -12,9 +12,9 @@ argument-hint: "[what to write or change]"
 
 # Write text
 
-This skill writes and rewrites book prose. The rules below apply to any non-fiction book. The
-book supplies its own voice (how this author sounds), its own words (coined terms, glossary,
-watch lists) and its own decisions. Nothing in this skill is about one particular book.
+This skill writes and rewrites book prose. The rules below apply to any non-fiction book, and
+to a paper as "A book or a paper" says. The book supplies its own voice, its own words (coined
+terms, glossary, watch lists) and its own decisions. Nothing here is about one book.
 
 ## Before any work
 
@@ -22,8 +22,9 @@ watch lists) and its own decisions. Nothing in this skill is about one particula
    (`--config FILE` names it). Show the setup with
    `python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py show`.
 2. **Read the voice profile.** The book's `rules.voice` file, or
-   `${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/default.md` when the book has none. Rules
-   marked "per the voice profile" take their form and numbers from it.
+   `${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/default.md` when the book has none
+   (`profiles/paper-voice.md` for a paper). Rules marked "per the voice profile" take their
+   form and numbers from it.
 3. **Read the author's position** on the topic (`thinking.stance`) and the audience
    (`thinking.audience`) before writing a claim or a recommendation.
 4. **Read only the decisions index** (`python3 ${CLAUDE_PLUGIN_ROOT}/lib/decisions.py index`)
@@ -203,6 +204,27 @@ a person's name (2.7), naming before evidence (1.3).
 12.2. Refer back only to a named concept in the glossary; otherwise restate the idea.
 12.3. Keep the cause-and-effect direction the thesis states.
 
+### 13. Papers (only for `kind: paper`)
+
+13.1. The abstract states the problem, what was done, the main result and what it changes, within `paper.abstract_max_words`.
+13.2. The introduction ends with a numbered list of contributions; each names the section that supports it.
+13.3. Scope every claim to what the evidence shows: its data, setting and time.
+13.4. Hedge precisely: say what is uncertain and why; one hedge per claim, none on a measured result.
+13.5. Name the threats to validity openly, in their own section, with what was done about each.
+13.6. Give every measured number with its uncertainty and its unit.
+13.7. Point to every figure and table from the text, by its number or its label.
+
+## A book or a paper
+
+`kind` in `book.yaml` says which. A book uses Sections 1-12; a paper (`kind: paper`) also uses
+Section 13, and its sections are what the rules call chapters. For a paper these are **off**:
+1.2 at the book and Part levels; 3.9 and 3.12-3.14, the learning path of coined terms (a paper
+defines each term once, before use: 2.4); 6.1, 6.5, 6.6, 6.8 (Parts, kinds of chapter); 7.1 (a
+paper says "we"); 8.2. These **change**: 2.15 and 11.4 hold within the whole paper; for 2.14
+the abstract and the conclusion open and sum up; 6.3 allows a pointer to a later section by
+number; for 5.1 and 5.6 the reader is a researcher new to this paper, and 5.2-5.5 still hold;
+8.3 allows the usual titles (Introduction, Method). `paper-check.py` runs only on a paper.
+
 ## The text checks
 
 The text check scripts live here; run-checks, review-text and revise-from-notes call them from this folder.
@@ -214,7 +236,7 @@ Checks that list candidates for the author to judge exit 0. The prose checks
 print text only (no `--format tsv` or `json`), so do not pipe them into a tool that expects
 columns. For a book in another language, the English-only checks (`ascii-normalize.py`,
 `sentence-and-paragraph-check.py`, `unclear-this-check.py`, `word-for-two-things-check.py`,
-`person-introduction-check.py`) print SKIPPED.
+`person-introduction-check.py`, `paper-check.py`) print SKIPPED.
 
 | Script | Rules | What it reports |
 |---|---|---|
@@ -228,7 +250,8 @@ columns. For a book in another language, the English-only checks (`ascii-normali
 | `word-sense-check.py` | 2.4 | Words used in a sense the book avoids (`terms.watch_words.word_sense`). |
 | `person-introduction-check.py` | 2.7 | First mentions without the full name or an introduction; `--bare-mentions` lists bare surnames for a voice that wants full names later too. |
 | `definition-check.py` | 2.4, 9.5 | Bold definition blockquotes whose term is not in the glossary; `--propose` suggests the bold span. |
-| `term-density-check.py` | 3.9-3.14 | Coined-term density, phases (`--phases`), gaps, antonym pairs, compound drift; `--first-use`. |
+| `term-density-check.py` | 3.9-3.14 | Coined-term density, phases (`--phases`), gaps, antonym pairs, compound drift; `--first-use`. SKIPPED on a paper, but for `--first-use`. |
+| `paper-check.py` | 13.1, 13.2, 13.5, 13.7 | A paper only: the abstract length, the contribution list, a figure or table no sentence points to, the threats section. |
 | `glossary-check.py` | 2.4, 12.2 | Every glossary term in the manuscript: first use against the definition's file, uses per file; `--report FILE` writes the report review-ideas reads. Format of the glossary: `${CLAUDE_PLUGIN_ROOT}/lib/glossary-format.md`. |
 | `vale-run.py`, `vale-sync.py` | several | Vale in Docker (pinned image, files written as you). `vale-run.py` never writes; `vale-sync.py --fix` copies PlainBook into the book. See `references/vale-check.md`. |
 | `self-check.py` | - | Maintainer check, not for book work: every self-test, rule numbers, file references, leak words (from `$BOOK_LEAK_LIST`, or `--leak-words FILE`). |

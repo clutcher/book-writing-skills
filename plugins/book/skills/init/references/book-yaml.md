@@ -32,12 +32,47 @@ python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py show      # every value, and wh
 example. Every path keeps its default, so the file stays short; add a key
 only to change its value.
 
+`new.py --kind paper` writes `kind: paper`, the same `book:` keys a paper uses (`title`,
+`subtitle`, `author`, `language`, `description`), every `paper:` key with its default, and
+`sources.backup`.
+
+## kind: book or paper
+
+`kind` is `book` (the default) or `paper`, a research article for arXiv or a venue. Any other
+value is a `wrong-value` defect in `check`. For a paper:
+
+- The `book:` section keeps its name and holds the shared metadata: `title`, `author` (used
+  when `paper.authors` is empty) and `language`. `description` is not used: the abstract is in
+  the manuscript.
+- Every manuscript file that is not front matter, not the abstract and not the references file
+  is a section and counts as a chapter, numbered in order from 1, so every check that reads
+  chapters reads the sections. The abstract (`paper.abstract`) is front matter, and so is a
+  file numbered `000`-`009`, unless the paper sets `manuscript.front_matter` itself. No file
+  is back matter unless the paper sets `manuscript.back_matter`. `chapter_pattern` and
+  `part_pattern` are not used: a paper has no parts.
+- There is no cover and no sales text, so `check` does not report the `publishing.*`,
+  `cover.*` and `sales_text.*` paths as missing.
+
+The `paper:` keys are known keys for a book too, and a book never reads them. `check` reports
+a `wrong-value` defect when `paper.engine`, `paper.format`, `paper.template`,
+`paper.abstract_max_words`, `paper.anonymous` or an author in `paper.authors` holds a value
+the build cannot use. `paper.template` takes only the built-in templates `article` (the
+default), `acm`, `ieee` and `lncs`; the author switches venue by changing this one key. A
+venue not in the list is added to the plugin as a new built-in template.
+
+`book_config.py paths --shell` also prints the paper settings for the build:
+`BOOK_KIND`, `PAPER_TEMPLATE` (the template name: `article`, `acm`, `ieee` or `lncs`),
+`PAPER_ENGINE`, `PAPER_ANONYMOUS` (`true` or `false`), `PAPER_FORMAT`, `PAPER_ABSTRACT` (full
+path), `PAPER_AUTHORS` (JSON: a list of `{name, affiliation, email}`, with `book.author` when
+`paper.authors` is empty), `PAPER_ARXIV_CATEGORY` and `PAPER_ABSTRACT_MAX_WORDS`.
+
 ## The full schema
 
 The value shown is the default.
 
 ```yaml
 version: 1
+kind: book                             # book | paper
 
 book:                                  # metadata and build settings (Title-Case-With-Hyphens also accepted)
   title: null
@@ -232,6 +267,17 @@ sales_text:
   sample_print_share: 0.2
   sample_ebook_share: 0.1
 
+paper:                                 # read only when kind is paper
+  authors: []                          # - {name: ..., affiliation: ..., email: ...}; a plain name also works;
+                                       # [] = book.author
+  abstract: manuscript/010-abstract.md # the abstract file; front matter
+  template: article                    # article, acm, ieee or lncs (built-in templates only)
+  engine: xelatex                      # xelatex | pdflatex (arXiv takes both)
+  anonymous: false                     # true = build without authors, for double-blind review
+  arxiv_category: null                 # e.g. cs.SE; shown in the build report only
+  abstract_max_words: 250              # the abstract word limit the paper checks read
+  format: a4                           # a4 | letter
+
 readers_review:                        # the readers mode of review-ideas
   room: null                           # null = <book folder>-readers-review, next to the book
   sources_for_reviewer: null           # null = <work.output>/sources-for-reviewer.md
@@ -252,6 +298,7 @@ tools:                                 # docker images pinned to a tag or digest
   pandoc_volume: book-to-pdf-texlive
   vale_image: jdkato/vale:v3.14.2
   bibtex_image: blang/latex:ubuntu@sha256:2c32abc3555a01e180528d542955e2730f7f3793cdeba49b1655de9b897cbafb
+  paper_tex_image: texlive/texlive:TL2025-historic@sha256:7056390eac37715fd3e01875037ceb4016cb17d44c611f7bbbfa7a012007979f  # full TeX Live 2025 (2.6 GB), for a paper only
   render_image: null                   # an image with rsvg-convert, only when none is installed
   epubcheck: 5.1.0
 ```

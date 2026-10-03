@@ -13,7 +13,7 @@ from check_list import CHECKS, RUN_CHECKS
 
 DESCRIPTION = """Maintainer check for the run-checks skill; no real book is read.
 
-  1. every script the check list names exists in the folder of the skill that owns it,
+  1. every script the check list names exists in the folder of the skill that owns it
      and no check is listed twice
   2. the tests in scripts/tests: the grading of one report, and runs of every mode
      on small test books made in a temporary folder"""

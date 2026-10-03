@@ -4,7 +4,7 @@ Self-contained review covering all 15 issue categories that recur across close r
 
 **What this review catches:** Every issue type that shows up in practice, from structural problems to formatting violations. Categories are ordered by frequency and impact (the First group first).
 
-**Rule source:** All rule numbers reference the Rules Summary in the write-text skill (`${CLAUDE_PLUGIN_ROOT}/skills/write-text/SKILL.md`, Sections 1-12), with the full text in `${CLAUDE_PLUGIN_ROOT}/skills/write-text/references/rules-explained.md`. Rules marked "per the voice profile" are judged against the book's voice file.
+**Rule source:** All rule numbers reference the Rules Summary in the write-text skill (`${CLAUDE_PLUGIN_ROOT}/skills/write-text/SKILL.md`, Sections 1-12, and Section 13 for a paper), with the full text in `${CLAUDE_PLUGIN_ROOT}/skills/write-text/references/rules-explained.md`. Rules marked "per the voice profile" are judged against the book's voice file.
 
 ---
 

@@ -8,7 +8,7 @@ workflow points to both its one-liner and its section here. The word-level looku
 Some rules are the author's choices rather than general truths: sentence and paragraph
 length, fronted inversions, punctuation habits, the use of "I", "you" and "we". Those rules say
 **per the voice profile**. The voice profile is the book's `rules.voice` file, or the skill's
-`profiles/default.md` when the book has none. Read it before applying such a rule: the rule
+`profiles/default.md` when the book has none (`profiles/paper-voice.md` for a paper). Read it before applying such a rule: the rule
 gives the goal, the profile gives the form and the numbers.
 
 ### 1. Structure
@@ -941,6 +941,68 @@ When the book's thesis states a causal or hierarchical direction between two nam
 Detection phrases to watch: "X applies Y," "X implements Y," "X is built on Y," "X is based on Y," where X is the derived concept and Y is the root. Rewrite with Y as the grammatical agent: "Y produces X."
 
 Example (fictional): a farming book's thesis is that soil shapes the crops a region can grow. "The crops of the valley decide its soil" reverses direction -- the soil is not something the crops choose, the crops are what the soil allows. Rewrite with the root as the grammatical agent: "the soil of the valley allows these crops."
+
+---
+
+### 13. Papers
+
+These rules hold only for a research paper (`kind: paper` in `book.yaml`). Which rules of
+Sections 1-12 a paper turns off or changes is said once, in `SKILL.md` under "A book or a
+paper". A reader of a paper reads it to decide whether to trust and use a result, often
+reading only the abstract, the contribution list and the figures. These rules make those parts
+carry the paper alone. `paper-check.py` checks 13.1, 13.2, 13.5 and 13.7.
+
+**13.1. The abstract states the problem, what was done, the main result and what it changes, within the word limit.**
+
+One or two sentences for each, in that order, and no citations, figures or abbreviations the
+reader must look up. The limit is `paper.abstract_max_words` in `book.yaml`; a venue or arXiv
+may set a lower one. The abstract makes no claim that the body does not show.
+
+**13.2. The introduction ends with a numbered list of contributions.**
+
+Each item is one thing the reader can use or check, stated as a result, not as an activity
+("a measured comparison of two watering times on twelve beds", not "we study watering"), and
+it names the section that supports it. The list is the contract of the paper: every item is
+shown in the body, and the body shows nothing larger than the list claims.
+
+**13.3. Scope every claim to what the evidence shows.**
+
+A claim carries the limits of its evidence: the data, the setting, the people and the time it
+comes from. A result measured on twelve beds in one season is a claim about those beds in that
+season, and any wider claim is stated as a reading of the result, marked as such, with its
+reason. Words that widen a claim silently ("always", "in general", "developers") are the
+usual leak.
+
+Test: could a reader repeat the study and find the claim false without finding the data false?
+Then the claim says more than the data.
+
+**13.4. Hedge precisely.**
+
+A hedge says what is uncertain and why: "the effect held in both seasons we measured; we did
+not measure a dry year". A vague hedge ("this may suggest", "it seems possible") hides what is
+known. Use one hedge per claim, on the uncertain part only, and none on a measured result:
+state a measurement as measured. Plain words of degree with a reason ("likely, because ...")
+are better than stacked qualifiers ("may perhaps").
+
+**13.5. Name the threats to validity openly, in their own section.**
+
+A section headed "Threats to Validity" (or "Limitations") names every reason the result could
+be wrong or fail to hold elsewhere: internal (the result is wrong here), external (it does not
+hold elsewhere) and construct (the study measured something other than it meant). For each
+threat, say what was done to reduce it, or say that it remains. The section is written in the
+same voice as the results: a threat is a fact about the study, not an apology.
+
+**13.6. Give every measured number with its uncertainty and its unit.**
+
+A mean comes with its spread or its interval, and the text says which one it is and how many
+runs or people it rests on. Report the size of an effect, not only that a test found one.
+Round to the precision the measurement supports, and use the same unit across the paper.
+
+**13.7. Point to every figure and table from the text.**
+
+The text names each figure and table by its number ("Figure 2 shows ...") or by its label
+(`@fig:beds`), before or near where it appears, and says what the reader should see in it. A
+figure no sentence points to is either not needed or not explained.
 
 ---
 

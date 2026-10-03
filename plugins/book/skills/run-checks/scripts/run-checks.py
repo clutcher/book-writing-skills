@@ -15,7 +15,7 @@ sys.path.insert(0, str(SCRIPTS))
 import grading
 from book_config import ConfigError, load_config, start_folder
 from check_output import run_main
-from check_list import ALL, GROUPS, MODES, ON_PATHS, checks_of
+from check_list import ALL, GROUPS, MISSING_IN_A_PAPER, MODES, ON_PATHS, checks_of
 from command_runs import python_command, run_command
 from run_folders import changed_files, record_checksums, start_run
 from source_files import markdown_files_under
@@ -30,7 +30,7 @@ report in a run folder.
 Modes (the part of the book checked):
   all (default)  every group below
   text           the prose checks of write-text, the glossary, the code font, the open notes,
-                 Vale
+                 Vale; for a paper also the paper check and the arXiv bundle check
   facts          citation keys, the bibliography, the sources list and quotes bank, the
                  library; every [Key] in the manuscript and the thinking files must be in the
                  sources list and have a library copy or a needed.txt line
@@ -38,6 +38,8 @@ Modes (the part of the book checked):
   sales-text     the selling texts agree, the store description and the keywords
   setup          book.yaml is valid, the decisions index is current, the outside tools are
                  installed
+
+A paper (kind: paper in book.yaml) has no cover and no sales text: those groups say SKIPPED.
 
 The scripts stay in the skill that owns them; this runs them where they are.
 
@@ -137,6 +139,8 @@ def missing_feature(check, config):
 
 
 def skip_reason(check, config, arguments):
+    if config.is_paper and check.group in MISSING_IN_A_PAPER:
+        return MISSING_IN_A_PAPER[check.group]
     if check.slow and not arguments.slow:
         return "slow: it reads every library file; pass --slow"
     if check.uses_vale and arguments.no_vale:

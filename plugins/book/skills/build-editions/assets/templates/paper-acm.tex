@@ -1,0 +1,93 @@
+\documentclass[sigconf$if(anonymous)$,anonymous,review$endif$]{acmart}
+
+\settopmatter{printacmref=false,printccs=false,printfolios=true}
+\setcopyright{none}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\acmConference{}{}{}
+\acmDOI{}
+\acmISBN{}
+
+\usepackage{iftex}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+
+\setlength{\emergencystretch}{3em}
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+\usepackage{longtable,array}
+\usepackage{calc}
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\let\paperlongtable\longtable
+\let\endpaperlongtable\endlongtable
+\renewenvironment{longtable}{%
+  \begin{table}[htbp]\centering\begin{minipage}{\columnwidth}\@twocolumnfalse
+  \setlength{\LTpre}{0pt}\setlength{\LTpost}{0pt}\paperlongtable}{%
+  \endpaperlongtable\end{minipage}\end{table}}
+\makeatother
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{%
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi
+}
+\def\fps@figure{htbp}
+\makeatother
+
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{}
+\urlstyle{same}
+\hypersetup{
+$if(title-meta)$
+  pdftitle={$title-meta$},
+$endif$
+$if(pdf-authors)$
+  pdfauthor={$pdf-authors$},
+$endif$
+$if(lang)$
+  pdflang={$lang$},
+$endif$
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\begin{document}
+
+\title{$title$}
+$for(author)$
+\author{$author.name$}
+$if(author.affiliation)$
+\affiliation{\institution{$author.affiliation$}\country{}}
+$endif$
+$if(author.email)$
+\email{$author.email$}
+$endif$
+$endfor$
+
+$if(abstract)$
+\begin{abstract}
+$abstract$
+\end{abstract}
+$endif$
+
+\maketitle
+\pagestyle{plain}
+
+$body$
+
+\end{document}

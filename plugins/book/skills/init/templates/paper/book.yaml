@@ -1,0 +1,33 @@
+version: 1
+kind: paper                      # book or paper
+
+book:                            # the shared metadata section keeps its name for a paper
+  title: {{title}}
+  subtitle: null
+  author: {{author}}             # used when paper.authors is empty
+  language: en-US                # BCP 47 code of the paper's language
+  description: null              # not used for a paper: the abstract is in the manuscript
+
+paper:
+  authors: []                    # - {name: ..., affiliation: ..., email: ...}; empty = book.author
+  abstract: manuscript/010-abstract.md
+  template: article              # article, acm, ieee or lncs: the built-in venue template
+  engine: xelatex                # xelatex or pdflatex (arXiv takes both)
+  anonymous: false               # true = build without authors, for double-blind review
+  arxiv_category: null           # e.g. cs.SE; shown in the build report only
+  abstract_max_words: 250
+  format: a4                     # a4 or letter
+
+sources:
+  backup: null                   # a private folder outside the paper for source files that
+                                 # cannot be downloaded again; the collect-sources skill fills it
+
+# Words the paper makes up, or gives its own meaning. The write-text skill counts how often
+# the reader meets them.
+# terms:
+#   families:
+#     - {term: example, role: primary, also: [examples]}
+#   compounds: [example word]
+
+# Every other key, its default and what it does: the init skill, references/book-yaml.md.
+# Check this file with: /book:run-checks setup

@@ -6,6 +6,7 @@ from book_files import SKILL_DIR
 from book_config import parse_scalar
 
 DEFAULT_PROFILE = SKILL_DIR / "profiles" / "default.md"
+PAPER_PROFILE = SKILL_DIR / "profiles" / "paper-voice.md"
 SETTINGS_HEADING = "## Settings"
 SETTING_LINE = re.compile(r"^([a-z][a-z0-9_]*):[ \t]*(.*?)\s*$")
 
@@ -42,9 +43,13 @@ def read_settings_section(text):
     return settings
 
 
+def default_profile(config):
+    return PAPER_PROFILE if config.is_paper else DEFAULT_PROFILE
+
+
 def load_voice_profile(config):
-    settings = read_settings_section(DEFAULT_PROFILE.read_text(encoding="utf-8"))
-    path = DEFAULT_PROFILE
+    path = default_profile(config)
+    settings = read_settings_section(path.read_text(encoding="utf-8"))
     book_profile = config.rules.voice
     if book_profile and Path(book_profile).is_file():
         path = Path(book_profile)

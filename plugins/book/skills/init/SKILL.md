@@ -1,13 +1,15 @@
 ---
 name: init
 description: >-
-  Sets up a book for the book plugin: in a new folder it writes book.yaml, CLAUDE.md, the
-  folders and the starter files, then checks which outside tools are missing and what each one
-  turns off. It also sets up a book from any folder that already holds one: it drafts a move
-  plan and moves the files only after the author agrees. Use it to start a new book or set up a
-  book folder. To check the tools later, use run-checks; for text, sources, editions or cover,
-  use the skill for that job.
-argument-hint: "[new|existing] [folder]"
+  Sets up a book or a research paper for the book plugin: in a new folder it writes book.yaml,
+  CLAUDE.md, the folders and the starter files, then checks which outside tools are missing and
+  what each one turns off. Mode new paper writes a paper for arXiv instead (abstract, numbered
+  sections, references, no cover and no sales text), also inside a study folder that already
+  holds code and data. It also sets up a book from any folder that already holds one: it drafts
+  a move plan and moves the files only after the author agrees. Use it to start a new book or
+  paper, or set up a book folder. To check the tools later, use run-checks; for text, sources,
+  editions or cover, use the skill for that job.
+argument-hint: "[new|new paper|existing] [folder]"
 ---
 
 # Init
@@ -36,10 +38,12 @@ writes only with `--fix`; each answers `--help`.
 | Mode | Say | What happens |
 |---|---|---|
 | `new` (default) | "start a new book", "set up a book in this folder", `/book:init new [folder]` | `new.py`: the starter book, the Vale style, then the tool check |
+| `new paper` | "start a paper", "set up an arXiv paper in my study folder", `/book:init new paper [folder]` | `new.py --kind paper`: the starter paper, the Vale style, then the tool check |
 | `existing` | "set up my book from this folder", "I have a manuscript already", `/book:init existing [folder]` | Claude drafts a move plan, the author agrees, the files move, then `new.py` adds what is missing |
 
 With no mode, look at the folder. An empty or new folder, or one that already has `book.yaml`,
-uses `new`. A folder with chapters, notes or sources in its own shape uses `existing`. Ask when
+uses `new` (a `book.yaml` with `kind: paper` is a paper and keeps that kind). When the author
+says paper, article or arXiv, use `new paper`. A folder with chapters, notes or sources in its own shape uses `existing`. Ask when
 unsure.
 
 `new` runs the tool check as its last step. For "check my tools" on a book already set up, use
@@ -84,6 +88,35 @@ starter manuscript, cover design and sales-text files are written only while the
 folder has no `.md` file, so a book that already has text never gets placeholders. It
 refuses a folder inside another book (a `book.yaml` above it).
 
+## new paper: a research paper
+
+The same steps as `new`, with `--kind paper`:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/init/scripts/new.py FOLDER --kind paper --title "..." --author "..."
+```
+
+- **What differs from a book:** `book.yaml` says `kind: paper` and holds the `paper:` section
+  (authors, abstract file, LaTeX template and engine, anonymous build, arXiv category, abstract
+  word limit, page format). The starter manuscript is `010-abstract.md`, `020-introduction.md`
+  (it ends with a numbered list of contributions), `030-related-work.md`, `040-method.md`,
+  `050-results.md`, `060-threats-to-validity.md`, `070-conclusion.md`, `900-references.md` and
+  `images/`. `CLAUDE.md` is the paper variant. There is no `publishing/` folder: a paper has no
+  cover and no sales text. `rules/voice.md` is the write-text skill's paper voice profile when
+  that skill has one, else its default profile (the dry run says which).
+- **What stays the same:** `thinking/`, `rules/`, `sources/`, `notes/`, `.book/`, the Vale sync
+  and the tool check.
+- **A study folder:** a paper often lives next to the code and data of its study. `new.py`
+  writes only files that do not exist, so `README.md`, an own `CLAUDE.md`, code and data keep
+  every byte. Each file it keeps is listed as `keep`; when the folder already has a `CLAUDE.md`
+  of its own, it says so and names the paper template to copy from, and Claude offers to merge
+  the paper's folders, skills and rules into it (draft, show, then apply).
+- **Next steps:** fill in "What the paper is" in `CLAUDE.md`, the author files, `paper.authors`
+  and `paper.arxiv_category`; then the write-text skill for the introduction.
+
+A folder whose `book.yaml` already names a kind keeps it: `--kind` with the other kind is
+refused, and the author changes `kind` in `book.yaml` first.
+
 ## existing: a book from any folder
 
 No script decides where a file goes: Claude reads the folder, the author decides. Full
@@ -121,16 +154,17 @@ images: [references/toolchain.md](references/toolchain.md).
 
 | Script | Does |
 |---|---|
-| `new.py` | Writes a new book's starter files, or adds what a book folder lacks |
+| `new.py` | Writes a new book's or paper's starter files (`--kind paper`), or adds what a folder lacks |
 | `toolchain-check.py` | Lists the outside tools and what each missing one turns off; `--pull` pulls images |
 | `book_yaml.py` | Used by `new.py`: writes book.yaml values and proves they read back as intended |
-| `self-check.py` | Maintainer check in a temporary folder: new (with `run-checks.py all`), `new.py` on a folder that already holds a book, the tool check |
+| `self-check.py` | Maintainer check in a temporary folder: new (with `run-checks.py all`), `new.py` on a folder that already holds a book, a new paper in a study folder, the tool check |
 
 ## Templates
 
 The files `new.py` copies live in `${CLAUDE_PLUGIN_ROOT}/skills/init/templates/`: `book.yaml`,
 `CLAUDE.md`, `gitignore`, `claude-settings.json`, `vale.ini`, the starter `manuscript/`,
-`sources-list.md`, `sources-quotes.md`, `glossary.md` and `cover/design.py`. No folder gets a
+`sources-list.md`, `sources-quotes.md`, `glossary.md` and `cover/design.py`; for a paper,
+`templates/paper/` holds its `book.yaml`, `CLAUDE.md` and starter `manuscript/`. No folder gets a
 README or index file: the book's `CLAUDE.md` describes every folder and lists the eleven skills.
 The sales-text files come straight from the prepare-sales-text skill's `templates/`, and
 `rules/voice.md` from `${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/default.md`. Three templates copy text

@@ -22,11 +22,14 @@ check.
 | Mode | Say | What it checks |
 |---|---|---|
 | `all` (default) | "run the checks", "run all the checks on the book" | every group below |
-| `text` | "run the text checks", "run the checks on this chapter" | sentence and paragraph length, connectors, inversions, ASCII, unclear "this", one word for two things, word senses, person introductions, definitions, coined-term density, the glossary, the code font, the open notes, Vale |
+| `text` | "run the text checks", "run the checks on this chapter" | sentence and paragraph length, connectors, inversions, ASCII, unclear "this", one word for two things, word senses, person introductions, definitions, coined-term density, the glossary, the code font, the open notes, Vale; for a paper also the paper check and the arXiv bundle check |
 | `facts` | "run the citation checks", "run the source checks" | citation keys, the bibliography, the sources list and the quotes bank, the library files; every `[Key]` in the manuscript and the thinking files |
 | `cover` | "run the cover checks" | colors and contrast, fonts, text placement, the KDP template overlay |
 | `sales-text` | "run the sales-text checks" | the surfaces agree, the store description, the keywords |
 | `setup` | "check the setup", "check my tools" | book.yaml is valid, the decisions index is current, the outside tools are installed |
+
+A paper (`kind: paper` in `book.yaml`) has no cover and no sales text, so those two groups say
+SKIPPED with that reason; the other groups read its sections as chapters.
 
 Options:
 

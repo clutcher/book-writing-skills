@@ -16,9 +16,16 @@ from command_runs import python_command, run_command
 TIME_LIMIT = 300
 SELF_TESTS = ("compute-leading.py", "diff-preprocess.py", "output_files.py",
               "flatten-code-lines.py", "filter-settings.py", "epub-check.py",
-              "code-font-check.py")
+              "code-font-check.py", "paper-metadata.py", "paper_source.py",
+              "arxiv-bundle-check.py")
+PAPER_AUTHOR_WORDS = ("Sam Example", "Lee Sample", "Garden School", "sam@example.org")
+PAPER_TEMPLATES = ("article", "acm", "ieee", "lncs")
+TEMPLATES = SKILL / "assets" / "templates"
+NAME_LOOPS = re.compile(r"\$for\((author|institutes)\)\$.*?\$endfor\$", re.S)
+NAME_FIELDS = re.compile(r"\$(author|institutes)\.")
 
-DESCRIPTION = """Runs every build script's self-test on the fixture books in scripts/fixtures/.
+DESCRIPTION = """Runs every build script's self-test on the fixture books and the fixture paper in
+scripts/fixtures/.
 Needs Python, and bash for the steps that read settings through build-book.sh (they print
 SKIPPED without bash): no Docker, no network, no real book."""
 
@@ -184,6 +191,77 @@ def settings_steps(steps):
                               "--output", "reader-copy_v2.pdf"))
 
 
+def anonymous_metadata_names_nobody():
+    result = run_command(python_command(SCRIPTS / "paper-metadata.py", "--config",
+                                        FIXTURES / "new-paper" / "book.yaml", "--anonymous"),
+                         TIME_LIMIT)
+    named = [word for word in PAPER_AUTHOR_WORDS if word in result.output]
+    return result.passed and not named and '"abstract"' in result.output, result.output
+
+
+def names_come_only_from_the_author_list(template):
+    def step():
+        text = (TEMPLATES / f"paper-{template}.tex").read_text(encoding="utf-8")
+        outside = NAME_LOOPS.sub("", text)
+        stray = NAME_FIELDS.findall(outside)
+        return not stray, f"author fields outside the author loops: {stray}"
+    return step
+
+
+def acm_turns_on_anonymous_review():
+    text = (TEMPLATES / "paper-acm.tex").read_text(encoding="utf-8")
+    return ("\\documentclass[sigconf$if(anonymous)$,anonymous,review$endif$]{acmart}" in text,
+            "the acm template does not pass anonymous,review to acmart when anonymous")
+
+
+def paper_template_steps(steps):
+    for template in PAPER_TEMPLATES:
+        steps.run(f"paper.template {template} uses assets/templates/paper-{template}.tex",
+                  output_has_line(f"TEMPLATE_FILE={TEMPLATES / f'paper-{template}.tex'}",
+                                  "new-paper", "--set", f"paper.template={template}"))
+        steps.run(f"the {template} template prints names only from the author list, so an "
+                  f"anonymous build has no author", names_come_only_from_the_author_list(template))
+    steps.run("the acm template turns on the class's anonymous review options",
+              acm_turns_on_anonymous_review)
+    steps.run("a paper refuses a template that is not built in",
+              build_refuses("new-paper", "--set", "paper.template=springer"))
+    steps.run("a paper refuses a template file",
+              build_refuses("new-paper", "--template", str(TEMPLATES / "paper-article.tex")))
+
+
+def paper_steps(steps):
+    steps.run("a paper builds the paper edition by default",
+              output_has_line("EDITION=paper", "new-paper"))
+    steps.run("all is the paper edition for a paper",
+              output_has_line("EDITION=paper", "new-paper", "--edition", "all"))
+    for book_edition in ("print", "digital", "epub"):
+        steps.run(f"a paper refuses the {book_edition} edition",
+                  build_refuses("new-paper", "--edition", book_edition))
+    steps.run("a book refuses the paper edition",
+              build_refuses("new-book", "--edition", "paper"))
+    steps.run("a book refuses --arxiv", build_refuses("new-book", "--arxiv"))
+    steps.run("a book refuses --anonymous", build_refuses("new-book", "--anonymous"))
+    steps.run("a paper refuses a reviewer copy",
+              build_refuses("new-paper", "--reviewer-copy", "Jane Smith"))
+    steps.run("a paper refuses lualatex, which arXiv does not support",
+              build_refuses("new-paper", "--set", "paper.engine=lualatex"))
+    steps.run("a paper uses the article template by default",
+              output_contains("/assets/templates/paper-article.tex", "new-paper"))
+    paper_template_steps(steps)
+    steps.run("a paper file name names the first author",
+              output_contains("/new-paper/.book/output/watering-small-gardens-a-field-study-example.pdf",
+                              "new-paper", "--final"))
+    steps.run("--anonymous puts anonymous in the file name",
+              output_contains("/new-paper/.book/output/watering-small-gardens-a-field-study-anonymous.pdf",
+                              "new-paper", "--final", "--anonymous"))
+    steps.run("paper.anonymous: true puts anonymous in the file name",
+              output_contains("watering-small-gardens-a-field-study-anonymous.pdf", "new-paper",
+                              "--final", "--set", "paper.anonymous=true"))
+    steps.run("the abstract is listed apart from the body",
+              output_has_line("PAPER_ABSTRACT=" + str(FIXTURES / "new-paper" / "manuscript"
+                                                      / "010-abstract.md"), "new-paper"))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="self-check.py", description=DESCRIPTION,
                                      epilog=EPILOG)
@@ -192,8 +270,11 @@ def main(argv=None):
     script_steps(steps)
     if shutil.which("bash"):
         settings_steps(steps)
+        paper_steps(steps)
     else:
         steps.skip("build-book.sh settings steps", "bash not found; build-book.sh needs bash")
+    steps.run("an anonymous paper title block names no author, affiliation or email",
+              anonymous_metadata_names_nobody)
     steps.run("the OFL licence in epub.css matches assets/fonts/OFL.txt", same_licence_text)
     steps.run("the vendored EPUB template differs from pandoc's in exactly three places",
               template_has_three_changes)

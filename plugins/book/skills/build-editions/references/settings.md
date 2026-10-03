@@ -98,6 +98,51 @@ Why each of these matters: [epub.md](epub.md).
 | `emblem_alt` | `Publisher emblem` | alt text of an image placed with a `tikzpicture` (the publisher emblem) |
 | `references_heading` | `References` | the level-1 heading of the bibliography, where citation links point |
 
+## Paper keys (`paper:`)
+
+Read only when `book.yaml` has `kind: paper` (the default is `kind: book`). The title comes from
+`book.title`; `book.subtitle`, the page format and the font keys above are not used for a paper.
+
+```yaml
+kind: paper
+book:
+  title: My Paper Title
+  author: Author Name                  # used when paper.authors is empty
+paper:
+  authors:
+    - {name: Author Name, affiliation: A University, email: author@example.org}
+  abstract: manuscript/010-abstract.md
+  template: article
+  engine: xelatex
+  anonymous: false
+  arxiv_category: null
+  format: a4
+```
+
+| Key | Option | Values | Default |
+|-----|--------|--------|---------|
+| `authors` | none | a list of `{name, affiliation, email}`; affiliation and email may be left out | `[]`, which means `book.author` alone |
+| `abstract` | none | the abstract file; it fills the abstract field and is left out of the body | `manuscript/010-abstract.md` |
+| `template` | `--set paper.template=acm` | a built-in template: `article`, `acm` (`acmart` sigconf), `ieee` (`IEEEtran` conference), `lncs` (`llncs`); anything else is refused | `article` |
+| `engine` | `--set paper.engine=pdflatex` | `xelatex`, `pdflatex` (arXiv supports both; lualatex is refused) | `xelatex` |
+| `anonymous` | `--anonymous` | `true` builds with no author, affiliation or email; the file names end in `-anonymous` | `false` |
+| `arxiv_category` | none | an arXiv category such as `cs.SE`; shown in the build report only | none |
+| `format` | `--set paper.format=letter` | `a4`, `letter` | `a4` |
+| `abstract_max_words` | none | not read by the build; the write-text paper check reads it | `250` |
+
+The four templates take the same title block: `title`, the authors with affiliation and
+email, the abstract, the body and the references section, which stays the hand-written
+references file. `paper.format` sets the paper size of `article`, `ieee` and `lncs`; `acm`
+keeps the page size of `acmart`. The `acm` template prints no ACM copyright block, reference
+format or CCS concepts (`\setcopyright{none}`, `printacmref=false`), so a preprint builds without
+ACM boilerplate; add those when the venue gives them. A venue not in the list is added to the
+plugin as a new built-in template (`assets/templates/paper-<name>.tex`), not kept as a file
+in one paper.
+
+**Citations.** Every template keeps the book's alpha labels (`[Abc99]`) and links each one to
+its entry in the references file. A venue that requires numeric citations (`[1]`) is not
+covered: the labels are not renumbered.
+
 ## Folder keys
 
 | Key | Option | Default |
@@ -117,14 +162,17 @@ of the book it runs from.
 | Key | Default | Use |
 |-----|---------|-----|
 | `pandoc_image` | `pandoc/extra:3.8.3` | the pinned image; must match the pandoc the EPUB template was taken from ([epub.md](epub.md)) |
-| `pandoc_volume` | `book-to-pdf-texlive` | Docker volume holding TeX Live packages and fonts |
+| `pandoc_volume` | `book-to-pdf-texlive` | Docker volume holding TeX Live packages and fonts (a book only) |
+| `paper_tex_image` | `texlive/texlive:TL2025-historic@sha256:7056390e...` (pinned by digest) | full TeX Live 2025 (2.6 GB), as on arXiv; latexmk for every paper and the arXiv bundle check run here |
 | `epubcheck` | `5.1.0` | epubcheck release, written like `5.1.0`; the jar is checked against a pinned sha256 for this version. Another version has no known sha256 and is refused unless `epub-check.py` runs with `--allow-unverified` |
 
 ## Other options
 
 | Option | Does | Default |
 |--------|------|---------|
-| `--edition <name>` | `print`, `digital`, `epub`, `all` | `all` |
+| `--edition <name>` | `print`, `digital`, `epub`, `all` for a book; `paper` (or `all`) for a paper | `all`, which is `paper` for a paper |
+| `--arxiv` | paper only: also write the arXiv source bundle and check it | off |
+| `--anonymous` | paper only: no authors, affiliations or emails | `paper.anonymous` |
 | `--parallel` / `--sequential` | build the editions together or one by one | parallel |
 | `--azw3` | also convert the EPUB to AZW3 (needs calibre) | off |
 | `--final` / `--draft` | final or draft mode | draft |
@@ -132,7 +180,7 @@ of the book it runs from.
 | `--protected` / `--unprotected` | PDF copy/print protection for drafts | protected |
 | `--changes-since <ref>`, `--changes-until <ref>` | changes copy ([changes-since.md](changes-since.md)) | none |
 | `--output <file>` | output file name: letters, digits, `.`, `_` and `-` only | generated |
-| `--template <file>` | another LaTeX template | bundled |
+| `--template <file>` | another LaTeX template, for a book only; a paper refuses it and names its template in `paper.template` | bundled |
 | `--config <file>`, `--set key=value` | config file, one override (repeatable) | found by walking up |
 
 ## Structure mapping

@@ -2,6 +2,11 @@
 
 Self-contained review that reads the entire manuscript to find style issues that only emerge across chapter boundaries. Per-chapter reviews (common-problems, flow, all-problems) catch issues within a chapter. This review catches issues between chapters.
 
+**For a paper** (`kind: paper`): a chapter here is one section of the paper, and the rules a
+paper turns off ("A book or a paper" in the write-text `SKILL.md`) are not findings.
+For a paper, skip Part Boundaries and the WHY/HOW chapter roles, and check Section 13 of the
+rules (contributions, scoped claims, hedging, threats, numbers) across the sections.
+
 ## Table of Contents
 
 - [1: Terminology Consistency](#1-terminology-consistency-rules-24-217) -- same name for same concept across all chapters (includes within-chapter near-synonym drift)

@@ -3,7 +3,7 @@ import shlex
 import unittest
 from pathlib import Path
 
-from support import NEW_BOOK, TemporaryBook, run_script
+from support import NEW_BOOK, NEW_PAPER, TemporaryBook, run_script
 
 import book_config
 from book_config import (KIND_BACK_MATTER, KIND_CHAPTER, KIND_FRONT_MATTER, KIND_PART,
@@ -370,6 +370,207 @@ class YamlSubsetTest(unittest.TestCase):
                 # when / then
                 with self.assertRaisesRegex(ConfigError, r"line \d+"):
                     read_yaml_subset(text)
+
+
+class DocumentKindTest(unittest.TestCase):
+    def test_should_be_a_book_when_book_yaml_names_no_kind(self):
+        # when
+        config = load_config(start=NEW_BOOK)
+
+        # then
+        self.assertEqual(config.kind, "book")
+        self.assertFalse(config.is_paper)
+
+    def test_should_be_a_paper_when_book_yaml_says_kind_paper(self):
+        # when
+        config = load_config(start=NEW_PAPER)
+
+        # then
+        self.assertEqual(config.kind, "paper")
+        self.assertTrue(config.is_paper)
+
+    def test_should_be_a_paper_when_the_command_line_sets_the_kind(self):
+        # when
+        config = load_config(start=NEW_BOOK, overrides=["kind=paper"])
+
+        # then
+        self.assertTrue(config.is_paper)
+
+
+class PaperSettingsTest(unittest.TestCase):
+    def test_should_give_the_paper_defaults_when_the_paper_sets_none(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "book.yaml").write_text("kind: paper\n", encoding="utf-8")
+
+            # when
+            paper = load_config(start=folder).paper
+
+        # then
+        self.assertEqual(paper.authors, [])
+        self.assertEqual(paper.abstract, folder / "manuscript" / "010-abstract.md")
+        self.assertEqual(paper.template, "article")
+        self.assertEqual(paper.engine, "xelatex")
+        self.assertFalse(paper.anonymous)
+        self.assertIsNone(paper.arxiv_category)
+        self.assertEqual(paper.abstract_max_words, 250)
+        self.assertEqual(paper.format, "a4")
+
+    def test_should_read_every_author_when_the_paper_lists_them(self):
+        # when
+        paper = load_config(start=NEW_PAPER).paper
+
+        # then
+        self.assertEqual([(author.name, author.affiliation, author.email)
+                          for author in paper.authors],
+                         [("Sam Example", "Garden School", "sam@example.org"),
+                          ("Lee Sample", None, None)])
+        self.assertEqual(paper.arxiv_category, "cs.SE")
+        self.assertEqual(paper.abstract_max_words, 200)
+
+    def test_should_use_the_book_author_when_the_paper_lists_no_author(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "book.yaml").write_text("kind: paper\nbook:\n  author: Ada Example\n",
+                                              encoding="utf-8")
+
+            # when
+            paper = load_config(start=folder).paper
+
+        # then
+        self.assertEqual([author.name for author in paper.authors], ["Ada Example"])
+
+    def test_should_accept_the_template_when_the_paper_names_a_built_in_venue(self):
+        for venue in ("article", "acm", "ieee", "lncs"):
+            with self.subTest(venue=venue):
+                # given
+                with TemporaryBook() as folder:
+                    (folder / "book.yaml").write_text(f"kind: paper\npaper:\n  template: {venue}\n",
+                                                      encoding="utf-8")
+
+                    # when
+                    paper = load_config(start=folder).paper
+                    checked = run_script("book_config.py", "check", "--format", "tsv", cwd=folder)
+
+                # then
+                self.assertEqual(paper.template, venue)
+                self.assertNotIn("paper.template", checked.stdout)
+
+    def test_should_report_a_defect_when_the_paper_names_a_template_file(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "venue").mkdir()
+            (folder / "venue" / "main.tex").write_text("\\documentclass{article}\n",
+                                                       encoding="utf-8")
+            (folder / "book.yaml").write_text("kind: paper\npaper:\n  template: venue/main.tex\n",
+                                              encoding="utf-8")
+
+            # when
+            result = run_script("book_config.py", "check", "--format", "tsv", cwd=folder)
+
+        # then
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("paper.template\twrong-value", result.stdout)
+        self.assertIn("article, acm, ieee, lncs", result.stdout)
+
+    def test_should_print_the_paper_settings_when_paths_are_asked_for_shell(self):
+        # when
+        result = run_script("book_config.py", "paths", "--shell", cwd=NEW_PAPER)
+
+        # then
+        self.assertEqual(result.returncode, 0, result.stderr)
+        values = {name: shlex.split(value)[0] if value else ""
+                  for name, value in (line.split("=", 1) for line in result.stdout.splitlines())}
+        self.assertEqual(values["BOOK_KIND"], "paper")
+        self.assertEqual(values["PAPER_TEMPLATE"], "article")
+        self.assertEqual(values["PAPER_ENGINE"], "xelatex")
+        self.assertEqual(values["PAPER_ANONYMOUS"], "false")
+        self.assertEqual(values["PAPER_FORMAT"], "a4")
+        self.assertEqual(values["PAPER_ABSTRACT"],
+                         str(NEW_PAPER / "manuscript" / "010-abstract.md"))
+        self.assertEqual([author["name"] for author in json.loads(values["PAPER_AUTHORS"])],
+                         ["Sam Example", "Lee Sample"])
+
+
+class PaperCheckTest(unittest.TestCase):
+    def test_should_accept_the_paper_when_every_paper_value_is_allowed(self):
+        # when
+        result = run_script("book_config.py", "check", "--format", "tsv", cwd=NEW_PAPER)
+
+        # then
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertNotIn("publishing.cover", result.stdout)
+        self.assertNotIn("sales_text.", result.stdout)
+
+    def test_should_report_a_defect_when_a_paper_value_is_not_allowed(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "book.yaml").write_text(
+                "kind: article\npaper:\n  engine: lualatex\n  format: a5\n"
+                "  template: springer\n  abstract_max_words: many\n", encoding="utf-8")
+
+            # when
+            result = run_script("book_config.py", "check", "--format", "tsv", cwd=folder)
+
+        # then
+        self.assertEqual(result.returncode, 1)
+        for key in ("kind", "paper.engine", "paper.format", "paper.template",
+                    "paper.abstract_max_words"):
+            self.assertIn(f"{key}\twrong-value", result.stdout)
+
+    def test_should_accept_paper_keys_in_a_book_when_they_hold_allowed_values(self):
+        # given
+        with TemporaryBook() as folder:
+            (folder / "book.yaml").write_text("paper:\n  engine: pdflatex\n  format: letter\n",
+                                              encoding="utf-8")
+
+            # when
+            result = run_script("book_config.py", "check", "--format", "tsv", cwd=folder)
+
+        # then
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+
+class PaperManuscriptTest(unittest.TestCase):
+    def test_should_read_paper_sections_as_chapters_when_the_kind_is_paper(self):
+        # when
+        files = manuscript_files(load_config(start=NEW_PAPER))
+
+        # then
+        self.assertEqual([(item.name, item.kind, item.chapter) for item in files], [
+            ("010-abstract.md", KIND_FRONT_MATTER, None),
+            ("020-introduction.md", KIND_CHAPTER, 1),
+            ("030-related-work.md", KIND_CHAPTER, 2),
+            ("040-method.md", KIND_CHAPTER, 3),
+            ("900-references.md", KIND_REFERENCES, None),
+        ])
+
+    def test_should_number_one_section_when_it_is_asked_for_alone(self):
+        # given
+        config = load_config(start=NEW_PAPER)
+
+        # then
+        self.assertEqual(chapter_number(NEW_PAPER / "manuscript" / "040-method.md", config), 3)
+        self.assertIsNone(chapter_number(NEW_PAPER / "manuscript" / "010-abstract.md", config))
+
+    def test_should_keep_a_file_before_the_abstract_as_front_matter_when_it_is_numbered_below_ten(self):
+        # given
+        with TemporaryBook(copy_of=NEW_PAPER) as folder:
+            (folder / "manuscript" / "005-title-page.md").write_text("Title\n", encoding="utf-8")
+
+            # when
+            kinds = {item.name: item.kind for item in manuscript_files(load_config(start=folder))}
+
+        # then
+        self.assertEqual(kinds["005-title-page.md"], KIND_FRONT_MATTER)
+        self.assertEqual(kinds["020-introduction.md"], KIND_CHAPTER)
+
+    def test_should_keep_book_classification_when_the_same_files_are_a_book(self):
+        # when
+        files = manuscript_files(load_config(start=NEW_PAPER, overrides=["kind=book"]))
+
+        # then
+        self.assertEqual({item.kind for item in files}, {KIND_FRONT_MATTER, KIND_REFERENCES})
 
 
 class CommandLineTest(unittest.TestCase):

@@ -62,9 +62,40 @@ one chapter and the references file, each in the shape the build and the writing
 The full convention, including raw LaTeX blocks and a manual contents page, is in
 `${CLAUDE_PLUGIN_ROOT}/skills/build-editions/references/manuscript-layout.md`.
 
+## A paper
+
+`new.py --kind paper` writes the same layout for a research paper (`kind: paper` in
+`book.yaml`), with these differences:
+
+| Path | Holds |
+|---|---|
+| `manuscript/010-abstract.md` | The abstract (`paper.abstract`); front matter |
+| `manuscript/020-introduction.md` | The problem, the gap, the question; ends with a numbered list of contributions |
+| `manuscript/030-related-work.md` | Earlier work, grouped by the question it answers |
+| `manuscript/040-method.md` | What was done, in enough detail to do it again |
+| `manuscript/050-results.md` | What was found, one question per subsection |
+| `manuscript/060-threats-to-validity.md` | Every reason the results could be wrong or fail to hold elsewhere |
+| `manuscript/070-conclusion.md` | The answer, what it changes, the next question |
+| `manuscript/900-references.md` | The references, as for a book |
+| `manuscript/images/` | Figures |
+| `CLAUDE.md` | The paper variant: what the paper is, its folders, the skills a paper uses |
+
+Each manuscript file starts with one `#` heading and is one numbered section; every file
+that is not front matter, the abstract or the references counts as a chapter for the checks.
+Number new sections in the gaps (`045-...`), as for a book.
+
+A paper has no `publishing/` folder: no cover and no sales text. `rules/voice.md` is the
+write-text skill's paper voice profile when that skill has one, else its default profile.
+`thinking/`, `rules/`, `sources/`, `notes/` and `.book/` are the same as for a book.
+
+A paper often lives in the folder of its study, next to code, data and a `README.md`. `new.py`
+writes only files that do not exist, lists each one it keeps, and leaves every other file of
+the study alone; the skills read only the paths `book.yaml` names.
+
 ## No README or index files
 
-A book holds no README or index file in any folder. A file that lists the files of a folder
+A book holds no README or index file in any folder it makes (a study folder that holds a paper
+keeps its own `README.md`). A file that lists the files of a folder
 falls behind as soon as a file is added without it. The book's `CLAUDE.md` describes the folders
 in its "Where things live" table, and each file is named by what it holds, so a listing of the
 folder is the index.

@@ -267,7 +267,7 @@ end
 
 local function is_screen_edition(meta)
   if FORMAT:match('^epub') or FORMAT:match('^html') then return true end
-  return meta_is_true(meta['digital-edition'])
+  return meta_is_true(meta['digital-edition']) or meta_is_true(meta['paper-edition'])
 end
 
 function Pandoc(doc)

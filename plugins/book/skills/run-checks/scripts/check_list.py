@@ -18,6 +18,8 @@ GROUPS = (TEXT, FACTS, COVER, SALES_TEXT, SETUP)
 ALL = "all"
 MODES = (ALL, *GROUPS)
 
+MISSING_IN_A_PAPER = {COVER: "a paper has no cover", SALES_TEXT: "a paper has no sales text"}
+
 ON_PATHS = "on the paths given"
 WHOLE_BOOK = "on the whole book"
 
@@ -97,6 +99,10 @@ def sources_in_use(config):
                 return None
     return NO_SOURCES_YET
 
+def a_paper(config):
+    return None if config.is_paper else "a book has no arXiv bundle; this check is for a paper"
+
+
 STORE_DESCRIPTION = feature("sales_text.amazon", "store description")
 KEYWORDS = feature("sales_text.keywords", "keywords file")
 
@@ -156,7 +162,9 @@ CHECKS = (
           needs=(GLOSSARY,)),
     text_check("term-density-check.py", reach=WHOLE_BOOK),
     text_check("glossary-check.py", reach=WHOLE_BOOK, graded=True),
+    text_check("paper-check.py", reach=WHOLE_BOOK, graded=True),
     text_check("code-font-check.py", reach=WHOLE_BOOK, graded=True, skill="build-editions"),
+    Check(TEXT, "build-editions", "arxiv-bundle-check.py", needs=(a_paper,)),
     Check(TEXT, "revise-from-notes", "open-notes.py", ("check",)),
     Check(TEXT, "write-text", "vale-run.py", reach=ON_PATHS, graded=False, uses_vale=True),
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Set up a new book in a folder: book.yaml, the folders, starter files and a tool check.
+"""Set up a new book or paper in a folder: book.yaml, the folders, starter files and a tool check.
 
 Writes the standard layout (the init skill, references/book-layout.md) and nothing the book
 already has:
@@ -29,8 +29,18 @@ The starter manuscript, the thinking/argument and thinking/doubts starters, the 
 design and the sales-text files are written only while the manuscript folder has no .md
 file. No folder gets a README or index file.
 
+--kind paper sets up a research paper instead (the default is --kind book): book.yaml with
+`kind: paper` and the paper section, a paper CLAUDE.md, and a starter manuscript of an
+abstract, an introduction that ends in a numbered list of contributions, related work,
+method, results, threats to validity, a conclusion, the references file and images/. A paper
+gets no publishing/ folder: no cover and no sales text. rules/voice.md is the write-text
+skill's paper voice profile when that skill has one, else its default profile. Everything
+else is the same as for a book. A folder that already holds a book.yaml keeps its own kind.
+
 An existing file is never changed, except that .gitignore gains missing lines, so a folder
-that already holds a book gains only what it lacks. A folder inside another book (a book.yaml
+that already holds a book gains only what it lacks, and a folder that holds other work (a
+study with code, data and a README.md) keeps every file it has. Each file that is kept
+because it is already there is listed as `keep`. A folder inside another book (a book.yaml
 above it) is refused. A path the book.yaml puts outside the book folder is shown and made as a
 full path. After writing, the write-text skill's vale-sync.py --fix copies the Vale style into
 rules/vale and runs `vale sync` in Docker (without Docker it says SKIPPED and the book is still
@@ -52,15 +62,17 @@ SKILL = SCRIPTS.parent
 LIB = Path(__file__).resolve().parents[3] / "lib"
 TEMPLATES = SKILL / "templates"
 MARKETING_TEMPLATES = SKILL.parent / "prepare-sales-text" / "templates"
-DEFAULT_VOICE = SKILL.parent / "write-text" / "profiles" / "default.md"
+VOICE_PROFILES = SKILL.parent / "write-text" / "profiles"
+DEFAULT_VOICE = VOICE_PROFILES / "default.md"
+PAPER_VOICE = VOICE_PROFILES / "paper-voice.md"
 VALE_SYNC = SKILL.parent / "write-text" / "scripts" / "vale-sync.py"
 sys.path.insert(0, str(LIB))
 sys.path.insert(0, str(SCRIPTS))
 sys.dont_write_bytecode = True
 
 from book_yaml import new_layout_paths, relative_or_none, same_values, scalar
-from book_config import (CONFIG_FILE_NAMES, GLOSSARY_HEADING_SEPARATOR, ConfigError,
-                         find_config_file, load_config)
+from book_config import (CONFIG_FILE_NAMES, DOCUMENT_KINDS, GLOSSARY_HEADING_SEPARATOR,
+                         KIND_BOOK, KIND_PAPER, ConfigError, find_config_file, load_config)
 from decisions import render_template
 
 TOOL = "new"
@@ -96,15 +108,19 @@ THINKING_FILES = {
                                                                  "settled yet."),
 }
 COVER_FOLDERS = ("font-widths",)
-EMPTY_FOLDERS = ("thinking.argument", "thinking.doubts", "notes", "publishing.cover",
-                 "cover.final", "publishing.sales_text", "rules.vale", "work.runs",
+EMPTY_FOLDERS = ("thinking.argument", "thinking.doubts", "notes", "rules.vale", "work.runs",
                  "work.output", "work.caches", "sources.to_add")
+PUBLISHING_FOLDERS = ("publishing.cover", "cover.final", "publishing.sales_text")
+PAPER_TEMPLATES = Path("paper")
+IMAGES_FOLDER = "images"
+OWN_CLAUDE_MD_MARK = "/book:init"
 
 
 class Plan:
     def __init__(self, root):
         self.root = root
         self.items = []
+        self.notes = []
 
     def planned(self, path):
         return any(item[1] == path for item in self.items)
@@ -185,6 +201,17 @@ def existing_config(root):
     return next((root / name for name in CONFIG_FILE_NAMES if (root / name).is_file()), None)
 
 
+def kind_of_folder(root, asked_kind):
+    config_file = existing_config(root)
+    if config_file is None:
+        return asked_kind or KIND_BOOK
+    written_kind = load_config(config=config_file).kind
+    if asked_kind and asked_kind != written_kind:
+        raise ConfigError(f"{config_file.name} already says kind: {written_kind}; "
+                          f"change it there first to make a {asked_kind}")
+    return written_kind
+
+
 def names_left_unset(root, title, author):
     config_file = existing_config(root)
     if config_file is not None:
@@ -237,8 +264,18 @@ def vale_references_glob(paths):
     return references
 
 
-def book_yaml_text(title, author, subtitle):
-    text = template("book.yaml", title=scalar(title), author=scalar(author))
+def kind_template(kind, name):
+    return (PAPER_TEMPLATES / name).as_posix() if kind == KIND_PAPER else name
+
+
+def voice_profile(kind):
+    if kind == KIND_PAPER and PAPER_VOICE.is_file():
+        return PAPER_VOICE
+    return DEFAULT_VOICE
+
+
+def book_yaml_text(title, author, subtitle, kind):
+    text = template(kind_template(kind, "book.yaml"), title=scalar(title), author=scalar(author))
     if subtitle:
         text = text.replace("  subtitle: null", f"  subtitle: {scalar(subtitle)}", 1)
     problems = same_values({"book": {"title": title, "author": author,
@@ -257,16 +294,17 @@ def manuscript_is_empty(root, paths):
     return not folder.is_dir() or not any(folder.glob("*.md"))
 
 
-def plan_book(root, title, author, subtitle, year):
+def plan_book(root, title, author, subtitle, year, kind):
     plan = Plan(root)
     config_file = existing_config(root)
     if config_file is None:
-        plan.file("book.yaml", book_yaml_text(title, author, subtitle))
+        plan.file("book.yaml", book_yaml_text(title, author, subtitle, kind))
     else:
         plan.file(config_file.name, "")
     paths = book_paths(root, config_file)
+    is_paper = kind == KIND_PAPER
 
-    plan.file("CLAUDE.md", template("CLAUDE.md", title=title, author=author))
+    plan.file("CLAUDE.md", template(kind_template(kind, "CLAUDE.md"), title=title, author=author))
     plan.append_lines(".gitignore", gitignore_lines(paths))
     plan.file(".claude/settings.json", template("claude-settings.json"))
     plan.file(paths["rules.decisions"], render_template())
@@ -276,10 +314,13 @@ def plan_book(root, title, author, subtitle, year):
     starting = manuscript_is_empty(root, paths)
     if starting:
         references = Path(paths["manuscript.references"]).name
-        for starter in sorted((TEMPLATES / "manuscript").glob("*.md")):
+        starters = kind_template(kind, "manuscript")
+        for starter in sorted((TEMPLATES / starters).glob("*.md")):
             name = references if starter.name.endswith("references.md") else starter.name
-            plan.file(manuscript / name, template(f"manuscript/{starter.name}", year=year,
+            plan.file(manuscript / name, template(f"{starters}/{starter.name}", year=year,
                                                   author=latex_text(author)))
+        if is_paper:
+            plan.folder(manuscript / IMAGES_FOLDER)
 
     shown = {key: value for key, value in paths.items() if value}
     plan.file(paths["sources.list"], template("sources-list.md", files=shown["sources.library"],
@@ -296,7 +337,7 @@ def plan_book(root, title, author, subtitle, year):
             plan.file(vale_ini.parent / WORD_LIST_FOLDER / word_list, "")
     plan.file(vale_ini, template("vale.ini", references_file=vale_references_glob(paths)))
 
-    if starting:
+    if starting and not is_paper:
         plan.file(paths["cover.design"], template("cover/design.py"))
         for key, name in MARKETING_FILES.items():
             plan.file(paths[key], (MARKETING_TEMPLATES / name).read_text(encoding="utf-8"))
@@ -306,12 +347,24 @@ def plan_book(root, title, author, subtitle, year):
     for (key, name), (heading, line) in THINKING_FILES.items():
         if starting and paths.get(key):
             plan.file(Path(paths[key]) / name, stub_text(heading, line))
-    plan.file(paths["rules.voice"], DEFAULT_VOICE.read_text(encoding="utf-8"))
+    plan.file(paths["rules.voice"], voice_profile(kind).read_text(encoding="utf-8"))
+    if is_paper and not PAPER_VOICE.is_file() and not (root / paths["rules.voice"]).exists():
+        plan.notes.append(f"the write-text skill has no paper voice profile yet, so "
+                          f"{paths['rules.voice']} is its default profile")
     for key in EMPTY_FOLDERS:
         plan.folder(paths[key])
-    for name in COVER_FOLDERS:
-        plan.folder(Path(paths["publishing.cover"]) / name)
+    if not is_paper:
+        for key in PUBLISHING_FOLDERS:
+            plan.folder(paths[key])
+        for name in COVER_FOLDERS:
+            plan.folder(Path(paths["publishing.cover"]) / name)
     return plan
+
+
+def someone_elses_claude_md(root):
+    claude_md = root / "CLAUDE.md"
+    return claude_md.is_file() and OWN_CLAUDE_MD_MARK not in claude_md.read_text(
+        encoding="utf-8", errors="replace")
 
 
 def run_vale_sync(root):
@@ -337,6 +390,8 @@ def parse_arguments(argv):
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("folder", nargs="?", default=".",
                         help="the folder of the new book (default: the working folder)")
+    parser.add_argument("--kind", choices=DOCUMENT_KINDS,
+                        help="book or paper (default: the kind book.yaml names, else book)")
     parser.add_argument("--title", help=f"the book title (default: {UNSET})")
     parser.add_argument("--author", help=f"the author's name (default: {UNSET})")
     parser.add_argument("--subtitle", help="the subtitle")
@@ -365,12 +420,13 @@ def main(argv=None):
     unset_names = names_left_unset(root, title, author)
     year = args.year or str(datetime.date.today().year)
     try:
-        plan = plan_book(root, title, author, args.subtitle, year)
+        kind = kind_of_folder(root, args.kind)
+        plan = plan_book(root, title, author, args.subtitle, year, kind)
     except (ConfigError, KeyError) as error:
         print(f"{TOOL}: {error}", file=sys.stderr)
         return 2
 
-    print(f"book folder: {root}")
+    print(f"{kind} folder: {root}")
     plan.show()
     counts = plan.counts()
     summary = ", ".join(f"{number} {action}" for action, number in sorted(counts.items()))
@@ -384,6 +440,12 @@ def main(argv=None):
                   "runs 'vale sync' in Docker")
     if unset_names:
         print(f"note: {' and '.join(unset_names)} not set yet; set them in book.yaml and CLAUDE.md")
+    if someone_elses_claude_md(root):
+        claude_template = TEMPLATES / kind_template(kind, "CLAUDE.md")
+        print(f"note: CLAUDE.md is already there and is kept as it is; to add the {kind}'s "
+              f"folders, skills and rules, copy what it needs from {claude_template}")
+    for note in plan.notes:
+        print(f"note: {note}")
     if args.fix and not args.no_tools:
         run_vale_sync(root)
     if not args.no_tools:

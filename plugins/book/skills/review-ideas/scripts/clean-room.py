@@ -225,6 +225,10 @@ def read_room_state(room):
     return {}
 
 
+PAPER_BACK_COVER = ("# Back cover\n\nA paper has no back cover. Its abstract, the first file of "
+                    "the manuscript, states what the paper promises.\n")
+
+
 def book_facts(config):
     lines = ["# Book facts", "",
              "These live outside the manuscript: on the title page, the cover and the store page.", ""]
@@ -232,6 +236,9 @@ def book_facts(config):
                        ("Language", "language"), ("Description", "description")):
         value = config.book.get(key)
         lines.append(f"- **{label}:** {value if value else 'not set'}")
+    if config.is_paper:
+        lines.append(f"- **Kind:** a research paper, not a book; its abstract is "
+                     f"manuscript/{config.paper.abstract.name}")
     return "\n".join(lines) + "\n"
 
 
@@ -371,7 +378,9 @@ def plan_setup(config, args):
         warnings.append(f"no decisions file at {decisions}; reviewers cannot tell decided items")
         plan.write(room / "decisions.md", "# Decisions\n\nNo decisions recorded yet.\n")
     back_cover = config.path("sales_text.back_cover")
-    if back_cover and Path(back_cover).is_file():
+    if config.is_paper:
+        plan.write(room / "book" / "back-cover.md", PAPER_BACK_COVER)
+    elif back_cover and Path(back_cover).is_file():
         plan.copy_file(Path(back_cover), room / "book" / "back-cover.md")
     else:
         plan.write(room / "book" / "back-cover.md", "# Back cover\n\nThe book has no back-cover text yet.\n")

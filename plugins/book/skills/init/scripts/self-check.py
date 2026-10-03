@@ -13,6 +13,13 @@ existing: on a folder that already holds a book, new.py --fix adds only what the
           a deleted starter file comes back and nothing else changes, an existing .gitignore
           keeps its lines and gains only the missing ones, and chapters already in
           manuscript/ keep every byte and get no starter files beside them.
+paper:    new.py --kind paper --fix writes the paper layout (book.yaml with kind: paper, the
+          starter sections, manuscript/images/) and no publishing/ folder; in a study folder
+          it keeps README.md, CLAUDE.md, code and data byte for byte and lists CLAUDE.md as
+          kept; book_config.py check accepts the book.yaml with no unknown key and no wrong
+          value; the sections read as chapters and the abstract as front matter; a second
+          --fix changes nothing; in an empty folder it writes the paper CLAUDE.md and the
+          paper voice profile (the default profile while write-text has none).
 vale:     new.py --fix on a machine with no Docker copies the Vale style into the book,
           says SKIPPED for `vale sync`, and still makes the book.
 tools:    toolchain-check.py answers in the check contract's shape.
@@ -88,6 +95,18 @@ NEW_BOOK_FILES = ("book.yaml", "CLAUDE.md", ".gitignore", ".claude/settings.json
                   "publishing/sales-text/intended-impression.md")
 STARTER_OPEN_WORK = {"sync-check.py"}
 STARTER_FONT_FAMILIES = ("DejaVu Serif", "DejaVu Sans")
+PAPER_STARTER_FILES = ("010-abstract.md", "020-introduction.md", "030-related-work.md",
+                       "040-method.md", "050-results.md", "060-threats-to-validity.md",
+                       "070-conclusion.md", "900-references.md")
+PAPER_FILES = tuple(name for name in NEW_BOOK_FILES if not name.startswith("publishing/"))
+PAPER_SECTION_COUNT = 6
+STUDY_FILES = {
+    "README.md": "# Soil study\n\nCode and data for the soil study.\n",
+    "CLAUDE.md": "# Soil study\n\nRun the analysis with code/analysis.py.\n",
+    "code/analysis.py": "print('analysis')\n",
+    "data/results.csv": "garden,water\n1,4\n",
+}
+VOICE_PROFILES = PLUGIN / "skills" / "write-text" / "profiles"
 FACTS_CHECKS_WITHOUT_SOURCES = ("uncited-claim-check.py", "stale-argument-pointer-check.py")
 
 
@@ -315,6 +334,70 @@ def existing_chapters_case(cases, work):
                  f"{sorted(after)} {made.stderr[-300:]}")
 
 
+def paper_cases(cases, work):
+    study_folder_case(cases, work)
+    empty_folder_paper_case(cases, work)
+
+
+def study_folder_case(cases, work):
+    study = work / "study"
+    for name, text in STUDY_FILES.items():
+        (study / name).parent.mkdir(parents=True, exist_ok=True)
+        (study / name).write_text(text, encoding="utf-8")
+    study_before = tree_hashes(study)
+    made = python(SCRIPTS / "new.py", study, "--kind", "paper", "--title", "A Soil Study",
+                  "--author", "Ada Example", "--no-tools", "--fix")
+    missing = [name for name in PAPER_FILES + tuple(f"manuscript/{starter}"
+                                                    for starter in PAPER_STARTER_FILES)
+               if not (study / name).exists()]
+    if not cases.expect("paper: --kind paper --fix writes the paper layout",
+                        made.returncode == 0 and not missing
+                        and (study / "manuscript" / "images").is_dir(),
+                        f"exit {made.returncode}, missing {missing} {made.stderr[-300:]}"):
+        return
+    cases.expect("paper: no publishing/ folder", not (study / "publishing").exists(),
+                 made.stdout[-300:])
+    after = tree_hashes(study)
+    changed = [name for name in STUDY_FILES if after.get(name) != study_before[name]]
+    cases.expect("paper: README.md, CLAUDE.md, code and data keep every byte",
+                 not changed, f"{changed}")
+    cases.expect("paper: the existing CLAUDE.md is listed as kept",
+                 "keep    CLAUDE.md" in made.stdout, made.stdout[-400:])
+    check = python(LIB / "book_config.py", "check", "--format", "json", cwd=study)
+    counts = json.loads(check.stdout or "{}").get("counts", {}) if check.stdout.startswith("{") else {}
+    cases.expect("paper: book_config.py check has no unknown key and no wrong value",
+                 check.returncode == 0 and "unknown-key" not in counts
+                 and "wrong-value" not in counts, check.stdout[-400:])
+    kind = python(LIB / "book_config.py", "get", "kind", cwd=study)
+    cases.expect("paper: book.yaml says kind paper", kind.stdout.strip() == "paper",
+                 kind.stdout + kind.stderr[-200:])
+    listed = python(LIB / "book_config.py", "files", cwd=study)
+    kinds = [line.split("\t")[1] for line in listed.stdout.splitlines() if "\t" in line]
+    cases.expect("paper: the sections read as chapters and the abstract as front matter",
+                 kinds[:1] == ["front-matter"] and kinds.count("chapter") == PAPER_SECTION_COUNT
+                 and kinds[-1:] == ["references"], listed.stdout[-400:])
+    before = tree_hashes(study)
+    again = python(SCRIPTS / "new.py", study, "--no-tools", "--fix")
+    cases.expect("paper: a second --fix changes nothing",
+                 again.returncode == 0 and tree_hashes(study) == before
+                 and "create" not in again.stdout, again.stdout[-400:])
+
+
+def empty_folder_paper_case(cases, work):
+    paper = work / "new-paper"
+    made = python(SCRIPTS / "new.py", paper, "--kind", "paper", "--no-tools", "--fix")
+    claude_md = (paper / "CLAUDE.md").read_text(encoding="utf-8") if made.returncode == 0 else ""
+    cases.expect("paper: an empty folder gets the paper CLAUDE.md",
+                 "kind: paper" in claude_md and "/book:init" in claude_md
+                 and "publishing/" not in claude_md, made.stdout[-300:] + made.stderr[-300:])
+    profile = VOICE_PROFILES / "paper-voice.md"
+    expected_voice = profile if profile.is_file() else VOICE_PROFILES / "default.md"
+    voice = paper / "rules" / "voice.md"
+    cases.expect("paper: rules/voice.md is the paper voice profile, else the default one",
+                 voice.is_file() and voice.read_bytes() == expected_voice.read_bytes(),
+                 str(expected_voice))
+
+
 def vale_cases(cases, work):
     book = work / "no-docker-book"
     folder_with_no_tools = work / "no-tools-on-path"
@@ -350,6 +433,7 @@ def main(argv=None):
         work = Path(folder)
         new_cases(cases, work)
         existing_book_cases(cases, work)
+        paper_cases(cases, work)
         vale_cases(cases, work)
         tool_cases(cases, work)
     return report.emit(args.format)

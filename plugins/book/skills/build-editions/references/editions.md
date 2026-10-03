@@ -188,7 +188,8 @@ over the whole document, because a citation cannot be linked before the anchors 
   `+` is not a valid XML name character, and pandoc repairs only ids that start wrong. One
   function makes both the anchor and the link, so they cannot disagree. Two keys that would give
   one id are reported, and the second is left unlinked.
-- **Where it acts.** EPUB and HTML, plus any build with the `digital-edition` flag. A print build
+- **Where it acts.** EPUB and HTML, plus any build with the `digital-edition` flag, and the
+  paper edition (its `paper-edition` flag), whose PDF is read on screen. A print build
   gets nothing from it. There is no condition in the build script: a second copy of that
   decision would sit where nobody looks when the two disagree.
 - **Filter order matters.** `digital-mode.lua` runs first and turns raw front matter into blocks;

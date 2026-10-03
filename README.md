@@ -1,6 +1,6 @@
 # Book Writing Skills
 
-A Claude Code plugin that helps you write, check, review and publish a non-fiction book.
+A Claude Code plugin that helps you write, check, review and publish a non-fiction book, or a research paper for arXiv.
 
 Your book keeps one config file, `book.yaml`, next to its text. Every skill reads its paths and settings from that file, so the skills work with any folder layout and any book. The skills are not written for any one book or author.
 
@@ -31,6 +31,22 @@ Run `/book:init existing` in the folder that holds it, whatever its shape. Claud
 
 If your chapters are already in a `manuscript/` folder as `NNN-name.md` files (for example `110-first-steps.md`), `/book:init new` in the folder above it is enough.
 
+## A research paper
+
+Set `kind: paper` in `book.yaml`, or start with `/book:init new paper`. It works in a folder that already holds your study (code, data, a README): init adds the paper files next to them and never writes over a file that is there.
+
+```
+/book:init new paper              a starter paper: abstract, introduction with a contribution list,
+                                  related work, method, results, threats to validity, conclusion
+/book:write-text                  "write the method section from ..."; uses the paper voice
+/book:check-facts                 claims, quotes and numbers against your sources
+/book:review-ideas readers        cold readers and skeptics, like a peer review
+/book:build-editions --arxiv      the PDF, the .tex and the arXiv source bundle, checked by compiling it
+/book:run-checks                  every script check; a paper skips the cover and sales-text checks
+```
+
+The paper settings live under `paper:` in `book.yaml`: authors with affiliation and email, the abstract file, the LaTeX template (one of the built-in `article`, `acm`, `ieee` or `lncs`; you switch venue by changing that one key), the engine (`xelatex` or `pdflatex`, both of which arXiv compiles), the page format and the abstract word limit. `--anonymous` builds a copy without authors for double-blind review. A paper has no cover, no sales text and no EPUB. Citations, sources, notes and decisions work as they do for a book.
+
 ## The eleven skills
 
 | Skill | Call | What it does |
@@ -55,9 +71,9 @@ The reviews (review-text, review-ideas, check-facts, and the review modes of des
 
 ## What it assumes
 
-- A **non-fiction** book.
+- A **non-fiction** book, or a research paper (`kind: paper`).
 - **English** prose for the prose checks. A book in another language still builds, but the English-only checks say `SKIPPED`.
-- A **Markdown** manuscript, one file per chapter, named `NNN-name.md`.
+- A **Markdown** manuscript, one file per chapter (or per paper section), named `NNN-name.md`.
 - Citation keys in the **alpha BibTeX style**, such as `[Abc99]`.
 - **KDP and Amazon** as the print and store target (cover geometry, store description, keywords).
 - An opinionated **house style**: plain A2 English, ASCII punctuation (Latin letters with accents are allowed), no bold in running text, no phrase wrapped in a pair of dashes. The rules live in the write-text skill, and your own voice profile (`rules/voice.md`) can change many of them.
@@ -65,7 +81,7 @@ The reviews (review-text, review-ideas, check-facts, and the review modes of des
 ## Cost and the first run
 
 - **Tokens.** `review-ideas` (above all its `readers` mode), `check-facts`, the review of `design-cover` and the review of `prepare-sales-text` start many subagents, and many of them read the whole book. That costs many tokens. Each of these skills says how big a run is and asks before it starts a batch.
-- **The first build.** The first `/book:build-editions` downloads the `pandoc/extra` Docker image and fills a TeX Live volume. That is large and takes minutes, but it happens once.
+- **The first build.** The first `/book:build-editions` downloads the `pandoc/extra` Docker image and fills a TeX Live volume. That is large and takes minutes, but it happens once. The first build of a paper also downloads full TeX Live 2025 (`tools.paper_tex_image`, 2.6 GB), the TeX that arXiv compiles with.
 
 ## Permission prompts
 

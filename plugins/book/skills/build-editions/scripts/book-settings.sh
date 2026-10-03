@@ -26,6 +26,7 @@ load_book_settings() {
     eval "$shell_lines"
     DOCKER_IMAGE="$BOOK_TOOLS_PANDOC_IMAGE"
     TEXLIVE_VOLUME="$BOOK_TOOLS_PANDOC_VOLUME"
+    PAPER_TEX_IMAGE="$BOOK_TOOLS_PAPER_TEX_IMAGE"
     set_docker_user
 }
 

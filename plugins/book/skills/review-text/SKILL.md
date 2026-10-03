@@ -49,7 +49,8 @@ Every mode takes two options:
    with the full text in `${CLAUDE_PLUGIN_ROOT}/skills/write-text/references/rules-explained.md`.
    Every finding names the rule it applies, by number.
 3. **Read the voice profile** (`rules.voice`, or
-   `${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/default.md` when the book has none).
+   `${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/default.md` when the book has none;
+   `${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/paper-voice.md` for a paper).
 4. **Read only the decisions index** (`python3 ${CLAUDE_PLUGIN_ROOT}/lib/decisions.py index`)
    and open the entries you need (`decisions.py show ID`). Never report an item marked DECIDED.
    Match each finding before writing it:
@@ -66,6 +67,17 @@ Every mode takes two options:
    `<work.runs>/<YYYY-MM-DD-HHMM>-review-text-<mode>/` and keeps only the newest three runs of
    that mode. With `--resume`, use the folder `run_folders.py latest review-text <mode>` prints
    instead.
+
+## A paper
+
+When `book_config.py show` prints `kind: paper`, the text is a research paper. Read "chapter"
+in the modes and their files as "section" (one manuscript file), and "the whole book" as the
+whole paper. Judge it by the write-text rules as "A book or a paper" in
+`${CLAUDE_PLUGIN_ROOT}/skills/write-text/SKILL.md` sets them: Section 13 holds, and a rule
+that section turns off is never a finding (no Part boundaries, no chapter summary, no
+coined-term learning path). In `flow` the abstract and the conclusion stand for the opening and
+the summary; in `hard-words` the least experienced reader is the one `thinking.audience` names
+for the paper.
 
 ## Findings become notes
 
