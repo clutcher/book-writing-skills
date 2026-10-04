@@ -399,13 +399,13 @@ def assess(paths, book, root, exempt_files=()):
     return findings
 
 
-FIXTURE_CHAPTER = """# Chapter 1: What Quality Means
+FIXTURE_CHAPTER = """# Chapter 1: Flour and Water
 
 This chapter opens with the exact sentence that is present in the book today.
 
-## 1.1 What Quality Is
+## 1.1 What Flour Does
 
-Quality is what a reader can act on.
+Flour holds the water a loaf needs.
 """
 
 FIXTURE_DRIFT = """# History notes

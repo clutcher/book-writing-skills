@@ -38,7 +38,8 @@ Templates for every file the review writes are in `plan/templates/`.
 | `manuscript/` | the frozen manuscript; never edit it |
 | `book/facts.md` | title, subtitle, author: they live outside the manuscript |
 | `book/back-cover.md` | the cover text, if the book has one |
-| `sources/list.md` | the book's sources list |
+| `sources/references.bib` | the book's sources: authors, title, year, one entry per citation key |
+| `sources/list.md` | the book's sources list: where to read each source |
 | `sources/sources-for-reviewer.md` | neutral primary sources for the load-bearing claims {{sources_for_reviewer_note}} |
 | `decisions.md` | settled and open decisions |
 | `review/` | everything this round writes; `review/mechanical-checks.txt` is the author's citation check |

@@ -65,7 +65,7 @@ from source_files import (add_config_arguments, load_book, manuscript_paths,
                           markdown_files_under, tool_failed)
 from check_output import (ADVISORY, INFORMATIONAL, CheckReport, add_output_arguments,
                           skipped_for_missing)
-from citation_key import KEY_SHAPE
+from citations import cited_keys as keys_in_text
 from source_registry import read_bank
 
 TOOL = "guardrail-prose-check"
@@ -76,7 +76,6 @@ CLASSES = {
     "phrase-no-citation-nearby": INFORMATIONAL,
 }
 
-BRACKET = re.compile(r"\[([^\]\[\n]{1,160})\]")
 FENCE = re.compile(r"^```.*?^```", re.M | re.S)
 QUOTED = re.compile(r'"([^"\n]{10,240})"|\u201c([^\u201d\n]{10,240})\u201d')
 DIRECTIVE = re.compile(r"\bdo not\b|\bdon't\b|\bnever\b|\bmust not\b|\bmay not\b"
@@ -128,13 +127,7 @@ def normalise(text):
 
 
 def cited_keys(line):
-    found = set()
-    for group in BRACKET.findall(line):
-        for token in re.split(r"[,;]", group):
-            token = token.strip()
-            if KEY_SHAPE.match(token):
-                found.add(token)
-    return found
+    return set(keys_in_text(line))
 
 
 def read_manuscript(manuscript_files, references=None):
@@ -165,9 +158,8 @@ def read_manuscript(manuscript_files, references=None):
 
 def citing_sentence(line, key):
     for sentence in SENTENCE_SPLIT.split(line):
-        if "%s]" % key in sentence or "%s," % key in sentence or "%s;" % key in sentence:
-            if re.search(r"\[[^\]\n]*%s" % re.escape(key), sentence):
-                return sentence.strip()
+        if key in cited_keys(sentence):
+            return sentence.strip()
     return line.strip()
 
 
@@ -431,22 +423,22 @@ this paper's own Finding 5 and does NOT conflate the two quarter-figures. Cite f
 FIXTURE_CHAPTER = """# Chapter 1
 
 A rotation that needs more ploughing passes each year gave substantially larger
-harvests by ending this wasted effort [SW16].
+harvests by ending this wasted effort [@SW16].
 
 Field studies confirmed the effect: night traffic wakes sleepers in a
-quarter of cases [BMW18]. The same research found that road noise shortens
+quarter of cases [@BMW18]. The same research found that road noise shortens
 sleep every night and raises their anxiety.
 
 The wording in the book is "night traffic wakes sleepers in a quarter of cases"
-[Per19], and a scope caution applies [Ryn21].
+[@Per19], and a scope caution applies [@Ryn21].
 
 Trained tasters lose their edge when blindfolded, so the gain comes from reading
-the label rather than from taste [Hal15].
+the label rather than from taste [@Hal15].
 
-At open markets, small stalls sell most in the rain [Vey09].
+At open markets, small stalls sell most in the rain [@Vey09].
 
 Splitting the shift looks like a play for output, and the price is comfort for raw
-output [Orm12].
+output [@Orm12].
 
 ```
 we skip weeding in every season of the cycle except the last one

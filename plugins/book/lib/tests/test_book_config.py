@@ -573,6 +573,76 @@ class PaperManuscriptTest(unittest.TestCase):
         self.assertEqual({item.kind for item in files}, {KIND_FRONT_MATTER, KIND_REFERENCES})
 
 
+class CitationSettingsTest(unittest.TestCase):
+    def test_should_give_the_default_bibliography_and_style_when_the_book_sets_none(self):
+        # when
+        config = load_config(start=NEW_BOOK)
+
+        # then
+        self.assertEqual(config.sources.bibliography, NEW_BOOK / "sources" / "references.bib")
+        self.assertEqual(config.get("sources.bibliography"),
+                         NEW_BOOK / "sources" / "references.bib")
+        self.assertEqual(config.sources.citation_style, "alpha")
+        self.assertIsNone(config.sources.citation_style_file)
+
+    def test_should_resolve_the_bibliography_and_style_file_the_book_names(self):
+        with TemporaryBook() as folder:
+            # given
+            (folder / "styles").mkdir()
+            (folder / "styles" / "house.csl").write_text("<style/>", encoding="utf-8")
+            (folder / "book.yaml").write_text(
+                "sources:\n  bibliography: refs/works.bib\n  citation_style: numeric\n"
+                "  citation_style_file: styles/house.csl\n", encoding="utf-8")
+
+            # when
+            config = load_config(start=folder)
+            checked = run_script("book_config.py", "check", "--format", "tsv", cwd=folder)
+
+        # then
+        self.assertEqual(config.sources.bibliography, folder / "refs" / "works.bib")
+        self.assertEqual(config.sources.citation_style, "numeric")
+        self.assertEqual(config.sources.citation_style_file, folder / "styles" / "house.csl")
+        self.assertNotIn("wrong-value", checked.stdout)
+
+    def test_should_report_a_style_that_is_not_alpha_or_numeric(self):
+        with TemporaryBook() as folder:
+            # given
+            (folder / "book.yaml").write_text("sources:\n  citation_style: harvard\n",
+                                              encoding="utf-8")
+
+            # when
+            result = run_script("book_config.py", "check", "--format", "tsv", cwd=folder)
+
+        # then
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("sources.citation_style\twrong-value", result.stdout)
+
+    def test_should_report_a_style_file_that_does_not_exist(self):
+        with TemporaryBook() as folder:
+            # given
+            (folder / "book.yaml").write_text("sources:\n  citation_style_file: house.csl\n",
+                                              encoding="utf-8")
+
+            # when
+            result = run_script("book_config.py", "check", "--format", "tsv", cwd=folder)
+
+        # then
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("sources.citation_style_file\twrong-value", result.stdout)
+        self.assertNotIn("sources.citation_style_file\tmissing-path", result.stdout)
+
+    def test_should_export_the_citation_settings_for_the_build(self):
+        # when
+        result = run_script("book_config.py", "paths", "--shell", cwd=NEW_BOOK)
+
+        # then
+        values = {name: shlex.split(value)[0] if shlex.split(value) else ""
+                  for name, value in (line.split("=", 1) for line in result.stdout.splitlines())}
+        self.assertEqual(values["BOOK_BIBLIOGRAPHY"], str(NEW_BOOK / "sources" / "references.bib"))
+        self.assertEqual(values["BOOK_CITATION_STYLE"], "alpha")
+        self.assertEqual(values["BOOK_CITATION_STYLE_FILE"], "")
+
+
 class CommandLineTest(unittest.TestCase):
     def test_should_print_eval_ready_paths_when_asked_for_shell(self):
         # when

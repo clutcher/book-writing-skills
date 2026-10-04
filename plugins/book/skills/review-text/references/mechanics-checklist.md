@@ -32,10 +32,12 @@ for a script and are done by hand until one exists.
 
 ## Citations
 
-- Several keys in one bracket are in one agreed order (**script:** check-facts skill).
-- Every cited key is in the bibliography and every entry is cited (**script:** check-facts skill,
-  `python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/reference-format-check.py --completeness`).
-- The bibliography is sorted (**script:** check-facts skill, `python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/reference-sort.py`).
+- Citations are pandoc citations (`[@Abc99]`, `[@Abc99; @Def01, p. 12]`, narrative `@Abc99`),
+  several keys in one bracket separated by `;`, never adjacent brackets (**script:** check-facts
+  skill, `python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/citation-check.py`).
+- Every cited key is an entry in the book's `.bib` file (`sources.bibliography`) (**script:**
+  check-facts skill, `python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/citation-check.py`). The build makes and sorts the references page from the `.bib`
+  file, so the page itself is never edited by hand.
 
 ## Diagrams in text
 

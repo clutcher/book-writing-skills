@@ -3,6 +3,8 @@ import argparse
 import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+
 from vale_settings import (PACKAGE_NAME, ValeSetupError, add_book_arguments, docker_found,
                            load_vale_settings, package_copy_is_current, run_vale)
 

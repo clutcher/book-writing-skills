@@ -2,6 +2,8 @@
 import argparse
 import sys
 
+sys.dont_write_bytecode = True
+
 from vale_settings import (PACKAGE_NAME, ValeSetupError, add_book_arguments, copy_package,
                            docker_found, load_vale_settings, package_copy_is_current, run_vale)
 

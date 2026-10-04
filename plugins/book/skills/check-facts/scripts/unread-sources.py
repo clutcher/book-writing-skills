@@ -15,6 +15,7 @@ Two optional word lists in the book's config narrow and group the queue:
                                      source goes to the first group it matches, so a
                                      group can go to one reading agent
 
+Titles and venues come from the .bib (sources.bibliography), notes from the sources list.
 A cached text under 5000 bytes is listed apart as a stub to verify before use.
 
 Usage:
@@ -40,6 +41,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 from source_files import (add_config_arguments, folders_for_directory, folders_from_config,
                           load_book, tool_failed)
+from bibliography import BibliographyError, parse_bibliography, read_identities
 from source_registry import read_bank
 from check_output import skipped_for_missing
 
@@ -65,30 +67,31 @@ def reading_groups(config_groups):
     return groups
 
 
-def parse_bank(path):
-    bank = read_bank(path)
-    return {
-        entry.key: {
-            "heading": entry.heading_tail,
-            "fields": {f.name.lower(): f.line_value for f in entry.fields},
+def parse_bank(path, identities=None):
+    identities = identities or {}
+    found = {}
+    for entry in read_bank(path).entries:
+        identity = identities.get(entry.key)
+        found[entry.key] = {
+            "title": identity.plain("title") if identity else entry.heading_tail,
+            "venue": identity.plain("journal", "booktitle", "publisher") if identity else "",
+            "year": identity.plain("year") if identity else "",
+            "note": next((f.line_value for f in entry.fields if f.name == "Note"), ""),
         }
-        for entry in bank.entries
-    }
+    return found
 
 
 def describe(key, entry, folders):
-    fields = entry["fields"]
     text = folders.file(key + ".txt")
     exists = text.exists()
     return {
         "key": key,
-        "title": fields.get("full title") or entry["heading"],
-        "venue": fields.get("venue", ""),
-        "year": fields.get("year", ""),
+        "title": entry["title"],
+        "venue": entry["venue"],
+        "year": entry["year"],
         "cached": exists,
         "size": text.stat().st_size if exists else 0,
-        "blob": " ".join([entry["heading"], fields.get("full title", ""),
-                          fields.get("venue", ""), fields.get("note", "")]),
+        "blob": " ".join([entry["title"], entry["venue"], entry["note"]]),
     }
 
 
@@ -143,32 +146,38 @@ FIXTURE_LIST = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 ```
 
-### [Aaa01] Adams, "Baking bread" (2001)
+### [Aaa01]
 
-**Full title:** Baking bread
-
----
-
-### [Bbb02] Baker, "Sourdough starters" (2002)
-
-**Full title:** Sourdough starters
+**Access URLs:** https://example.org/aaa01
 
 ---
 
-### [Ccc03] Clark, "Gardening" (2003)
+### [Bbb02]
 
-**Full title:** Gardening
+**Access URLs:** https://example.org/bbb02
+
+---
+
+### [Ccc03]
+
+**Note:** a book on gardening
 
 ---
 
-### [Ddd04] Davis, "Read already" (2004)
+### [Ddd04]
 
-**Full title:** Reading, already read
+**Access URLs:** https://example.org/ddd04
 
 ---
+"""
+
+FIXTURE_BIBLIOGRAPHY = """@book{Aaa01, author = {Adams, A.}, title = {Baking bread}, year = {2001}}
+@book{Bbb02, author = {Baker, B.}, title = {Sourdough starters}, year = {2002}}
+@book{Ccc03, author = {Clark, C.}, title = {Gardening}, year = {2003}}
+@book{Ddd04, author = {Davis, D.}, title = {Reading, already read}, year = {2004}}
 """
 
 FIXTURE_QUOTES = """# Quotes Bank
@@ -196,7 +205,8 @@ def self_test():
             (files / f"{key}.txt").write_text("x" * 6000, encoding="utf-8")
         (Path(root) / "list.md").write_text(FIXTURE_LIST, encoding="utf-8")
         (Path(root) / "quotes.md").write_text(FIXTURE_QUOTES, encoding="utf-8")
-        sources = parse_bank(Path(root) / "list.md")
+        identities = parse_bibliography(FIXTURE_BIBLIOGRAPHY).entries
+        sources = parse_bank(Path(root) / "list.md", identities)
         findings = parse_bank(Path(root) / "quotes.md")
         folders = folders_for_directory(files)
         groups = reading_groups({"Bread": ["bread", "loaf"], "Starters": ["starter"]})
@@ -245,8 +255,12 @@ def main():
     watch = config.terms.watch_words or {}
     topics = as_pattern(watch.get("reading_topics"))
     groups = reading_groups(watch.get("reading_groups"))
+    try:
+        identities = read_identities(config.sources.bibliography)
+    except (OSError, BibliographyError) as error:
+        return tool_failed("cannot read %s: %s" % (config.sources.bibliography, error), TOOL)
     rows, cached, unread, queue, stubs = build_queue(
-        parse_bank(sources_list), parse_bank(quotes), folders_from_config(config),
+        parse_bank(sources_list, identities), parse_bank(quotes), folders_from_config(config),
         topics, groups, args.all)
     if args.group:
         queue = [row for row in queue if row["group"] == args.group]

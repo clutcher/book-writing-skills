@@ -270,11 +270,11 @@ For background concepts (prerequisites):
 
 ### Citation Quality
 
-- Are claims grounded with [Abc99] references?
+- Are claims grounded with `[@Abc99]` citations?
 - Are primary sources cited (the originator, not the synthesis that collected the idea)?
 - Are "research shows" claims backed with specific references?
 
-Companion check: the check-facts skill's reference check (`python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/reference-format-check.py --completeness`) verifies that every cited key exists in the bibliography.
+Companion check: the check-facts skill's citation check (`python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/citation-check.py`) verifies that every cited key is an entry in the book's `.bib` file.
 
 ### What to Flag
 

@@ -33,6 +33,7 @@ NOT_SET = "not set: find it in the book"
 PLACEHOLDER_KEYS = ("main_metaphor", "key_sources", "research_field", "similar_books",
                     "author_background", "audience")
 SOURCES_FOR_REVIEWER_FILE_NAME = "sources-for-reviewer.md"
+BIBLIOGRAPHY_FILE_NAME = "references.bib"
 ROOM_STATE_FILE = "room.json"
 MECHANICAL_CHECKS_FILE = "mechanical-checks.txt"
 RESULT_FILES = ("merge-map.md", "REVIEW-REPORT.md", "verification")
@@ -367,6 +368,11 @@ def plan_setup(config, args):
         plan.copy_file(Path(sources_list), room / "sources" / "list.md")
     else:
         warnings.append(f"no sources list at {sources_list}; the room has none")
+    bibliography = config.path("sources.bibliography")
+    if bibliography and Path(bibliography).is_file():
+        plan.copy_file(Path(bibliography), room / "sources" / BIBLIOGRAPHY_FILE_NAME)
+    else:
+        warnings.append(f"no .bib file at {bibliography}; the room has no source identities")
     if sources_for_reviewer:
         plan.copy_file(sources_for_reviewer, room / "sources" / SOURCES_FOR_REVIEWER_FILE_NAME)
     else:
@@ -503,7 +509,7 @@ def build_parser():
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser(
         "setup", help="make or refresh the clean room next to the book folder",
-        description="Copy the manuscript, sources list, sources for the reviewer, decisions.md and book "
+        description="Copy the manuscript, sources list, .bib file, sources for the reviewer, decisions.md and book "
                     "facts into a folder next to the book, write the review plan and a "
                     ".claude/settings.local.json that switches the book skills off. "
                     "An earlier round's results leave the room: removed when collect already "

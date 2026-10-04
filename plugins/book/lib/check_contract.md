@@ -108,7 +108,7 @@ formats; never one file written in several formats.
 
 ## What this contract does not change
 
-- **Banks stay markdown.** They are read with grep (`grep -n '\[Smi99[,\]]' manuscript/*.md`), and
+- **Banks stay markdown.** They are read with grep (`grep -n '@Smi99' manuscript/*.md`), and
   their values are long prose.
 - **No output synonyms.** One name per idea.
 - **`--fix` keeps its meaning.** A check that refuses to fix a class keeps refusing.

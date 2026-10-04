@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 
+from bibliography import read_identities
 from source_files import FETCH
 from source_registry import read_bank
 
@@ -35,18 +36,22 @@ def field(entry, name):
     return (entry.field(name) or "").strip()
 
 
-def describe(entry, reason):
+def identity_field(identity, *names):
+    return identity.plain(*names) if identity is not None else ""
+
+
+def describe(entry, reason, identity=None):
     return {
         "key": entry.key,
-        "title": field(entry, "Full title"),
-        "authors": field(entry, "Authors"),
-        "year": field(entry, "Year"),
-        "venue": field(entry, "Venue"),
-        "doi": field(entry, "DOI"),
-        "isbn": field(entry, "ISBN"),
+        "title": identity_field(identity, "title"),
+        "authors": identity_field(identity, "author", "editor"),
+        "year": identity_field(identity, "year"),
+        "venue": identity_field(identity, "journal", "booktitle", "publisher", "howpublished"),
+        "doi": identity_field(identity, "doi"),
+        "isbn": identity_field(identity, "isbn"),
         "urls": URL_RE.findall(field(entry, "Access URLs")),
         "access_raw": field(entry, "Access URLs"),
-        "page_urls": URL_RE.findall(field(entry, "DOI/URL")),
+        "page_urls": URL_RE.findall(identity_field(identity, "url")),
         "status": reason,
     }
 
@@ -57,26 +62,30 @@ def failed_fetch(folders, key):
     return status if status in NOT_FETCHED_STATUSES else ""
 
 
-def collect(list_path, folders):
+def collect(list_path, folders, bibliography_path=None):
+    known = read_identities(bibliography_path)
     gated, no_free_copy, fetch_failed, preprint_only = [], [], [], []
     for entry in read_bank(list_path).entries:
+        identity = known.get(entry.key)
         status = field(entry, "Access status")
         if status and PREPRINT_ONLY_RE.search(entry.raw):
-            preprint_only.append(describe(entry, status))
+            preprint_only.append(describe(entry, status, identity))
             continue
         if folders.file(entry.key + ".txt").exists():
             continue
         if MANUAL in status:
-            gated.append(describe(entry, status))
+            gated.append(describe(entry, status, identity))
         elif NO_FREE_COPY in status:
-            no_free_copy.append(describe(entry, status))
+            no_free_copy.append(describe(entry, status, identity))
         elif failed_fetch(folders, entry.key):
-            fetch_failed.append(describe(entry, "fetch " + failed_fetch(folders, entry.key)))
+            fetch_failed.append(describe(entry, "fetch " + failed_fetch(folders, entry.key),
+                                         identity))
     return gated, no_free_copy, fetch_failed, preprint_only
 
 
-def needed_items(list_path, folders):
-    gated, no_free_copy, fetch_failed, _preprint_only = collect(list_path, folders)
+def needed_items(list_path, folders, bibliography_path=None):
+    gated, no_free_copy, fetch_failed, _preprint_only = collect(list_path, folders,
+                                                                bibliography_path)
     return sorted(gated + no_free_copy + fetch_failed, key=lambda item: item["key"].lower())
 
 

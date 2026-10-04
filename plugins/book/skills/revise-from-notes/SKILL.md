@@ -1,12 +1,12 @@
 ---
 name: revise-from-notes
 description: >-
-  Answers the open notes on a book, one decision at a time: the author's own reading notes and
-  the notes the reviews write. Each note is checked against the text as it is now and answered
-  with a few small, true fixes; the chosen fix goes into the text, the decision into
-  decisions.md, and the note is deleted. Use it when the author has notes, comments on a chapter
-  or review findings to go through, also for the back cover or store copy. For new text use
-  write-text; for new findings use review-text or review-ideas.
+  Answers the open notes on a book, one decision at a time: the author's reading notes and the
+  notes the reviews write. Each note is checked against the current text and answered with a few
+  small, true fixes; the chosen fix goes into the text, the decision into decisions.md, and the
+  note is deleted. Use it when the author has notes or review findings to go through, also for
+  the back cover or store copy. For new text use write-text; for new findings use review-text or
+  review-ideas.
 argument-hint: "[one-by-one|all-at-once|right-now]"
 ---
 

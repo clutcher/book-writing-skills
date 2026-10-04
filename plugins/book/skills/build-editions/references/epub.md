@@ -42,10 +42,10 @@ creators holding the same text.
 `book.accessibility_summary` states only what has been established about this book. There is
 **no default**: whether code and diagrams are text or pictures differs from book to book, so a
 built-in sentence would be a false claim for some of them. Without the key the EPUB carries no
-summary and the build warns, as it does for a missing `epub_identifier`. A book that is all text
-might write: "This publication is fully textual, with a structured table of contents and
-navigable headings throughout. Code listings and diagrams are preformatted text rather than
-images. It has not been independently audited for accessibility conformance." There is
+summary and the build warns, as it does for a missing `epub_identifier`. A field guide whose
+photos all have text descriptions might write: "The text can be read aloud and resized. Every
+photo has a short description, and the tables are real tables, not pictures. Nobody outside
+has tested it for accessibility." There is
 deliberately **no
 `dcterms:conformsTo`**: a WCAG AA claim nobody has tested is the same defect as a check that
 reports success without running. Change the summary only when something new is true, such as

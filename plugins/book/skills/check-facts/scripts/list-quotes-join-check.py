@@ -149,35 +149,35 @@ FIXTURE_SOURCES = '''# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 
-**Full title:** the title as printed on the work
+**Access URLs:** where the source can be read
 **Findings:** see `sources/quotes.md`
 ```
 
-### [Aaa01] Alpha, "A cached paper" (2001)
+### [Aaa01]
 
-**Full title:** A paper held in both banks
+**Note:** a paper held in both banks
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Bbb02] Beta, "A pointer to nothing" (2002)
+### [Bbb02]
 
-**Full title:** An entry pointing at a quotes entry that was never written
+**Note:** an entry pointing at a quotes entry that was never written
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Ccc03] Charlie, "Read, but the entry does not say so" (2003)
+### [Ccc03]
 
-**Full title:** An entry whose quotes exist and are not advertised
+**Note:** an entry whose quotes exist and are not advertised
 
 ---
 
-### [Ddd04] Delta, "No backlink on the other side" (2004)
+### [Ddd04]
 
-**Full title:** An entry whose quotes entry forgot the Source line
+**Note:** an entry whose quotes entry forgot the Source line
 **Findings:** see `sources/quotes.md`
 
 ### DELTA for the existing Ddd04 entry
@@ -186,30 +186,30 @@ FIXTURE_SOURCES = '''# Sources List
 
 ---
 
-### [Eee05] Echo, "Merged twice" (2005)
+### [Eee05]
 
-**Full title:** The surviving entry
+**Note:** the surviving entry
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Eee05] Echo, "Merged twice" (2005)
+### [Eee05]
 
-**Full title:** The second entry, which every tool that matches by key never sees
+**Note:** the second entry, which every tool that matches by key never sees
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Wal--] Walsh, "A living catalog" (--)
+### [Wal--]
 
-**Full title:** A living catalog
+**Note:** a living catalog
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [SFD+25a] Sigma, Delta & Foxtrot, "First of two papers" (2025)
+### [SFD+25a]
 
-**Full title:** Registered for identity and access only, never read
+**Note:** registered for identity and access only, never read
 
 ---
 '''

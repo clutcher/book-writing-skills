@@ -141,7 +141,7 @@ class ChangedTextTest(CopiedBookTestCase):
     def test_should_accept_a_quote_with_the_middle_left_out(self):
         # given
         replace_in(self.book / CHAPTER_NOTES,
-                   "> Flour takes up water slowly, so dough shaped in a hurry tears in the hand [Doe20]. A long rest helps only when the kitchen is warm enough.",
+                   "> Flour takes up water slowly, so dough shaped in a hurry tears in the hand [@Doe20]. A long rest helps only when the kitchen is warm enough.",
                    "> Flour takes up water slowly ... A long rest helps only when the kitchen is warm enough.")
 
         # when

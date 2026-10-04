@@ -32,14 +32,12 @@ LIST_TEXT = """# Sources list
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 ```
 
-### [Smi99] Smith, "Kitchen Gardens" (1999)
+### [Smi99]
 
-**Full title:** Kitchen Gardens
-**Authors:** Smith, J.
-**Year:** 1999
+**Access URLs:** https://example.org/kitchen-gardens
 """
 
 QUOTES_TEXT = """# Quotes Bank
@@ -64,7 +62,17 @@ QUOTES_TEXT = """# Quotes Bank
 
 REFERENCES_TEXT = """# References
 
-[Smi99] Smith, J. (1999). *Kitchen Gardens*. Example Press. ISBN 9780000000002.
+::: {#refs}
+:::
+"""
+
+BIBLIOGRAPHY_TEXT = """@book{Smi99,
+  author = {Smith, Jane},
+  title = {Kitchen Gardens},
+  publisher = {Example Press},
+  year = {1999},
+  isbn = {9780000000002},
+}
 """
 
 DECISIONS_TEXT = """# Decisions
@@ -95,13 +103,14 @@ class RunChecksTest(unittest.TestCase):
         self.write("book.yaml", "version: 1\nbook:\n  title: A Test Book\n  author: Sam Example\n")
         self.write("manuscript/110-chapter-1.md",
                    "# Chapter 1: Sun\n\nBeans need full sun for most of the day, so a bed under "
-                   "a tree gives a poor crop [Smi99]. A sunny bed lets the plants flower early. "
+                   "a tree gives a poor crop [@Smi99]. A sunny bed lets the plants flower early. "
                    "A shady one makes them grow tall and thin.\n")
         self.write("manuscript/900-references.md", REFERENCES_TEXT)
+        self.write("sources/references.bib", BIBLIOGRAPHY_TEXT)
         self.write("sources/list.md", LIST_TEXT)
         self.write("sources/quotes.md", QUOTES_TEXT)
         self.write("sources/library/Smi99.txt", "Beans need full sun.\n")
-        self.write("thinking/argument/sun.md", "Shade slows the crop [Lee05].\n")
+        self.write("thinking/argument/sun.md", "Shade slows the crop [@Lee05].\n")
         self.write("rules/decisions.md", DECISIONS_TEXT)
 
     def tearDown(self):
@@ -122,12 +131,13 @@ class RunChecksTest(unittest.TestCase):
     def line_of(self, output, check):
         return next(line for line in output.splitlines() if f"] {check} " in line + " ")
 
-    def test_shouldFindAThinkingKeyWhenTheSourcesListHasNoEntryForIt(self):
+    def test_shouldFindAThinkingKeyWhenTheBibliographyAndTheSourcesListHaveNoEntryForIt(self):
         # when
         exit_code, output = self.run_checks("facts", "--no-report")
 
         # then
         self.assertIn("[FIND] cited-source-check.py", output)
+        self.assertIn("not-in-bibliography 1", self.line_of(output, "cited-source-check.py"))
         self.assertIn("not-in-list 1", self.line_of(output, "cited-source-check.py"))
         self.assertEqual(exit_code, 1)
 
@@ -143,25 +153,25 @@ class RunChecksTest(unittest.TestCase):
         self.assertIn("line-anchor 1", self.line_of(output, "stale-argument-pointer-check.py"))
         self.assertEqual(exit_code, 1)
 
-    def test_shouldFindABookOwnedKeyWhenADoubtsFileCitesTheSourceUnderAnotherKey(self):
+    def test_shouldFindABibliographyEntryWhenTheSourcesListHasNoEntryForIt(self):
         # given
-        self.write("thinking/doubts/counterarguments.md",
-                   "# Counterarguments\n\nSome say beans grow anywhere [Smith99].\n\n"
-                   "## References\n\n"
-                   "[Smith99] Smith, J. (1999). *Kitchen Gardens*. Example Press.\n")
+        self.write("sources/references.bib", BIBLIOGRAPHY_TEXT
+                   + "\n@book{Lee05,\n  author = {Lee, Bo},\n  title = {Shade},\n"
+                     "  publisher = {Example Press},\n  year = {2005},\n}\n")
 
         # when
         exit_code, output = self.run_checks("facts", "--no-report")
 
         # then
-        self.assertIn("book-owned 1", self.line_of(output, "argument-key-check.py"))
+        self.assertIn("missing-from-list 1",
+                      self.line_of(output, "list-bibliography-check.py --no-verdicts"))
         self.assertEqual(exit_code, 1)
 
     def test_shouldFindAnUncitedClaimWhenTheBookHasNoSourcesYet(self):
         # given
         self.write("sources/list.md", "# Sources list\n")
         self.write("sources/quotes.md", "# Quotes Bank\n")
-        (self.book / "manuscript" / "900-references.md").unlink()
+        (self.book / "sources" / "references.bib").unlink()
         self.write("thinking/argument/sun.md", "Shade slows the crop.\n")
         self.write("manuscript/110-chapter-1.md",
                    "# Chapter 1: Weeds\n\nGardeners spend 70% of their time weeding.\n")
@@ -191,18 +201,19 @@ class RunChecksTest(unittest.TestCase):
 
     def test_shouldSkipTheBibliographyChecksWhenTheBookHasNoBibliography(self):
         # given
-        (self.book / "manuscript" / "900-references.md").unlink()
+        (self.book / "sources" / "references.bib").unlink()
 
         # when
         exit_code, output = self.run_checks("facts", "--no-report")
 
         # then
-        self.assertIn("[SKIP] reference-sort.py", output)
+        self.assertIn("[SKIP] reference-format-check.py", output)
+        self.assertIn("[SKIP] key-bibtex-check.py", output)
         self.assertNotIn("[FAIL]", output)
 
     def test_shouldPassAndShowTheCountWhenACheckReportsOnlyAnExpectedState(self):
         # given
-        self.write("thinking/argument/sun.md", "Shade slows the crop [Smi99].\n")
+        self.write("thinking/argument/sun.md", "Shade slows the crop [@Smi99].\n")
         (self.book / "sources" / "library" / "Smi99.txt").unlink()
         self.write(".book/sources-to-add/needed.txt", "Smi99\n")
 

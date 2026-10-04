@@ -45,6 +45,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
+from bibliography import read_identities
 from source_files import (FETCH, OCR, SourceFolders, add_config_arguments, cache_references,
                           folders_from_config, load_book, tool_failed)
 from check_output import DEFECT, INFORMATIONAL, CheckReport, add_output_arguments
@@ -77,14 +78,15 @@ def cached_names(entry, folders):
     return list(dict.fromkeys(names))
 
 
-def has_download_route(entry, folders):
+def has_download_route(entry, folders, identity=None):
     original = entry.field("Cached original") or ""
     if FROM_URL.search(original.strip()):
         return True
     record = folders.read_origin_record(entry.key, FETCH) or {}
     if record.get("status") == "cached" and str(record.get("url", "")).startswith("http"):
         return True
-    return bool(DOI.match((entry.field("DOI") or "").strip()))
+    doi = identity.field("doi") if identity is not None else None
+    return bool(DOI.match((doi or "").strip()))
 
 
 def is_ocr(entry, folders):
@@ -97,14 +99,14 @@ def is_ocr(entry, folders):
     return False
 
 
-def backup_reason(entry, folders, everything):
+def backup_reason(entry, folders, everything, identity=None):
     status = entry.field("Access status") or ""
     gate = GATED.search(status)
     if gate:
         return "Access status: %s" % gate.group(0).upper()
     if is_ocr(entry, folders):
         return "OCR text"
-    if not has_download_route(entry, folders):
+    if not has_download_route(entry, folders, identity):
         return "no download route"
     return "every file (--all)" if everything else None
 
@@ -116,13 +118,13 @@ def sidecar_names(entry, folders):
                                    folders.origin_record_path(entry.key, OCR)) if path.exists()]
 
 
-def plan(entries, folders, everything):
+def plan(entries, folders, everything, identities=None):
     rows = []
     for entry in entries:
         names = cached_names(entry, folders)
         if not names:
             continue
-        reason = backup_reason(entry, folders, everything)
+        reason = backup_reason(entry, folders, everything, (identities or {}).get(entry.key))
         if not reason:
             continue
         for name in names + sidecar_names(entry, folders):
@@ -166,33 +168,50 @@ FIXTURE_LIST = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 ```
 
-### [Gat70] Gate, "Gated" (1970)
+### [Gat70]
 
-**Full title:** Gated
 **Access status:** MANUAL FETCH REQUIRED (gate)
 **Cached text:** `sources/library/Gat70.txt` (fetched 2025-01-01)
 **Cached original:** `sources/library/Gat70.pdf` (fetched 2025-01-01, from manual download)
 
 ---
 
-### [Web05] Web, "Downloadable" (2005)
+### [Web05]
 
-**Full title:** Downloadable
 **Cached text:** `sources/library/Web05.txt` (fetched 2025-01-01)
 **Cached original:** `sources/library/Web05.html` (fetched 2025-01-01, from https://example.org/w)
 
 ---
 
-### [Scn80] Scan, "An OCR text" (1980)
+### [Scn80]
 
-**Full title:** An OCR text
-**DOI:** 10.5555/scn80
 **Cached text:** `sources/library/Scn80.txt` (fetched 2025-01-01)
 
 ---
+
+### [Doi90]
+
+**Cached text:** `sources/library/Doi90.txt` (fetched 2025-01-01)
+
+---
+"""
+
+FIXTURE_BIBLIOGRAPHY = """@article{Scn80,
+  author = {Scan, Sam},
+  title = {An OCR text},
+  year = {1980},
+  doi = {10.5555/scn80},
+}
+
+@article{Doi90,
+  author = {Doe, Dee},
+  title = {A paper with a DOI},
+  year = {1990},
+  doi = {10.5555/doi90},
+}
 """
 
 
@@ -204,12 +223,15 @@ def self_test():
         files.mkdir(parents=True)
         for name, body in (("Gat70.txt", "gated text"), ("Gat70.pdf", "%PDF gated"),
                            ("Web05.txt", "web text"), ("Web05.html", "<html></html>"),
-                           ("Scn80.txt", "=== OCR-PROVENANCE ===\nscan")):
+                           ("Scn80.txt", "=== OCR-PROVENANCE ===\nscan"),
+                           ("Doi90.txt", "a text that can be downloaded again")):
             (files / name).write_text(body, encoding="utf-8")
         (root / "list.md").write_text(FIXTURE_LIST, encoding="utf-8")
+        (root / "references.bib").write_text(FIXTURE_BIBLIOGRAPHY, encoding="utf-8")
         folders = SourceFolders(root=root, files=files, origin=root / "sources" / "library-index")
         entries = read_bank(root / "list.md").entries
-        rows = plan(entries, folders, False)
+        identities = read_identities(root / "references.bib")
+        rows = plan(entries, folders, False, identities)
         names = sorted(name for _key, name, _reason in rows)
         if names != ["Gat70.pdf", "Gat70.txt", "Scn80.txt"]:
             failures.append("wrong files chosen for backup: %s" % names)
@@ -221,7 +243,9 @@ def self_test():
         run(rows, folders, backup, True, second)
         if second.items:
             failures.append("an identical copy was written again: %s" % second.items)
-        everything = sorted(name for _k, name, _r in plan(entries, folders, True))
+        if "Doi90.txt" not in [name for _k, name, _r in plan(entries, folders, False)]:
+            failures.append("without the .bib a DOI is unknown, so the file needs a backup")
+        everything = sorted(name for _k, name, _r in plan(entries, folders, True, identities))
         if "Web05.html" not in everything:
             failures.append("--all must include downloadable files")
     for line in failures:
@@ -254,7 +278,9 @@ def main():
     wanted = {k.strip() for k in args.keys.split(",")} if args.keys else None
     entries = [e for e in read_bank(sources_list).entries if wanted is None or e.key in wanted]
     report = CheckReport(TOOL, CLASSES)
-    run(plan(entries, folders, args.all), folders, config.sources.backup, args.fix, report)
+    identities = read_identities(config.sources.bibliography)
+    run(plan(entries, folders, args.all, identities), folders, config.sources.backup, args.fix,
+        report)
     if args.format == "text":
         print("backup folder: %s%s\n" % (config.sources.backup, "" if args.fix else " (dry run)"))
     return report.emit(args.format)

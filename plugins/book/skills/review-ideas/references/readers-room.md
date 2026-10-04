@@ -72,7 +72,9 @@ The room is a folder next to the book (`<book folder>-readers-review`, or `reade
 It gets:
 
 - `manuscript/`: a frozen copy;
-- `sources/list.md` and `sources/sources-for-reviewer.md`;
+- `sources/references.bib` (authors, title, year of every source, the keys the manuscript
+  cites as `[@Key]`), `sources/list.md` (where to read each source) and
+  `sources/sources-for-reviewer.md`;
 - `decisions.md`;
 - `book/facts.md` and `book/back-cover.md`: title, subtitle and cover text live outside the
   manuscript, and a lens that does not see them reports "no subtitle" as a blocker;
@@ -174,7 +176,7 @@ readers_review:
   room: ../my-book-readers-review                   # default: <book folder>-readers-review
   sources_for_reviewer: .book/output/sources-for-reviewer.md   # made with sources-for-reviewer.py
   main_metaphor: "the metaphor in the title"        # Lens 8
-  key_sources: ["[Key1]", "[Key2]"]                 # Lens 2 checks these hardest
+  key_sources: ["@Key1", "@Key2"]                 # Lens 2 checks these hardest
   research_field: "the field the book leans on"     # Lens 3
   similar_books: ["Similar Book One", "Two"]        # Lens 6
   author_background: "years in the field, roles"    # Lens 6

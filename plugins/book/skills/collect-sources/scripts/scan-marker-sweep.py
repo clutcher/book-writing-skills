@@ -85,8 +85,8 @@ OCR_PROSE = re.compile(
 NEGATED = re.compile(r"\b(?:not|n't|never|nor|no)\s+(?:\w+\s+){0,3}$", re.I)
 CLEARED = re.compile(r"scan-origin-check|scan-provenance-check|ocr-provenance-check|ocr-marker-check|\bgrades?\b|\bgraded\b"
                      r"|\brefuted\b|\bcleared\b|\bfalse positive\b|\bAMBIGUOUS\b", re.I)
-PROSE_FIELDS = ("Note", "Fetch note", "Access status", "Identifier", "Record history",
-                "Edition", "Scope", "Guardrail", "Verified quotes", "Key findings")
+PROSE_FIELDS = ("Note", "Fetch note", "Access status", "Record history", "Scope", "Guardrail",
+                "Verified quotes", "Key findings")
 
 
 def load_scan_origin_check(directory):

@@ -38,8 +38,8 @@ draft, show, apply. What changes:
 - **The checks:** `${CLAUDE_PLUGIN_ROOT}/skills/run-checks/scripts/run-checks.py text <thinking file>` runs the same scripts;
   `sentence-and-paragraph-check.py` skips its length limits for every file in the thinking
   folders, and the other checks apply as they are.
-- **Citations:** every `[Key]` in a thinking file must be in the sources list, as in the
-  manuscript (`run-checks facts`).
+- **Citations:** every `@Key` in a thinking file must be an entry in the `.bib` file and in the
+  sources list, as in the manuscript (`run-checks facts`).
 
 ---
 
@@ -141,7 +141,7 @@ For each section of the rules in `SKILL.md`, list the violations you find. Use t
 - Does each sentence build from the previous (chain test, Rule 2.2)?
 - Are terms defined before use (Rule 2.4-2.6)?
 - Are persons introduced before quoting, with the full name at first mention and later names per the voice profile (Rule 2.7)?
-- Are claims grounded with [Abc99] citations (Rule 2.9)?
+- Are claims grounded with `[@Abc99]` citations (Rule 2.9)?
 - Does each sentence add NEW understanding, or restate (Rule 2.13)?
 - Does the opening pose a question, or state the answer (Rule 2.14)?
 

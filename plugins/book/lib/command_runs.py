@@ -3,6 +3,7 @@ import argparse
 import os
 import subprocess
 import sys
+sys.dont_write_bytecode = True
 from dataclasses import dataclass
 
 from check_output import run_main

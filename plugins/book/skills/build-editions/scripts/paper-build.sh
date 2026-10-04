@@ -84,7 +84,7 @@ paper_name_slug() {
     local author
     author="$(first_paper_author)"
     [[ -z "$author" ]] && author="$BOOK_AUTHOR"
-    [[ -z "$author" ]] && return 0
+    is_set_for_name "$author" || return 0
     slugify "$(get_lastname "$author")"
 }
 
@@ -151,15 +151,40 @@ write_paper_tex() {
         --metadata="papersize:$PAPER_FORMAT"
         --metadata="lang:$BOOK_LANGUAGE"
         --lua-filter=/filters/paper-mode.lua
-        --lua-filter=/filters/citation-links.lua
+        "${CITATION_PANDOC_ARGS[@]}"
     )
     [[ -n "$BOOK_TITLE" ]] && PANDOC_ARGS+=(--metadata="title:$BOOK_TITLE")
     PANDOC_ARGS+=("${body_paths[@]}" -o "$tex_in_container")
     run_in_pandoc_container
 }
 
+check_anonymous_images() {
+    local build_folder="$1"
+    is_yes "$PAPER_ANONYMOUS" || return 0
+    python3 "$SCRIPT_DIR/image_metadata.py" "$build_folder" > "$SETTINGS_DIR/image-metadata.txt" 2>&1
+}
+
+report_anonymous_images() {
+    local status="$1"
+    is_yes "$PAPER_ANONYMOUS" || return 0
+    if [[ "$status" -eq 0 ]]; then
+        echo "No image the paper uses names anyone in its metadata."
+        return 0
+    fi
+    echo ""
+    if [[ "$status" -ne 1 ]]; then
+        echo "The image metadata could not be read, so nobody checked that the images are anonymous:"
+        sed 's/^/    /' "$SETTINGS_DIR/image-metadata.txt"
+        return 0
+    fi
+    echo "NOT ANONYMOUS: these images name someone in their metadata (image-metadata):"
+    grep -v '^$' "$SETTINGS_DIR/image-metadata.txt" | sed 's/^/    /'
+    echo "  The PDF and the .tex were still written. Clean the images and build again."
+}
+
 build_paper() {
-    local base_name tex_file build_folder latex_log bundle_file metadata_args=()
+    local base_name tex_file build_folder latex_log bundle_file authors_line image_status=0
+    local metadata_args=() bundle_check_args=()
     base_name="$(basename "$OUTPUT_FILE" .pdf)"
     tex_file="$FULL_OUTPUT_DIR/$base_name.tex"
     build_folder="$FULL_OUTPUT_DIR/.paper-build-${TIMESTAMP}-${RANDOM_SUFFIX}"
@@ -167,8 +192,8 @@ build_paper() {
     CLEANUP_PATHS+=("$build_folder")
     is_yes "$PAPER_ANONYMOUS" && metadata_args+=(--anonymous)
 
-    python3 "$SCRIPT_DIR/paper-metadata.py" ${CONFIG_ARGS[@]+"${CONFIG_ARGS[@]}"} \
-        ${metadata_args[@]+"${metadata_args[@]}"} --output "$SETTINGS_DIR/paper-metadata.json" \
+    authors_line="$(python3 "$SCRIPT_DIR/paper-metadata.py" ${CONFIG_ARGS[@]+"${CONFIG_ARGS[@]}"} \
+        ${metadata_args[@]+"${metadata_args[@]}"} --output "$SETTINGS_DIR/paper-metadata.json")" \
         || { echo "Error: could not write the paper title block (see the message above)"; exit 1; }
 
     echo ""
@@ -176,7 +201,7 @@ build_paper() {
     echo "  Mode: $([ "$DRAFT_MODE" == true ] && echo "DRAFT (only the file name says so)" || echo "FINAL")"
     echo "  Engine: $PAPER_ENGINE"
     echo "  Paper size: $PAPER_FORMAT"
-    echo "  Authors: $(is_yes "$PAPER_ANONYMOUS" && echo "none (anonymous)" || echo "from paper.authors")"
+    echo "  Authors: $authors_line"
     echo "  Abstract: $(relative_to_root "$PAPER_ABSTRACT")"
     [[ -n "$PAPER_ARXIV_CATEGORY" ]] && echo "  arXiv category: $PAPER_ARXIV_CATEGORY"
     echo "  Template: $TEMPLATE_FILE"
@@ -191,6 +216,7 @@ build_paper() {
     python3 "$SCRIPT_DIR/paper_source.py" stage --tex "$tex_file" \
         --search "$FULL_MANUSCRIPT" --search "$PROJECT_ROOT" --to "$build_folder" \
         || { echo "Error: could not gather the files the paper uses (see the message above)"; exit 1; }
+    check_anonymous_images "$build_folder" || image_status=$?
 
     ensure_paper_tex_image
     echo ""
@@ -221,10 +247,12 @@ build_paper() {
             || { echo "Error: could not write the arXiv bundle (see the message above)"; exit 1; }
         echo ""
         echo "Checking the bundle in a clean folder..."
+        is_yes "$PAPER_ANONYMOUS" && bundle_check_args+=(--anonymous)
         python3 "$SCRIPT_DIR/arxiv-bundle-check.py" ${CONFIG_ARGS[@]+"${CONFIG_ARGS[@]}"} \
-            --engine "$PAPER_ENGINE" "$bundle_file" \
+            --engine "$PAPER_ENGINE" ${bundle_check_args[@]+"${bundle_check_args[@]}"} "$bundle_file" \
             || echo "  The bundle check reported problems (above). The bundle was still written."
     fi
+    report_anonymous_images "$image_status"
     report_placeholders
     exit 0
 }

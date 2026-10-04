@@ -5,8 +5,8 @@ description: >-
   description, the ebook description and the plain-text copy for other stores. Also chooses
   store keywords, categories and subject codes, and exports store files. Use it when the author
   asks to write, improve, review or score back-cover or store copy or a blurb, to choose or
-  check keywords or categories, or to export a description. For the cover image use design-
-  cover; for the book's own prose use write-text.
+  check keywords or categories, or to export a description. For the cover image use
+  design-cover; for the book prose use write-text.
 argument-hint: "[write|review|pick-keywords|export]"
 ---
 

@@ -168,38 +168,51 @@ injection.
   least important thing the loudest. Readers may still restyle links; that failure is harmless.
 - **Tables** are small and tightly padded; **block quotes** italic, as in print.
 
-## Citations become links on screen
+## Citations and the reference list
 
-Citations are written as plain text (`[Smi99]`) with no markdown link behind them. On paper that
-is fine; on a screen it was the largest missing affordance. `assets/filters/citation-links.lua`
-anchors each bibliography entry and turns every other `[Key]` into a link to it, in two passes
-over the whole document, because a citation cannot be linked before the anchors are known.
+The text cites with pandoc's own syntax (`[@Smi99]`, `[@Smi99; @Wal]`, `[@Smi99, p. 12]`,
+`@Smi99 says`) and the reference list is generated from the book's BibTeX file
+(`sources.bibliography`, default `sources/references.bib`). The references file holds only its
+heading and an empty `::: {#refs}` div; the list is written there. Every edition takes the same
+path:
 
-- **The rule it protects:** a citation is either a link that lands on its entry, or plain text
-  plus a warning. It is never a link that goes nowhere (pandoc would send a mistyped key to the
-  top of the current chapter, and nobody would notice).
-- **Visible text never changes.** A lone key links whole, brackets included, which gives an
-  e-reader a tap target. In a group (`[Smi99, Wal--]`) only the keys link.
-- **Only key-shaped text is considered.** The key shape in the filter must accept every key
-  `${CLAUDE_PLUGIN_ROOT}/lib/citation_key.py` can make, and nothing else; `scripts/key-pattern-check.py` checks this.
-  The bibliography decides what gets linked: a key-shaped token no entry backs becomes a warning.
-  A bracket must hold keys and separators only, so a quoted `[a phrase]` is never a citation.
-- **Anchor ids** are cut to letters, digits and hyphens (`[ABC+20]` anchors as `ref-ABC-20`): a
-  `+` is not a valid XML name character, and pandoc repairs only ids that start wrong. One
-  function makes both the anchor and the link, so they cannot disagree. Two keys that would give
-  one id are reported, and the second is left unlinked.
-- **Where it acts.** EPUB and HTML, plus any build with the `digital-edition` flag, and the
-  paper edition (its `paper-edition` flag), whose PDF is read on screen. A print build
-  gets nothing from it. There is no condition in the build script: a second copy of that
-  decision would sit where nobody looks when the two disagree.
-- **Filter order matters.** `digital-mode.lua` runs first and turns raw front matter into blocks;
-  `citation-links.lua` reads what it leaves.
-- **The bibliography** is the level-1 heading `book.references_heading` (default `References`).
-  Without it the filter links nothing and says why.
+1. `scripts/bibliography-to-csl.py` runs pandoc (in `tools.pandoc_image`) on a copy of the `.bib`
+   to write CSL-JSON into the build's temporary folder. The copy puts each title field (`title`,
+   `booktitle`, `journal`, `series`, `chapter`) in one more pair of braces: pandoc otherwise turns
+   every English title into sentence case, and the list would not show the titles as written.
+   With `sources.citation_style: alpha` it sets `citation-label` to the key on every entry:
+   pandoc's own labels are not the labels BibTeX gives (`Smit99` where alpha.bst gives `Smi99`).
+2. pandoc runs with `--citeproc`, that JSON, the style (`assets/csl/alpha.csl`,
+   `assets/csl/numeric.csl`, or `sources.citation_style_file`) and `link-citations: true`.
+3. `assets/filters/citation-links.lua` runs right after citeproc and gives the result the shape
+   the hand-written list had, so the styling below applies unchanged.
+
+What the filter does:
+
+- **An unknown key stops the build.** Every cited key must be in the `.bib`; otherwise the build
+  fails with a message that names each key and how often it is cited. Without a `.bib` the build
+  runs without `--citeproc`, and stops the same way if the text cites any key. Write a literal
+  `@` before a word as `\@`.
+- **Each entry is a plain paragraph** directly under the References heading, its label wrapped
+  in an anchor (`<span id="ref-ABC-20" class="bib-anchor">[ABC+20]</span>`). Links whose text
+  is their address get the class `uri`, as a bare URL written in Markdown did; a word such as
+  `pp.` keeps a no-break space before what follows, as pandoc gives typed text.
+- **Visible text is the same as typed text.** A lone citation links whole, brackets included,
+  which gives an e-reader a tap target. In a group (`[Smi99, Wal]`) only the labels link; a
+  locator (`p. 12`) stays outside the link.
+- **Anchor ids** are cut to letters, digits and hyphens (`ABC+20` anchors as `ref-ABC-20`): a
+  `+` is not a valid XML name character. One function makes both the anchor and the link.
+- **Where it links.** EPUB and HTML, any build with the `digital-edition` flag, and the paper
+  edition (`paper-edition`), whose PDF is read on screen. In the print PDF citations and
+  entries are plain text.
+- **No reference list in the files built** (a `--pattern` build of one chapter): the build adds
+  `suppress-bibliography`, every citation stays plain text, and the filter says so.
+- **Filter order matters.** `digital-mode.lua` (or `paper-mode.lua`) runs first, then citeproc,
+  then `citation-links.lua`.
 - **It always prints one summary line on stderr**:
-  `linked N citations into M of T bibliography entries; U unresolved key(s), C uncited entry/entries.`
-  A filter that linked nothing looks exactly like a filter never wired in; the line tells them
-  apart. Different numbers from the last build are the thing to chase.
+  `N citation(s) of K key(s) linked to M bibliography entries; 0 unresolved keys.` (print says
+  `as plain text, with`). A filter that linked nothing looks exactly like a filter never wired
+  in; the line tells them apart.
 
 Both container runs mount the filter folder read-only at `/filters`: one mechanism, no copies in
 the book.

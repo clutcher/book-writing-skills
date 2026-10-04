@@ -1,8 +1,8 @@
 {
   "name": "book",
   "description": "Write, check, review and publish a non-fiction book or a research paper for arXiv: one config file, one layout, one workflow for findings.",
-  "version": "0.5.0",
-  "license": "MIT AND BSD-3-Clause AND OFL-1.1",
+  "version": "0.6.0",
+  "license": "MIT AND BSD-3-Clause AND OFL-1.1 AND CC-BY-SA-3.0",
   "homepage": "https://github.com/clutcher/book-writing-skills",
   "repository": "https://github.com/clutcher/book-writing-skills",
   "author": {
@@ -13,6 +13,7 @@
     "writing",
     "fact-check",
     "citations",
+    "bibtex",
     "pdf",
     "epub",
     "kdp",

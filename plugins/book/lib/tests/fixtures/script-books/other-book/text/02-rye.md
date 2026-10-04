@@ -2,7 +2,7 @@
 
 ## 2.1 Sour rye
 
-Sour rye is a bread raised by a starter instead of yeast [Vey20].
+Sour rye is a bread raised by a starter instead of yeast [@Vey20].
 
 ## 2.2 Hydration
 

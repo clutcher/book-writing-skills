@@ -3,6 +3,70 @@
 The plugin is in early 0.x versions: names, modes and config keys may still change between
 versions. A change that needs work in an existing book is named here.
 
+## 0.6.0
+
+Real BibTeX citations, for books and papers.
+
+### Changes that need work in your book
+
+- Sources live in `sources/references.bib` (`sources.bibliography`): one BibTeX entry per source,
+  whose key is the citation key. `sources/list.md` keeps only access and work fields (Access URLs,
+  Access status, Fetch note, Cached text, Cached original, Findings, Note, Record history,
+  Supersedes) under `### [Key]` headings; identity fields there are reported as
+  `identity-in-list`.
+- The text cites with pandoc citations: `[@Key]`, `[@A; @B]`, `[@A, p. 12]`, `[see @A]`, narrative
+  `@A`, and `@{Key--}` for a key pandoc would cut short. Old `[Key]` text citations are no longer
+  read.
+- The references file holds only its heading and `::: {#refs}` / `:::`; every edition builds the
+  list with pandoc citeproc from the `.bib`.
+- `sources.citation_style`: `alpha` (labels are the keys, APA-like entries) or `numeric`
+  (IEEE-like). The styles ship in `skills/build-editions/assets/csl/`; `numeric.csl` comes from the
+  CSL project under CC BY-SA 3.0 (`THIRD-PARTY.md`). `sources.citation_style_file` names a `.csl`
+  of the book's own instead; `null` keeps the style the build ships.
+
+### What to do in an existing book
+
+1. Create `sources/references.bib` with one BibTeX entry per source; the key of each entry is
+   the citation key the book already uses.
+2. Move the identity fields (authors, title, year, publisher and the like) out of
+   `sources/list.md` into those entries; the list keeps only the access and work fields.
+3. Turn the text citations into pandoc citations: `[Key]` becomes `[@Key]`, `[Key, p. 12]`
+   becomes `[@Key, p. 12]` and `[A, B]` becomes `[@A; @B]`.
+4. Replace the body of the references file with `::: {#refs}` and `:::` under its heading.
+5. Run `/book:run-checks facts`. What is left is reported: `old-citation` for a text citation in
+   the old form, `hand-written-references` for a references file that still holds entries, and
+   `identity-in-list` for a list entry that still holds identity fields.
+
+### Checks
+
+- Every cited key must exist in the `.bib`; the list and the `.bib` hold the same keys;
+  `key-bibtex-check.py` runs real BibTeX (`alpha.bst`) on the `.bib` and compares each label with
+  its key; `citation-key-check.py --fix` renames a key everywhere in one pass;
+  `reference-format-check.py` checks the `.bib` entries.
+- Removed: `reference-sort.py`, `key-authors-check.py`, `argument-key-check.py` and
+  build-editions' `key-pattern-check.py`, which only served the hand-written references file.
+- collect-sources: new `add-source.py` writes a source's `.bib` entry and list entry under one
+  checked key. It refuses an entry type that is not letters, a field name outside
+  `[A-Za-z][\w\-:.+]*` and unpaired braces, and takes a chosen `--key` when the names hold no
+  Latin letters.
+- A `crossref` child takes its parent's author, editor and year for its key, as BibTeX does, and a
+  key rename follows `crossref`.
+- For a paper, `key-bibtex-check.py` runs BibTeX in `tools.paper_tex_image`, so a paper needs one
+  TeX image; every check container runs with no network.
+- A bare web address (`https://example.org/@name`) and an e-mail-like word (`x_@Key`) are not
+  citations, the same as in the pandoc build.
+- `citation_key.py` takes `--year n.d.` for a work with no year (`--year=--` breaks on Python 3.9).
+
+### Also in this version
+
+- An anonymous paper hides an included PDF's properties under pdflatex, and the build and
+  `arxiv-bundle-check.py` report an image whose metadata names someone (`image-metadata`).
+- design-cover: `overlay.py` writes the overlay image only with `--fix` or `--out`, so
+  `run-checks` never writes into the book.
+- A title or author still holding the placeholder text no longer goes into the output file name.
+- A cited key with no `.bib` entry stops the build with a clear message and no Lua stack trace.
+- Containers that need no network run with `--network none`.
+
 ## 0.5.0
 
 Research papers, next to books.
@@ -23,7 +87,7 @@ Research papers, next to books.
   author switches venue by changing that one key; each builds with xelatex and pdflatex, and an
   anonymous build leaves out every author (`acm` also turns on the class's `anonymous,review`).
   Any other value, a template file included, is a `wrong-value` defect; a new venue is added
-  to the plugin as a new built-in template. Citations keep their alpha labels in every template.
+  to the plugin as a new built-in template. Citations keep their alpha labels in every template (until 0.6.0).
 - New tool key `tools.paper_tex_image`, full TeX Live 2025 pinned by digest
   (`texlive/texlive:TL2025-historic`, 2.6 GB, pulled on the first paper build). Every paper
   PDF and every arXiv bundle check compiles there, with the same classes arXiv has; the pandoc

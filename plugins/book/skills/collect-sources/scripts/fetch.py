@@ -34,6 +34,10 @@ lists, for each key, whether it is cached and which URL it would try first. With
 it downloads, writes the cache files and the origin record, and files the cache lines
 in the sources list. --dry-run is still accepted and wins over --fix.
 
+Where the URLs come from. For --all and --keys, each key's candidates are the list
+entry's `Access URLs` and the `url` and `doi` fields of its entry in the book's .bib file
+(`sources.bibliography`); a DOI becomes a doi.org URL, tried last.
+
 Filing the cache lines. With --fix the script replaces an existing `**Cached ...:**` pair
 rather than adding a second one, inserts a missing pair among the metadata fields
 (always above the entry's `---` and above Verified quotes / Key findings), and moves a
@@ -91,6 +95,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 from source_files import (FETCH, SourceFolders, add_config_arguments, cache_references,
                           folders_from_config, load_book, tool_failed)
+from bibliography import read_identities
 from citation_key import ENTRY_HEADING, FENCE_LINE, is_placeholder, is_safe_file_key
 from user_agent import USER_AGENT
 import sources_to_add
@@ -104,7 +109,9 @@ DEFAULT_TIMEOUT = 60
 DEFAULT_MAX_BYTES = 200 * 1024 * 1024
 PDFTOTEXT_TIMEOUT = 300
 
-URL_FIELDS = ("DOI/URL", "Access URLs", "DOI", "URL", "Access note")
+URL_FIELDS = ("Access URLs",)
+
+IDENTITY_URL_FIELDS = ("url", "doi")
 
 URL_RE = re.compile(r"https?://[^\s<>\"'\)\]]+")
 
@@ -286,7 +293,18 @@ class Entry:
         return sorted(usable, key=url_rank)
 
 
-def parse_list(path):
+def add_identity_urls(entries, bibliography_path):
+    identities = read_identities(bibliography_path)
+    for entry in entries:
+        identity = identities.get(entry.key)
+        for name in IDENTITY_URL_FIELDS:
+            value = identity.field(name) if identity is not None else None
+            if value:
+                entry.add_urls(value)
+    return entries
+
+
+def parse_list(path, bibliography_path=None):
     entries = []
     current = None
     in_url_field = False
@@ -326,7 +344,7 @@ def parse_list(path):
             if not line.strip():
                 continue
             in_url_field = False
-    return entries
+    return add_identity_urls(entries, bibliography_path)
 
 
 def curl(url, out_path, timeout, force_http11, max_bytes=DEFAULT_MAX_BYTES):
@@ -788,26 +806,37 @@ FIXTURE_LIST = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 **Cached text:** `{d}/<Key>.txt`
 ```
 
-### [Smi99] Smith, "A web page" (1999)
+### [Smi99]
 
-**Full title:** A web page
-**Authors:** Sam Smith
-**Year:** 1999
 **Access URLs:** https://example.org/smi99.html, see also doi 10.1234/abc.(x)
 **Note:** kept below the cache lines
 
 ---
 
-### [Jon01] Jones, "Not fetched" (2001)
+### [Jon01]
 
-**Full title:** Not fetched
-**DOI:** 10.5555/jon01
+**Access status:** not tried yet
 
 ---
+"""
+
+FIXTURE_BIBLIOGRAPHY = """@misc{Smi99,
+  author = {Smith, Sam},
+  title = {A web page},
+  year = {1999},
+}
+
+@article{Jon01,
+  author = {Jones, Ann},
+  title = {Not fetched},
+  year = {2001},
+  doi = {10.5555/jon01},
+  url = {https://example.org/jon01.pdf},
+}
 """
 
 FIXTURE_PAGE = ("<html><head><title>A web page</title><script>x()</script></head><body>"
@@ -877,11 +906,15 @@ def self_test():
             folders = SourceFolders(root=Path(root), files=files, origin=origin)
             list_path = Path(root) / "list.md"
             list_path.write_text(FIXTURE_LIST.format(d=folders.shown_files), encoding="utf-8")
-            entries = {entry.key: entry for entry in parse_list(list_path)}
+            bibliography_path = Path(root) / "references.bib"
+            bibliography_path.write_text(FIXTURE_BIBLIOGRAPHY, encoding="utf-8")
+            entries = {entry.key: entry for entry in parse_list(list_path, bibliography_path)}
             require(entries["Smi99"].candidates()[0] == "https://example.org/smi99.html",
                     "%s: the page URL is the first candidate" % layout)
             require("https://doi.org/10.5555/jon01" in entries["Jon01"].urls,
-                    "%s: a bare DOI becomes a doi.org URL" % layout)
+                    "%s: the DOI of the .bib entry becomes a doi.org URL" % layout)
+            require(entries["Jon01"].candidates()[0] == "https://example.org/jon01.pdf",
+                    "%s: the url of the .bib entry is tried before its DOI" % layout)
             page = Path(root) / "page.html"
             page.write_text(FIXTURE_PAGE, encoding="utf-8")
             result = ingest_file("Smi99", page, "https://example.org/smi99.html", folders, options)
@@ -921,17 +954,18 @@ def self_test():
     return 1 if failures else 0
 
 
-def write_needed_list(config, list_path, folders):
+def write_needed_list(config, list_path, folders, bibliography_path):
     folder = sources_to_add.to_add_folder(config)
-    written = sources_to_add.write_needed(folder, sources_to_add.needed_items(list_path, folders))
+    written = sources_to_add.write_needed(folder, sources_to_add.needed_items(
+        list_path, folders, bibliography_path))
     print("needed.txt: %d source(s) to download by hand -> %s"
           % (len(sources_to_add.needed_keys(folder)), written))
 
 
-def work_from_list(list_path, keys):
+def work_from_list(list_path, keys, bibliography_path=None):
     wanted = {k.strip() for k in keys.split(",") if k.strip()} if keys else None
     work, seen = [], set()
-    for entry in parse_list(list_path):
+    for entry in parse_list(list_path, bibliography_path):
         if entry.key in seen:
             continue
         seen.add(entry.key)
@@ -970,6 +1004,9 @@ def main():
     parser.add_argument("--all", action="store_true", help="every key in the sources list")
     parser.add_argument("--keys", help="comma-separated keys from the sources list")
     parser.add_argument("--list", dest="sources_list", help="the sources list (default: sources.list)")
+    parser.add_argument("--bibliography",
+                        help="the .bib file whose url and doi fields add candidate URLs "
+                             "(default: sources.bibliography)")
     parser.add_argument("--files-dir", help="the cache folder (default: sources.library)")
     parser.add_argument("--force", action="store_true", help="refetch keys already cached")
     parser.add_argument("--complete-partial", action="store_true",
@@ -1002,6 +1039,7 @@ def main():
         folders = SourceFolders(root=config.root, files=Path(options.files_dir),
                                 origin=Path(options.files_dir))
     list_path = options.sources_list or config.sources.list
+    bibliography_path = options.bibliography or config.sources.bibliography
 
     if options.key and not is_safe_file_key(options.key):
         return tool_failed("--key %r is %s" % (options.key, UNSAFE_KEY_REASON), TOOL)
@@ -1028,7 +1066,7 @@ def main():
         if not list_path or not Path(list_path).exists():
             print("SKIPPED   the book has no sources list (%s not found)" % list_path)
             return 0
-        work = work_from_list(list_path, options.keys)
+        work = work_from_list(list_path, options.keys, bibliography_path)
     else:
         return tool_failed("need --key with --url or --file, or --all, or --keys", TOOL)
 
@@ -1036,7 +1074,7 @@ def main():
     report(results, options.write)
     if options.write:
         file_into_list(results, list_path, folders)
-        write_needed_list(config, list_path, folders)
+        write_needed_list(config, list_path, folders, bibliography_path)
     if capped:
         print("%d key(s) not attempted: --max %d reached. Run again to continue."
               % (capped, options.max))

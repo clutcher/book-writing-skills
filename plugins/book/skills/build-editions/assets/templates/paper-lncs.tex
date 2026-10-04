@@ -1,6 +1,9 @@
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
 \documentclass[runningheads,$if(papersize)$$papersize$$else$a4$endif$paper]{llncs}
+$if(anonymous)$
+\ifdefined\pdfsuppressptexinfo\pdfsuppressptexinfo=-1\fi
+$endif$
 
 \usepackage{iftex}
 \ifPDFTeX

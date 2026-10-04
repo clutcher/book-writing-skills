@@ -1,12 +1,12 @@
 ---
 name: review-ideas
 description: >-
-  Reviews the argument, structure and evidence of a non-fiction book, either as an editor who
-  knows the book's decisions or as cold outside readers in a clean room, and writes every
-  finding that survives a check as a note. Use it when the author asks to review the book or a
-  draft, critique the argument, find contradictions or weak evidence, or wants an outside or
-  pre-print review. For prose style use review-text; to check one claim against its source use
-  check-facts; to answer the notes use revise-from-notes.
+  Reviews the argument, structure and evidence of a non-fiction book or paper, as an editor who
+  knows its decisions or as cold outside readers, and writes every finding that survives a check
+  as a note. Use it when the author asks to review the book, the paper or a draft, critique the
+  argument, find contradictions or weak evidence, or wants an outside, pre-print or peer review.
+  For prose use review-text; to check a claim against a source use check-facts; to answer the
+  notes use revise-from-notes.
 argument-hint: "[editor|readers]"
 ---
 
@@ -20,7 +20,7 @@ what a reader experiences. Prose style is out of scope (review-text).
 | Mode | Where | Knows | Full procedure |
 |---|---|---|---|
 | `editor` (default) | this session, in the book folder | the manuscript and bibliography in the stages; `decisions.md` and the thinking files in the main agent | `references/editor.md` |
-| `readers` | a clean room next to the book, then a new session in it | nothing but a frozen copy of the manuscript, the sources list, a neutral list of sources and `decisions.md` | `references/readers-room.md` |
+| `readers` | a clean room next to the book, then a new session in it | nothing but a frozen copy of the manuscript, the `.bib` file, the sources list, a neutral list of sources and `decisions.md` | `references/readers-room.md` |
 
 Both modes take two options:
 

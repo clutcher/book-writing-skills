@@ -32,14 +32,14 @@ other groups read the paper's sections as they read chapters.
 | `glossary-check.py` | write-text | book | classes | |
 | `paper-check.py` | write-text | book | classes | a paper (it says SKIPPED itself on a book) |
 | `code-font-check.py` | build-editions | book | classes | |
-| `arxiv-bundle-check.py` | build-editions | book | classes | a paper; Docker (it says SKIPPED itself) |
+| `arxiv-bundle-check.py` | build-editions | book | classes | a paper; Docker (it says SKIPPED itself); an anonymous bundle also gets `image-metadata` |
 | `open-notes.py check` | revise-from-notes | book | classes | |
 | `vale-run.py` | write-text | paths | exit | Docker; off with `--no-vale` |
 
 ## facts
 
 Every facts check needs the sources list, and sources in use: an entry in the sources list or
-the bibliography, or a `[Key]` cited in a manuscript or thinking file. A book with none (a new
+the .bib (`sources.bibliography`), or an `@Key` cited in a manuscript or thinking file. A book with none (a new
 book, or one that cites nothing) gets SKIPPED for every facts check. The slow ones run only
 with `--slow`.
 
@@ -50,18 +50,15 @@ with `--slow`.
 | `entry-format-check.py` | check-facts | classes | quotes bank |
 | `entry-format-fix.py` (dry run) | check-facts | exit | quotes bank |
 | `list-quotes-join-check.py` | check-facts | classes | quotes bank |
-| `key-authors-check.py` | check-facts | classes | |
 | `list-bibliography-check.py --no-verdicts` | check-facts | classes | bibliography, quotes bank |
 | `citation-key-check.py` | check-facts | classes | bibliography |
 | `key-bibtex-check.py` | check-facts | classes | bibliography |
 | `reference-format-check.py` | check-facts | classes | bibliography |
-| `reference-format-check.py --completeness` | check-facts | classes | bibliography |
-| `reference-sort.py` | check-facts | classes | bibliography |
+| `reference-format-check.py --titles` | check-facts | classes | bibliography |
 | `edition-duplicate-check.py` | check-facts | classes | bibliography |
 | `guardrail-prose-check.py` | check-facts | classes | quotes bank |
 | `uncited-claim-check.py` | check-facts | classes | |
 | `stale-argument-pointer-check.py` | check-facts | classes | thinking files |
-| `argument-key-check.py` | check-facts | classes | bibliography, thinking files |
 | `files-hash-check.py` | collect-sources | classes | |
 | `ocr-marker-check.py` | collect-sources | classes | quotes bank |
 | `duplicate-source-check.py` | collect-sources | classes | |
@@ -70,11 +67,15 @@ with `--slow`.
 | `scan-origin-check.py` | collect-sources | classes | slow |
 | `scan-marker-sweep.py` | collect-sources | classes | slow |
 
+"bibliography" here is the .bib file (`sources.bibliography`, default
+`sources/references.bib`), not the references page of the manuscript, which holds only its
+heading and `::: {#refs}`.
+
 `cited-source-check.py` reads the manuscript and the thinking files (the `thinking` folder).
-Every `[Key]` must have an entry in the sources list, and a library copy (`<Key>.<ext>` in
-`sources.library`) or a line in `needed.txt` in the sources-to-add folder. A key that waits in `needed.txt` is
-informational. There are no per-file reference sections: the sources list is the one place a
-key resolves.
+Every `@Key` (`[@Key]`, `[@A; @B, p. 3]`, `@Key`, `@{Key}`) must have an entry in the .bib and
+in the sources list, and a library copy (`<Key>.<ext>` in `sources.library`) or a line in
+`needed.txt` in the sources-to-add folder. A key that waits in `needed.txt` is informational.
+There are no per-file reference sections: the .bib is the one place a key resolves.
 
 Never run here: `link-check.py`, `metadata-check.py` (they use the network), `restore.py`,
 `fetch.py` (they write the library). Run them through collect-sources.

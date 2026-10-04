@@ -20,7 +20,7 @@ You are not checking writing style or prose quality. You are evaluating the book
 
 ## What You Read
 
-Read the entire manuscript: every manuscript file in the order the run gives you, plus the bibliography. Read them cover to cover. No other files.
+Read the entire manuscript: every manuscript file in the order the run gives you, plus the bibliography (the book's `.bib` file, `sources.bibliography`). Read them cover to cover. No other files.
 
 ## What You Produce
 
@@ -417,7 +417,7 @@ A table of major claims and their evidence:
 
 **This table is consumed downstream, which changes what "exhaustive" costs.** The `check-facts` skill can verify from this artifact rather than from the manuscript. A claim that never lands in a row here is never fact-checked by that path -- not marked unverifiable, not flagged, simply absent. Under-extraction is therefore silent in a way over-extraction is not: an unnecessary row costs one verification, a missing row costs a claim nobody ever looked at.
 
-**Walk these categories rather than scanning for what looks citable.** Attention drifts toward claims that already carry a `[Key]` or a number, because those announce themselves. The categories below include the ones that do not.
+**Walk these categories rather than scanning for what looks citable.** Attention drifts toward claims that already carry a `[@Key]` citation or a number, because those announce themselves. The categories below include the ones that do not.
 
 | Category | Looks like |
 |---|---|

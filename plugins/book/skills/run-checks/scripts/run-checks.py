@@ -31,9 +31,9 @@ Modes (the part of the book checked):
   all (default)  every group below
   text           the prose checks of write-text, the glossary, the code font, the open notes,
                  Vale; for a paper also the paper check and the arXiv bundle check
-  facts          citation keys, the bibliography, the sources list and quotes bank, the
-                 library; every [Key] in the manuscript and the thinking files must be in the
-                 sources list and have a library copy or a needed.txt line
+  facts          citation keys, the .bib, the sources list and quotes bank, the library;
+                 every @Key in the manuscript and the thinking files must be in the .bib and
+                 the sources list and have a library copy or a needed.txt line
   cover          colors, fonts, text placement and the KDP template of the cover design
   sales-text     the selling texts agree, the store description and the keywords
   setup          book.yaml is valid, the decisions index is current, the outside tools are

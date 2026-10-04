@@ -175,6 +175,12 @@ slugify() {
     echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//'
 }
 
+is_set_for_name() {
+    [[ -n "$1" ]] || return 1
+    [[ -n "${PLACEHOLDER_TOKEN:-}" && "$1" == *"$PLACEHOLDER_TOKEN"* ]] && return 1
+    return 0
+}
+
 get_lastname() {
     echo "$1" | awk '{print $NF}'
 }

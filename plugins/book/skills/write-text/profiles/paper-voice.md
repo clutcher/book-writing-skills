@@ -122,7 +122,7 @@ meet, the rule sets the goal and the voice sets the form.
 
 ## Names
 
-- Name a person by surname with the citation ("Doe [Doe19] showed ..."). The full name is not
+- Name a person by surname with the citation ("Doe [@Doe19] showed ..."). The full name is not
   needed.
 - A work: cite it by key; give the title only when the title itself matters.
 

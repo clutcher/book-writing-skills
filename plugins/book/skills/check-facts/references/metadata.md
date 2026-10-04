@@ -6,11 +6,17 @@ disagree, the disagreement IS the finding: report it and leave the entry alone. 
 "correction" looks like diligence while it introduces the error: a publisher can deposit a
 proceedings volume under the wrong year, and the DOI registry republishes it.
 
-`metadata-check.py` runs this over the whole bibliography, caches the answers, and reruns for free:
+The metadata lives in the book's `.bib` file (`sources.bibliography`, by default
+`sources/references.bib`), as BibTeX fields: `author`, `editor`, `title`, `journal` or `booktitle`,
+`year`, `volume`, `number`, `pages`, `publisher`, `doi`, `isbn`, `url`, `origdate` (first publication
+of a reprint). The sources list (`sources/list.md`) holds no metadata, only access and cache lines.
+A correction that survives is made in the `.bib` entry; the script never writes it.
+
+`metadata-check.py` runs this over every `.bib` entry, caches the answers, and reruns for free:
 
 ```bash
 SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts"
-python3 $SCRIPTS/metadata-check.py --only-disagreements          # the book's bibliography and list
+python3 $SCRIPTS/metadata-check.py --only-disagreements          # every entry of the book's .bib
 python3 $SCRIPTS/metadata-check.py --key Smi99
 python3 $SCRIPTS/metadata-check.py --kind book --discover-isbn --json candidates.json
 python3 $SCRIPTS/metadata-check.py --doi 10.1234/abc --isbn 9780000000002
@@ -75,13 +81,14 @@ what it resolves to has one answer. It needs to be the RIGHT key, which is check
   edition on purpose. Never compare edition statements.
 - **Copyright year versus retail release**: catalogues record the title-page year, booksellers the
   release; a one-year difference is usually this.
-- Books are matched on title AND author. A catalogue title that is a whole-word prefix of the cited
+- A book entry is an `@book` with no `doi` and no `url` field; an entry with a `doi` is checked
+  by its DOI. Books are matched on title AND author. A catalogue title that is a whole-word prefix of the cited
   one is a dropped subtitle; a catalogue title LONGER than the cited one is usually a different book
   (a companion, a summary) and is refused.
 - **ISBN discovery** searches Open Library edition records (not work records, which flatten every
   printing) and offers a candidate only when title, author, year and publisher all agree. The check
   digit is checked on every candidate. The output is a candidate list for a person, never a patch.
-- **Pre-ISBN works** (before 1970) need an LCCN or OCLC number in `Identifier`, not a forced ISBN
+- **Pre-ISBN works** (before 1970) need an LCCN or OCLC number in the entry's `note` field, not a forced ISBN
   match (a catalogue will happily return a later reprint). A 979-8 ISBN has no ISBN-10 form. A
   retailer's product id is not an ISBN.
 
@@ -102,5 +109,5 @@ DOI belongs to the cited work, treats a start-page-only registry record as agree
 matching catalogue records (so a wide year span is a weak AGREE: the output prints the span).
 
 When a correction survives, record both registries in the run report so a later run does not
-argue it again. When it fails, record the disagreement in the entry's `Record history` or the
-quotes bank, not only in a dated report.
+argue it again. When it fails, record the disagreement in the sources-list entry's
+`Record history` or the quotes bank, not only in a dated report.

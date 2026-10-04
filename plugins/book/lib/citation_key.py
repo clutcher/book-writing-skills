@@ -13,6 +13,8 @@ The rule is BibTeX alpha.bst, with no local dialect:
                when that fragment is a single character      Smith 1999        -> Smi99
   2-4 authors  one fragment each, no '+'                     Adams + 3         -> ABCD94
   5 or more    the first THREE fragments, then '+'           Adams + 4         -> ABC+20
+  `and others` at the end of a .bib name list counts as a name and gives '+'
+               (derive_label)                                Adams, others     -> A+20
 
 A fragment is the first letter of every token of the von part, then of every token of
 the Last part:
@@ -39,9 +41,10 @@ derive() raises UnkeyableName and the author-list readers leave the entry for a 
 
 is_safe_file_key() says whether a key can be used as a file name as it stands.
 
-The module also owns the shapes around a key: the bank entry heading (`### [Key] ...`),
-the bibliography line (`[Key] Author, A. (Year). Title.`), and reading author lists
-from both. Exit status of --self-test is 0 when clean, 1 otherwise.
+The names of a .bib entry come from bibliography.label_names(); bibliography.expected_key()
+gives the label for one entry with this rule. The module also owns the shapes around a key:
+the bank entry heading (`### [Key]`) and reading author lists.
+Exit status of --self-test is 0 when clean, 1 otherwise.
 """
 
 import argparse
@@ -50,7 +53,7 @@ import sys
 sys.dont_write_bytecode = True
 import unicodedata
 
-CONTRACT = "citation-key/8"
+CONTRACT = "citation-key/9"
 
 STYLE = "alpha"
 
@@ -118,7 +121,7 @@ def _single_author_stem(surname):
         return _fragment(surname)
     _, last = _split_von_last(_fold_accents(surname))
     word = last[0]
-    return _ascii_key_part(word[0].upper() + word[1:3])
+    return _ascii_key_part(word[:3])
 
 
 def _upper_case_letters():
@@ -278,13 +281,25 @@ def year_suffix(year):
     return digits[-2:]
 
 
-def derive(surnames, year):
+def _keyable_names(surnames):
     names = [s for s in surnames if s and s.strip()]
     if not names:
         raise ValueError("no surnames given")
     unkeyable = [name for name in names if not is_keyable(name)]
     if unkeyable:
         raise UnkeyableName(f"no Latin letters to build a key from: {', '.join(unkeyable)}")
+    return names
+
+
+def derive_label(surnames, year, and_others=False):
+    if not and_others:
+        return derive(surnames, year)
+    names = _keyable_names(surnames)
+    return "".join(_fragment(n) for n in names[:3]) + "+" + year_suffix(year)
+
+
+def derive(surnames, year):
+    names = _keyable_names(surnames)
     suffix = year_suffix(year)
 
     if len(names) == 1:
@@ -318,35 +333,6 @@ ENTRY_HEADING = re.compile(r"^###\s+\[([^\]]+)\]\s*(.*)")
 ENTRY_HEADING_M = re.compile(ENTRY_HEADING.pattern, re.M)
 
 FENCE_LINE = re.compile(r"^ {0,3}```")
-
-BIB_REST_OPENS = r'(?=["*“‘\w])'
-
-BIB_ENTRY = re.compile(rf"^\[({KEY_BODY})\]\s+{BIB_REST_OPENS}(.*)")
-
-BIB_ENTRY_ANY = re.compile(r"^\[([^\]\s]+)\]\s+(.*)")
-
-
-def bib_entry(line, any_key=False):
-    found = (BIB_ENTRY_ANY if any_key else BIB_ENTRY).match(line)
-    return (found.group(1), found.group(2)) if found else None
-
-
-def bib_entries(text, any_key=False):
-    for number, line in enumerate(text.split("\n"), 1):
-        found = bib_entry(line, any_key)
-        if found:
-            yield number, found[0], found[1]
-
-
-def bib_blocks(text, any_key=False):
-    lines = text.split("\n")
-    starts = [(number, key) for number, key, _ in bib_entries(text, any_key)]
-    for index, (number, key) in enumerate(starts):
-        end = starts[index + 1][0] - 1 if index + 1 < len(starts) else len(lines)
-        first = bib_entry(lines[number - 1], any_key)[1]
-        tail = lines[number:end]
-        yield number, key, "\n".join([first] + tail)
-
 
 def is_placeholder(key):
     return key.strip() == PLACEHOLDER
@@ -452,9 +438,16 @@ def _self_test():
     check(_fragment("Moreno de Luz"), "MdL", "the same, in a double surname")
     check(_fragment("Souza e Melo"), "SeM", "the same, with a connective")
     check(_fragment("Rocha Da Lima"), "RDL", "a capitalised Da is a Last token and stays upper")
+    check(derive(["kwalsh"], "12"), "kwa12",
+          "a lower-case one-word name keeps its case, as alpha.bst's {ll} prefix does")
     check(derive(["Upton", "Moreno de Luz"], 2025), "UMdL25", "end to end")
 
     check(derive(["Walsh"], "--"), "Wal--", "undated key")
+    check(derive_label(["Adams"], 2001, and_others=True), "A+01", "one name and others")
+    check(derive_label(["Adams", "Baker", "Clark"], 2002, and_others=True), "ABC+02",
+          "three names and others")
+    check(derive_label(four, 1994, and_others=True), "ABC+94", "four names and others")
+    check(derive_label(four, 1994), "ABCD94", "without others it is derive")
 
     check(parse("ABC+25a"), ("ABC", True, "25", "a"), "letter suffix parsed")
     if validate("ABC+25a"):
@@ -466,8 +459,6 @@ def _self_test():
     for long_key in ["CdFCdRSeM19", "RdLAB+23", "ABCDE26", "RDLARDL+26", "vDKvL98"]:
         if not parse(long_key):
             failures.append(f"{long_key} does not parse: the stem bound is too tight")
-        if not bib_entry(f"[{long_key}] Someone, S. (2019). A thing."):
-            failures.append(f"{long_key} is not recognised as a bibliography line")
     check(derive(["Costa", "de Faria Cruz", "de Rosa", "Souza e Melo"], 2019),
           "CdFCdRSeM19", "four compound surnames give a nine-character stem")
 
@@ -514,13 +505,13 @@ def _self_test():
             failures.append(f"registry field {field[:40]!r} was DERIVED as {names}; "
                             f"it must be refused: {why}")
 
-    check(reg("Eli Adler, Dan G. Fisher"), ["Adler", "Fisher"],
+    check(reg("Eli Archer, Dan G. Finch"), ["Archer", "Finch"],
           "two-author given-first with one comma")
     check(reg("Rob D. Ross, Steve Mills"), ["Ross", "Mills"], "two-author given-first")
     check(reg("Amy J. Kay, Brad A. Moore"), ["Kay", "Moore"], "two-author given-first")
     check(reg("Steve Ford, Nat Price"), ["Ford", "Price"],
           "two-author given-first with no initials at all")
-    check(derive(reg("Eli Adler, Dan G. Fisher"), 17), "AF17", "end to end: AF17")
+    check(derive(reg("Eli Archer, Dan G. Finch"), 19), "AF19", "end to end: AF19")
 
     check(reg("West, Dan"), None, "'Surname, Given' with a bare head is refused")
     check(reg("Smith, Miller"), None, "two bare surnames are refused for the same reason")
@@ -546,11 +537,9 @@ def _self_test():
     check(derive(["Sørensen"], 1999), "Sor99", "alpha takes Sør; the letter is spelled out")
     check(derive(["Hernández-Ruiz"], 2001), "HR01", "a hyphen splits the name, as in alpha")
     check(derive(["Aßmann"], 1999), "Assm99", "alpha takes Aßm; the sharp s is spelled out")
-    check(bib_entry("[Luk99] Łukasik, J. (1999). *A Book*. Example Press.")[0], "Luk99",
-          "an entry whose author starts with a non-ASCII capital is read")
     check(derive(["Déniz"], 1996), "Den96", "accented surname keys as ASCII")
-    check(derive(["Köster", "Kahn", "Vogel"], 2000), "KKV00", "accent in the first author")
-    check(derive(["Gårdström Holm", "Söder", "Rydén"], 2026), "GHSR26",
+    check(derive(["Kärn", "Kidd", "Voss"], 2003), "KKV03", "accent in the first author")
+    check(derive(["Gårdlund Hale", "Sörby", "Ryström"], 2023), "GHSR23",
           "accents do not change a multi-word fragment")
 
     if not surnames_from_registry_field("Acme Technologies")[2]:
@@ -613,56 +602,6 @@ def _self_test():
     if sorted(["b", "A"], key=sort_position) != ["A", "b"]:
         failures.append("sort_position is not case-insensitive")
 
-    for line, want in [
-        ("[Smi72a] Smith, A. (1972). Notes on a River Town. *Journal*.",
-         ("Smi72a", "Smith, A. (1972). Notes on a River Town. *Journal*.")),
-        ("[Jon01] Jones, N. (2001). A number of things.",
-         ("Jon01", "Jones, N. (2001). A number of things.")),
-        ("[ABC+94] Adams, R., et al. (1994). *Field Notes*.",
-         ("ABC+94", "Adams, R., et al. (1994). *Field Notes*.")),
-        ("[Wal--] Walsh, M. (--). An online catalog.",
-         ("Wal--", "Walsh, M. (--). An online catalog.")),
-        ('[Lee08] "A quoted title." The Example Blog.',
-         ("Lee08", '"A quoted title." The Example Blog.')),
-    ]:
-        check(bib_entry(line), want, f"bib_entry {want[0]}")
-
-    for line in ["[ABC12] (a harvest count that is not a weight measure). All are gated",
-                 "[ABCD11] / [XYZ18] cross-check, and the per-acre yield ([RM05]).",
-                 "[Jon74], p. 268, section 1.",
-                 "[Smi23], [AB97], [Lee77].",
-                 "[Alpha] [Beta] [Gamma]",
-                 "   [Smi01] indented, so not a bibliography line"]:
-        if bib_entry(line):
-            failures.append(f"bib_entry wrongly accepted prose: {line[:40]!r}")
-
-    if bib_entry("[Smith2001] Smith, N. (2001). Something."):
-        failures.append("bib_entry accepted a four-digit year")
-
-    check(bib_entry("[NotAKey] Someone, S. (1999). A thing.", any_key=True),
-          ("NotAKey", "Someone, S. (1999). A thing."), "any_key sees a malformed key")
-    if bib_entry("[NotAKey] Someone, S. (1999). A thing."):
-        failures.append("strict BIB_ENTRY accepted a malformed key")
-    if bib_entry("[Jon74], p. 268.", any_key=True):
-        failures.append("any_key accepted prose with no space after the bracket")
-
-    bibliography = (
-        "# References\n"
-        "\n"
-        "[Smi01] Smith, N. (2001). A number of things. *Journal*.\n"
-        "[Smi72a] Smith, A. (1972). Notes on a River Town.\n"
-        "    continued on a wrapped line\n"
-        "[Wal--] Walsh, M. (--). An online catalog.\n"
-    )
-    found = [(n, k) for n, k, _ in bib_entries(bibliography)]
-    if found != [(3, "Smi01"), (4, "Smi72a"), (6, "Wal--")]:
-        failures.append(f"bib_entries wrong: {found}")
-    blocks = list(bib_blocks(bibliography))
-    if len(blocks) != 3 or "wrapped line" not in blocks[1][2]:
-        failures.append("bib_blocks did not carry a wrapped entry whole")
-    if blocks[0][2] != "Smith, N. (2001). A number of things. *Journal*.":
-        failures.append(f"bib_blocks mangled an unwrapped entry: {blocks[0][2]!r}")
-
     if not validate("ABC+94", four, 1994):
         failures.append("validation did not flag a '+' key for four authors")
     if validate("ABCD94", four, 1994):
@@ -681,15 +620,15 @@ def main():
     ap.add_argument("--derive", nargs="+", metavar="SURNAME",
                     help="derive a key from surnames; pass --year as well")
     ap.add_argument("--year", help="the year for --derive; when there is none, write "
-                                   "--year=-- or --year n.d.")
+                                   "--year n.d.")
     ap.add_argument("--validate", metavar="KEY", help="check the shape of one key")
     args = ap.parse_args()
 
     if args.self_test:
         return _self_test()
     if args.derive:
-        if not args.year:
-            sys.stderr.write("--derive needs --year\n")
+        if args.year is None:
+            sys.stderr.write("--derive needs --year (--year n.d. when there is none)\n")
             return 2
         try:
             print(derive(args.derive, args.year))

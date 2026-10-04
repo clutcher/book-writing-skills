@@ -197,9 +197,9 @@ When citing an expert, establish who they are and why their opinion matters befo
 
 Examples must include explanation of WHY they demonstrate the point. The reader needs to understand the mechanism through the example.
 
-**2.9. Ground claims with references [Abc99].**
+**2.9. Ground claims with references [@Abc99].**
 
-Support all significant claims with references, in the book's citation style (`sources.citation_style`, BibTeX alpha by default; the check-facts skill owns the key and entry format).
+Support all significant claims with references, written as pandoc citations (`[@Abc99]`, `[@Abc99; @Def01, p. 12]`, narrative `@Abc99`; `citing-in-prose.md`). Every key is an entry in the book's `.bib` file (`sources.bibliography`); the build prints it in the book's citation style (`sources.citation_style`, BibTeX alpha by default). The check-facts skill owns the key and the `.bib` entry format.
 
 **2.10. Grounding varies by section type.**
 

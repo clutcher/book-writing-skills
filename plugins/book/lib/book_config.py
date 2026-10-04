@@ -83,7 +83,7 @@ SHARED_DEFAULTS = {
         "heading_separator": GLOSSARY_HEADING_SEPARATOR,
         "location_pattern": GLOSSARY_LOCATION_PATTERN,
     },
-    "sources": {"backup": None, "citation_style": "alpha"},
+    "sources": {"backup": None, "citation_style": "alpha", "citation_style_file": None},
     "cover": {
         "trim": None,
         "paper": "bw-white",
@@ -184,6 +184,7 @@ FOLDER_DEFAULTS = {
     "sources": {
         "list": "sources/list.md",
         "quotes": "sources/quotes.md",
+        "bibliography": "sources/references.bib",
         "library": "sources/library",
         "library_index": "sources/library-index",
         "to_add": None,
@@ -225,8 +226,8 @@ PATH_KEYS = (
     "manuscript.dir", "manuscript.references",
     *(f"thinking.{name}" for name in THINKING_FILES),
     *(f"rules.{name}" for name in RULES_FILES),
-    "sources.list", "sources.quotes", "sources.library", "sources.library_index",
-    "sources.backup", "sources.to_add",
+    "sources.list", "sources.quotes", "sources.bibliography", "sources.library",
+    "sources.library_index", "sources.backup", "sources.to_add", "sources.citation_style_file",
     "notes",
     "publishing.cover", "publishing.sales_text",
     "work.dir", *(f"work.{name}" for name in WORK_SUBFOLDERS),
@@ -241,6 +242,9 @@ TOOL_KEYS = ("pandoc_image", "pandoc_volume", "vale_image", "bibtex_image", "pap
              "render_image", "epubcheck")
 
 METADATA_PATH_KEYS = ("cover_front", "cover_back", "ebook_cover")
+
+CITATION_STYLES = ("alpha", "numeric")
+DEFAULT_CITATION_STYLE = "alpha"
 
 _MISSING = object()
 
@@ -863,11 +867,13 @@ class RulesSettings:
 class SourcesSettings:
     list: Path
     quotes: Path
+    bibliography: Path
     library: Path
     library_index: Path
     backup: Path
     to_add: Path
     citation_style: str
+    citation_style_file: Path
 
 
 @dataclass
@@ -1011,10 +1017,12 @@ class BookConfig:
             **{f"rules.{name}": getattr(self.rules, name) for name in RULES_FILES},
             "sources.list": self.sources.list,
             "sources.quotes": self.sources.quotes,
+            "sources.bibliography": self.sources.bibliography,
             "sources.library": self.sources.library,
             "sources.library_index": self.sources.library_index,
             "sources.backup": self.sources.backup,
             "sources.to_add": self.sources.to_add,
+            "sources.citation_style_file": self.sources.citation_style_file,
             "notes": self.notes,
             "publishing.cover": self.publishing.cover,
             "publishing.sales_text": self.publishing.sales_text,
@@ -1111,11 +1119,13 @@ def _build(settings, root, config_file, source, key_origins):
         sources=SourcesSettings(
             list=path("sources.list"),
             quotes=path("sources.quotes"),
+            bibliography=path("sources.bibliography"),
             library=path("sources.library"),
             library_index=path("sources.library_index"),
             backup=path("sources.backup"),
             to_add=path("sources.to_add") or work_dir / SOURCES_TO_ADD_FOLDER,
-            citation_style=sources.get("citation_style") or "alpha",
+            citation_style=str(sources.get("citation_style") or DEFAULT_CITATION_STYLE).strip(),
+            citation_style_file=path("sources.citation_style_file"),
         ),
         notes=path("notes"),
         publishing=publishing,
@@ -1471,7 +1481,18 @@ def shell_paths(config):
         lines.append(f"{_shell_name('BOOK_TOOLS_', key)}={shlex.quote(_plain(value))}")
     for name, value in shell_paper_values(config).items():
         lines.append(f"{name}={shlex.quote(value)}")
+    for name, value in shell_citation_values(config).items():
+        lines.append(f"{name}={shlex.quote(value)}")
     return "\n".join(lines)
+
+
+def shell_citation_values(config):
+    sources = config.sources
+    return {
+        "BOOK_BIBLIOGRAPHY": _plain(sources.bibliography),
+        "BOOK_CITATION_STYLE": sources.citation_style,
+        "BOOK_CITATION_STYLE_FILE": _plain(sources.citation_style_file),
+    }
 
 
 def shell_paper_values(config):
@@ -1589,7 +1610,8 @@ def _check(config, output_format):
 
 
 def _paths_to_check(config):
-    paths = config.resolved_paths()
+    paths = {key: value for key, value in config.resolved_paths().items()
+             if key != "sources.citation_style_file"}
     if not config.is_paper:
         return paths
     kept = {key: value for key, value in paths.items()
@@ -1601,6 +1623,7 @@ def _paths_to_check(config):
 def wrong_values(config):
     paper = config.settings.get("paper") or {}
     found = []
+    found.extend(_wrong_citation_values(config))
     if config.kind not in DOCUMENT_KINDS:
         found.append(("kind", f"kind must be one of {', '.join(DOCUMENT_KINDS)}, "
                               f"not {config.settings.get('kind')!r}"))
@@ -1628,6 +1651,19 @@ def wrong_values(config):
     for item in authors if isinstance(authors, list) else []:
         if _paper_author(item) is None:
             found.append(("paper.authors", f"every paper author needs a name, got {item!r}"))
+    return found
+
+
+def _wrong_citation_values(config):
+    found = []
+    style = config.sources.citation_style
+    if style not in CITATION_STYLES:
+        found.append(("sources.citation_style", f"sources.citation_style must be one of "
+                                                f"{', '.join(CITATION_STYLES)}, not {style!r}"))
+    style_file = config.sources.citation_style_file
+    if style_file is not None and not style_file.is_file():
+        found.append(("sources.citation_style_file", f"sources.citation_style_file names a file "
+                                                     f"that does not exist: {style_file}"))
     return found
 
 

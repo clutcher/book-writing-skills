@@ -2,7 +2,7 @@
 
 ## 1.1 What A Dough Holds
 
-Bread is baked far more often than it is planned, which means the cost of a rich plan falls on every loaf that comes out of the oven afterwards. Rivera argued that a cold kitchen slows the rise more than any change of flour [Riv19]. This matters.
+Bread is baked far more often than it is planned, which means the cost of a rich plan falls on every loaf that comes out of the oven afterwards. Rivera argued that a cold kitchen slows the rise more than any change of flour [@Riv19]. This matters.
 
 This suggests something important about the way a dough rises through a long night without anyone checking on it again. The lean rise of a well-mixed dough lets a baker leave it alone, while *rich dough* forces the baker to go back. A good loaf has a single flavour, and each note of the crust should stay separate from the rest of the bread.
 

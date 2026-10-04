@@ -1,12 +1,12 @@
 ---
 name: check-facts
 description: >-
-  Checks the claims, quotes, numbers and citations of a non-fiction book against the cached
-  copies of its sources, for one chapter, one thinking file or the whole book, and writes every
-  finding as a note. Use it to fact-check a chapter or the book, verify a quote or a figure, or
-  check citations, citation keys, the bibliography or uncited claims. To find or download the
-  source files, use collect-sources; for the argument as a whole, use review-ideas; to run only
-  the key and bank scripts, use run-checks.
+  Checks the claims, quotes, numbers and citations of a non-fiction book or paper against the
+  cached copies of its sources, for one chapter, one thinking file or the whole text, and writes
+  every finding as a note. Use it to fact-check a chapter, the book or the paper, verify a quote
+  or a figure, or check citations, keys, the bibliography or uncited claims. To find or download
+  sources, use collect-sources; for the argument, use review-ideas; to run only the key and bank
+  scripts, use run-checks.
 argument-hint: "[chapter or file] [--only-changed|--resume]"
 ---
 
@@ -20,15 +20,16 @@ finding in front of the author as a note.
 
 | What | Where (book.yaml key) | Why there |
 |---|---|---|
-| Identity and access: title, authors, year, ISBN, DOI, URLs, cache lines | the sources list (`sources.list`) | static facts; they let any later run fetch the source again without searching |
+| Identity: authors, title, year, venue, DOI, ISBN, as a BibTeX entry under the citation key | the .bib (`sources.bibliography`) | static facts; the build prints the reference list from them |
+| Access: URLs, access status, cache lines | the sources list (`sources.list`) | they let any later run fetch the source again without searching |
 | What the source says: verified quotes, findings, scope, limits on what may be claimed | the quotes bank (`sources.quotes`) | durable and expensive to establish again; some sources can no longer be fetched |
 | Verdicts about the book | a run folder, `<work.runs>/<YYYY-MM-DD-HHMM>-check-facts-all/`, and a note for each one that needs the author | they expire when the book is edited |
 
 Both banks are dateless and never a log (`Last verified` is the one date). Neither holds a verdict.
-Neither stores what a grep can recompute: where a source is cited is `grep -n '\[Key[,\]]'`.
+Neither stores what a grep can recompute: where a source is cited is `grep -nE '@\{?Key\b'`.
 The source files sit in a cache (`sources.library`) kept out of git; collect-sources manages it.
 
-**A reference is not a citation.** A `[Key]` points to where an idea lives; it is sound when the
+**A reference is not a citation.** An `@Key` (`[@Key]` in the text) points to where an idea lives; it is sound when the
 source holds the idea or its gist. Read `references/reference-standard.md` before grading anything.
 
 ## Modes
@@ -109,12 +110,12 @@ Rules that hold throughout:
 
 ## The banks: formats and rules
 
-- The sources list entry, its closed field list, Access status values, keys, editions, dating a
-  web source, pinning source code: `references/list-format.md`.
+- The .bib entry and the sources list entry, the list's closed field list, Access status values,
+  keys, editions, dating a web source, pinning source code: `references/list-format.md`.
 - The quotes bank entry, its closed field list, limits on what may be claimed, what a quote string
   must be: `references/quotes-format.md`.
-- Citation keys, bibliography entries, editions and preprints, title formatting, the reference
-  pass: `references/citations.md`.
+- Citation keys, `[@Key]` citations, .bib entries, editions and preprints, title formatting, the
+  reference pass: `references/citations.md`.
 - Metadata against registries (two independent registries before any correction):
   `references/metadata.md`.
 
@@ -137,14 +138,14 @@ run-checks still reports them until they are settled in the file.
 
 | Script | Checks |
 |---|---|
-| `citation-check.py` | citations in every manuscript file against the bibliography; `--report` writes the report review-ideas reads |
-| `cited-source-check.py` | every `[Key]` in the manuscript and the thinking files: in the sources list, with a library copy or a `needed.txt` line |
-| `citation-key-check.py`, `key-authors-check.py`, `key-bibtex-check.py` | every key against the alpha key rule, its own Authors field, and the label real bibtex prints |
-| `reference-format-check.py`, `reference-sort.py`, `list-bibliography-check.py`, `edition-duplicate-check.py` | the bibliography: titles, completeness, order, the join with the list, editions |
+| `citation-check.py` | citations in every manuscript file against the .bib; `--report` writes the report review-ideas reads |
+| `cited-source-check.py` | every `@Key` in the manuscript and the thinking files: in the .bib and the sources list, with a library copy or a `needed.txt` line |
+| `citation-key-check.py`, `key-bibtex-check.py` | every .bib key against the alpha key rule, and the label real bibtex prints for it; `citation-key-check.py --fix` renames a key everywhere |
+| `reference-format-check.py`, `list-bibliography-check.py`, `edition-duplicate-check.py` | the .bib: entry format (`--titles`: titles in the prose), the join with the list, editions |
 | `entry-format-check.py`, `entry-format-fix.py`, `list-quotes-join-check.py` | the two banks: format and the join |
 | `uncited-claim-check.py`, `guardrail-prose-check.py`, `quote-in-file-check.py`, `unread-sources.py` | the book against the banks and the cache |
-| `stale-argument-pointer-check.py`, `argument-key-check.py` | every thinking file (`thinking.dir`, all subfolders) against the book and the bibliography; `--argument <folder>` or a path narrows it |
-| `metadata-check.py` | the bibliography against registries (network; by hand) |
+| `stale-argument-pointer-check.py` | every thinking file (`thinking.dir`, all subfolders) against the book; `--argument <folder>` or a path narrows it |
+| `metadata-check.py` | the .bib against registries (network; by hand) |
 | `self-check.py` | the maintainer check on fixtures only |
 
 The catalogue of every script and what each finding means, and the book.yaml keys the checks
@@ -161,7 +162,7 @@ read: `references/checks.md`.
 | run output, verdicts and notes | `references/verdict-format.md` |
 | the missed-claims pass | `references/missed-claims-pass.md` |
 | the two banks | `references/list-format.md`, `references/quotes-format.md` |
-| keys and the bibliography | `references/citations.md` |
+| keys, citations and the .bib | `references/citations.md` |
 | registry metadata | `references/metadata.md` |
 | every script, the first checks, the book.yaml keys and the checklist | `references/checks.md` |
 

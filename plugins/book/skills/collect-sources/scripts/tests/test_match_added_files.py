@@ -25,48 +25,67 @@ SOURCES_LIST = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 
-**Full title:** the title as printed
+**Access URLs:** where the source can be read
 ```
 
 ---
 
-### [Mil08] Miller, "Crumb Structure" (2008)
+### [Mil08]
 
-**Full title:** Crumb Structure in Long Fermented Sourdough
-**Authors:** Hannah Miller
-**Year:** 2008
-**DOI:** 10.5555/crumb.2008.17
 **Access status:** MANUAL FETCH REQUIRED (gate)
 
 ---
 
-### [Ols19] Olsen, "Salt and Gluten" (2019)
+### [Ols19]
 
-**Full title:** Salt Levels and Gluten Networks in Wheat Dough
-**Authors:** Peter Olsen
-**Year:** 2019
-**DOI:** 10.5555/salt.2019.4
+**Access URLs:** https://example.org/salt-and-gluten
 
 ---
 
-### [Ros15] Rossi, "Slow Fermentation" (2015)
+### [Ros15]
 
-**Full title:** The Chemistry of Slow Fermentation
-**Authors:** Giulia Rossi
-**Year:** 2015
-**ISBN:** 978-0-306-40615-7
+**Note:** a library copy
 
 ---
 
-### [Web21] Weber, "Oven Spring" (2021)
+### [Web21]
 
-**Full title:** Measuring Oven Spring in Home Ovens
-**Authors:** Lena Weber
-**Year:** 2021
+**Note:** no copy known
 
 ---
+"""
+
+BIBLIOGRAPHY = """@article{Mil08,
+  author = {Miller, Hannah},
+  title = {Crumb Structure in Long Fermented Sourdough},
+  journal = {Journal of Bread Science},
+  year = {2008},
+  doi = {10.5555/crumb.2008.17},
+}
+
+@article{Ols19,
+  author = {Olsen, Peter},
+  title = {Salt Levels and Gluten Networks in Wheat Dough},
+  journal = {Journal of Bread Science},
+  year = {2019},
+  doi = {10.5555/salt.2019.4},
+}
+
+@book{Ros15,
+  author = {Rossi, Giulia},
+  title = {The Chemistry of Slow Fermentation},
+  publisher = {Example Press},
+  year = {2015},
+  isbn = {9780306406157},
+}
+
+@misc{Web21,
+  author = {Weber, Lena},
+  title = {Measuring Oven Spring in Home Ovens},
+  year = {2021},
+}
 """
 
 QUOTES_BANK = """# Quotes Bank
@@ -139,6 +158,7 @@ class AddedFilesBook:
         (self.root / "book.yaml").write_text(BOOK_YAML, encoding="utf-8")
         (self.root / "sources").mkdir()
         (self.root / "sources" / "list.md").write_text(SOURCES_LIST, encoding="utf-8")
+        (self.root / "sources" / "references.bib").write_text(BIBLIOGRAPHY, encoding="utf-8")
         (self.root / "sources" / "quotes.md").write_text(QUOTES_BANK, encoding="utf-8")
         self.config = load_config(str(self.root / "book.yaml"))
         self.folders = folders_from_config(self.config)
@@ -309,6 +329,9 @@ class MatchAddedFilesTest(unittest.TestCase):
             listed = book.root / "sources" / "list.md"
             listed.write_text(SOURCES_LIST.replace("### [Mil08]", "### [../../../outside/Mil08]"),
                               encoding="utf-8")
+            bibliography = book.root / "sources" / "references.bib"
+            bibliography.write_text(BIBLIOGRAPHY.replace("{Mil08,", "{../../../outside/Mil08,"),
+                                    encoding="utf-8")
             added = book.add("download (3).pdf", MILLER_WITH_DOI)
 
             # when

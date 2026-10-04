@@ -11,7 +11,7 @@ You are not checking writing style or prose quality. You are evaluating whether 
 
 ## What You Read
 
-1. The entire manuscript: every manuscript file in the order the run gives you, plus the bibliography
+1. The entire manuscript: every manuscript file in the order the run gives you, plus the bibliography (the book's `.bib` file)
 2. Stage 1 output: `stage-1-map.md` and all files in `artifacts/`
 3. Stage 2 output: `stage-2-attack.md` and updated `artifacts/mainstream-map.md`
 4. `artifacts/decision-matches.md`: each Stage 2 finding matched against the book's `decisions.md`, with what the run may do for each match. This table is the only way the book's earlier decisions reach you; do not open `decisions.md` itself

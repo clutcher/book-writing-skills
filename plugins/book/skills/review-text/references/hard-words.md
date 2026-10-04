@@ -148,7 +148,7 @@ The output of this test must include the actual substituted sentence. Without th
 
 For expert/person citations, classify first:
 
-**(a) Bare bibkey, no prose name.** `[Abc99]`, `[BC01]`, `[DEF+05]` -- citation only, no appeal to authority. Skip Rule 2.7 analysis entirely; this is a bibliographic reference, not a credential claim.
+**(a) Bare bibkey, no prose name.** `[@Abc99]`, `[@BC01]`, `[@DEF+05]` -- citation only, no appeal to authority. Skip Rule 2.7 analysis entirely; this is a bibliographic reference, not a credential claim.
 
 **(b) Named in prose.** "<Author> defines...", "<Author> and <Author> demonstrated..." -- person attributed in the sentence. Apply Rule 2.7 check (full name on first mention, credential tied to substantive contribution).
 
@@ -163,14 +163,14 @@ Both worked examples below are invented; the names, titles, and bibkeys are plac
 
 **Worked example (decorative, NO-ACTION):**
 
-- Original: *"Rita Alvarez and Sam Ng, authors of* The Patient Garden*, coined the term dry margin [Abc99]."*
-- Removed: *"The term dry margin was coined in* The Patient Garden *[Abc99]."*
+- Original: *"Rita Alvarez and Sam Ng, authors of* The Patient Garden*, coined the term dry margin [@Abc99]."*
+- Removed: *"The term dry margin was coined in* The Patient Garden *[@Abc99]."*
 - Argument still holds -- the book is a concrete reference; the authors' credential is decorative.
 
 **Worked example (load-bearing, flag):**
 
-- Original: *"Alex Doe showed in a field trial that mulched beds lose 30 percent less water over a dry summer [Def01]."*
-- Removed: *"A field trial showed that mulched beds lose 30 percent less water over a dry summer [Def01]."*
+- Original: *"Alex Doe showed in a field trial that mulched beds lose 30 percent less water over a dry summer [@Def01]."*
+- Removed: *"A field trial showed that mulched beds lose 30 percent less water over a dry summer [@Def01]."*
 - Argument weakened -- the specific trial result's credibility was carried by the named authority. Load-bearing -> credential needed.
 
 ### Step 6: Heuristics that default to NO-ACTION
@@ -217,7 +217,7 @@ Only flag if the argument specifically requires identifying *this* item. A flag 
 
 *NO-ACTION example (method-name handle).* A chapter names a farming method through a metaphor, and the quoted excerpt that immediately follows spells out what the metaphor means. -> NO-ACTION. Method name with nearby explanation.
 
-*NO-ACTION example (bare bibkey).* A chapter cites `[Abc99]` at a "farmers in several regions arrived at the same method on their own" claim, with no author named in prose. The citation is a bibliographic reference, not an authority appeal. Rule 2.7 does not apply. -> NO-ACTION.
+*NO-ACTION example (bare bibkey).* A chapter cites `[@Abc99]` at a "farmers in several regions arrived at the same method on their own" claim, with no author named in prose. The citation is a bibliographic reference, not an authority appeal. Rule 2.7 does not apply. -> NO-ACTION.
 
 *NO-ACTION example (institution-level attribution suffices).* A chapter refers to "two nurses at a large city hospital" for a claim about where a practice originated. Institution + era + citation carry the weight for the reader; individual names add no anchor. -> NO-ACTION.
 

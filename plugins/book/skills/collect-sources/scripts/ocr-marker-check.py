@@ -162,18 +162,15 @@ FIXTURE_LIST_HEADER = '''# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 
 **Access status:** READABLE VIA OCR (engine at NNN dpi)
 ```
 
 '''
 
-FIXTURE_LIST_ENTRY = '''### [%s] Author, "Short Title" (1970)
+FIXTURE_LIST_ENTRY = '''### [%s]
 
-**Full title:** A source held in the cache
-**Authors:** An Author
-**Year:** 1970
 **Access status:** %s
 
 ---
@@ -185,12 +182,12 @@ FIXTURE_QUOTES = '''# Quotes Bank
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 
 **Verified quotes:** exact strings, in quotation marks
 ```
 
-### [Cro91] Crowe, "A harbour survey" (1991)
+### [Cro91]
 
 **Verified quotes:**
 - p. 4: "the tide had to turn within 100 minutes"
@@ -199,7 +196,7 @@ FIXTURE_QUOTES = '''# Quotes Bank
 
 ---
 
-### [Yat83] Yates, "A talk to beekeepers" (1983)
+### [Yat83]
 
 **Verified quotes:** confirmed against the page image at 150 dpi.
 - p. 12: "we kept 64 hives and lost none of them that winter"
@@ -208,7 +205,7 @@ FIXTURE_QUOTES = '''# Quotes Bank
 
 ---
 
-### [Bro96] Brook, "Names for hedgerow plants" (1996)
+### [Bro96]
 
 **Verified quotes:**
 - p. 19: "a field guide to the hedgerow plants of one county"
@@ -217,7 +214,7 @@ FIXTURE_QUOTES = '''# Quotes Bank
 
 ---
 
-### [TWC88] Town Water Committee, "A town water report" (1988)
+### [TWC88]
 
 **Verified quotes:** II-2: "the well nearest the market - namely the old pump."
 **Key findings:** the only digit in the field is the section anchor
@@ -225,7 +222,7 @@ FIXTURE_QUOTES = '''# Quotes Bank
 
 ---
 
-### [Pen97] Penrose, "Parish boundaries along the brook" (1997)
+### [Pen97]
 
 **Verified quotes:**
 - p. 88, paraphrased rather than quoted, so no quotation marks are present at all
@@ -234,7 +231,7 @@ FIXTURE_QUOTES = '''# Quotes Bank
 
 ---
 
-### [Ree74] Reed, "On a river" (1974)
+### [Ree74]
 
 **Verified quotes:**
 - p. 336: "the 12 weirs, and the quotation is never closed
@@ -243,7 +240,7 @@ FIXTURE_QUOTES = '''# Quotes Bank
 
 ---
 
-### [Smi01] Smith, "Winter sowing" (2001)
+### [Smi01]
 
 **Verified quotes:**
 - p. 114: "the average garden kept between three and five beds in use"
@@ -252,7 +249,7 @@ FIXTURE_QUOTES = '''# Quotes Bank
 
 ---
 
-### [Wes02] West, "Mulch and moisture" (2002)
+### [Wes02]
 
 **Verified quotes:**
 - p. 297: "a thick mulch cut the watering time by 40 per cent"

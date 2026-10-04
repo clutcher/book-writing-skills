@@ -4,7 +4,7 @@
 A checkable claim ("gardeners spend 70% of their time weeding", "fields were rotated
 annually", "X was the first to describe it") is either grounded by a citation or
 decorative. This script finds claims by pattern class, then checks whether a citation
-key ([Abc99], [ABCD94]) appears within a 5-sentence window: the two sentences before,
+key ([@Abc99], @ABCD94) appears within a 5-sentence window: the two sentences before,
 the claim's own sentence, and the two after. Unmatched claims are listed for the author.
 
 It is recall-first: expect false positives. It surfaces; it never blocks. An uncited
@@ -61,7 +61,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 from source_files import (add_config_arguments, load_book, manuscript_paths, shown_path,
                           tool_failed)
 from check_output import ADVISORY, CheckReport, add_output_arguments
-from citation_key import BIB_ENTRY
+from citations import CITATION
 
 TOOL = "uncited-claim-check"
 
@@ -262,11 +262,6 @@ PRESCRIPTIVE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-_CITATION_KEY = r"[A-Za-z\+]+\d{2,4}[a-z]?"
-CITATION_PATTERN = re.compile(
-    rf"\[(?:{_CITATION_KEY})(?:\s*,\s*(?:{_CITATION_KEY}))*\]"
-)
-
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+(?=[A-Z\"'(])")
 
 CROSS_REF_PREFIXES = [
@@ -318,9 +313,6 @@ def strip_code_and_tables(text):
         if stripped.startswith("|"):
             out.append("")
             continue
-        if BIB_ENTRY.match(stripped):
-            out.append("")
-            continue
         out.append(line)
     return "\n".join(out)
 
@@ -370,7 +362,7 @@ def find_citation_window(sentences, claim_index):
     end = claim_index + 3
     window = sentences[start: end]
     combined = " ".join(s for _, s in window)
-    m = CITATION_PATTERN.search(combined)
+    m = CITATION.search(combined)
     return m.group(0) if m else None
 
 
@@ -499,7 +491,7 @@ Seventy percent of the rain runs off bare soil before it soaks in.
 
 Studies show that mulch helps, and one author was the first to describe it.
 
-The harvest doubled when the beds were split [Smi99]. Water use fell by 30 percent.
+The harvest doubled when the beds were split [@Smi99]. Water use fell by 30 percent.
 
 As Chapter 5 shows, Section 6.1 has 12 examples. You should water the beds daily.
 
@@ -511,7 +503,8 @@ As Chapter 5 shows, Section 6.1 has 12 examples. You should water the beds daily
 watering_minutes = 150  # 150 minutes
 ```
 
-[Smi99] Smith, J. (1999). A study of 70% of gardens.
+::: {#refs}
+:::
 """
 
 FIXTURE_EXPECTED = {

@@ -2,8 +2,8 @@
 
 ## 1.1 What a Small Bed Gives
 
-Small beds give the most food for each hour of work [Smi99], and a public catalog lists the
-same idea under another name [Wal--].
+Small beds give the most food for each hour of work [@Smi99], and a public catalog lists the
+same idea under another name [@{Wal--}].
 
 ## Summary
 

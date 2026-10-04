@@ -18,9 +18,9 @@
   acknowledgments), `100`-`899` parts and chapters, `900`-`999` back matter (references).
 - **Each part is its own file**: the `\part{...}` raw block plus the short overview paragraph that
   the part divider shows ([part-pages.md](part-pages.md)).
-- The bibliography is one file whose first line is the level-1 heading `book.references_heading`
-  (default `# References`), one entry per paragraph, each opening with its `[Key]`. Its path is
-  `manuscript.references` in `book.yaml`.
+- The references file holds the level-1 heading `book.references_heading` (default
+  `# References`) and an empty `::: {#refs}` div; the build writes the reference list there from
+  the bibliography (`sources.bibliography`). Its path is `manuscript.references` in `book.yaml`.
 
 ## Headings
 

@@ -481,22 +481,20 @@ FIXTURE_LIST = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 ```
 
 ---
 
-### [Smi93] Smith, "A scanned paper" (1993)
+### [Smi93]
 
-**Full title:** A scanned paper
 **Access status:** READABLE
 **Cached text:** `sources/library/Smi93.txt` (fetched 2025-01-01, sha256 0000000000000000000000000000000000000000000000000000000000000000)
 
 ---
 
-### [Gat90] Gate, "Gated" (1990)
+### [Gat90]
 
-**Full title:** Gated
 **Access status:** MANUAL FETCH REQUIRED (gate)
 **Cached text:** NOT YET FETCHED
 

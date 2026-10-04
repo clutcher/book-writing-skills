@@ -7,20 +7,36 @@ from pathlib import Path
 
 from citation_key import ENTRY_HEADING, is_placeholder, sort_position
 from book_config import ConfigError, add_config_arguments, config_from_args
-from check_output import tool_failed
+from check_output import (SHARED_CLASSES, CheckReport, add_output_arguments, run_main,
+                          tool_failed)
 
-CONTRACT = "source-registry/1"
+CONTRACT = "source-registry/2"
 
 TOOL = "source_registry"
 
 SOURCE_FIELDS = frozenset({
-    "Full title", "Authors", "Year", "Edition", "Venue", "Publisher",
-    "DOI", "ISBN", "Identifier", "DOI/URL",
-    "Access URLs", "Access status", "Cached text", "Cached original",
-    "Record history", "Fetch note", "Note", "Findings",
+    "Access URLs", "Access status", "Fetch note", "Cached text", "Cached original",
+    "Findings", "Note", "Record history", "Supersedes",
 })
 
-SOURCE_REQUIRED = ("Full title", "Authors", "Year")
+IDENTITY_FIELDS = {
+    "Full title": "title",
+    "Authors": "author",
+    "Editors": "editor",
+    "Year": "year",
+    "Edition": "edition",
+    "Venue": "journal or booktitle",
+    "Publisher": "publisher",
+    "DOI": "doi",
+    "ISBN": "isbn",
+    "Identifier": "doi, isbn or note",
+    "DOI/URL": "doi or url",
+    "URL": "url",
+}
+
+IDENTITY_IN_LIST = "identity-in-list"
+
+SOURCE_REQUIRED = ()
 
 FINDINGS_FIELDS = frozenset({
     "Verified quotes", "Key findings", "Role", "Scope", "Guardrail",
@@ -149,7 +165,20 @@ class Entry:
 
     def unapproved(self, is_findings):
         approved = fields_for(is_findings)
-        return [n for n in self.field_names() if n not in approved]
+        return [n for n in self.field_names()
+                if n not in approved and (is_findings or n not in IDENTITY_FIELDS)]
+
+    def identity_problems(self):
+        problems = []
+        if self.heading_tail:
+            problems.append(f"the heading carries {self.heading_tail!r}: a sources-list heading "
+                            f"is only ### [{self.key}], and the authors, title and year belong "
+                            f"in the .bib entry")
+        for name in self.field_names():
+            if name in IDENTITY_FIELDS:
+                problems.append(f"**{name}:** belongs in the .bib entry, as "
+                                f"{IDENTITY_FIELDS[name]}, not in the sources list")
+        return problems
 
     def missing(self, is_findings):
         if is_findings:
@@ -411,7 +440,7 @@ def _round_trip(path, failures, counts, config=None):
         "findings_bank": findings,
         "header_lines": bank.header.count("\n"),
         "unapproved": sorted({n for e in bank.entries for n in e.unapproved(findings)}),
-        "missing": sorted({n for e in bank.entries for n in e.missing(findings)}),
+        "identity": 0 if findings else sum(1 for e in bank.entries if e.identity_problems()),
         "out_of_order": len(bank.out_of_order()),
         "bad_separators": len(separator_defects(bank)),
     }
@@ -423,13 +452,13 @@ def _round_trip(path, failures, counts, config=None):
 def _sort_test(failures):
     bank_text = (
         "# Sources List\n\n## Entry format\n\n```\n"
-        '### [<Key>] Author(s), "Short Title" (Year)\n```\n\n'
-        "### [Smi01] S, \"Third\" (2001)\n\n**Full title:** Third\n\n---\n\n"
-        "### [Ada85] A, \"First\" (1985)\n\n**Full title:** First\n\n---\n\n"
-        "### [Bak02] B, \"Second\" (2002)\n\n**Full title:** Second\n\n"
+        "### [<Key>]\n```\n\n"
+        "### [Smi01]\n\n**Note:** Third\n\n---\n\n"
+        "### [Ada85]\n\n**Note:** First\n\n---\n\n"
+        "### [Bak02]\n\n**Note:** Second\n\n"
         "## Section 4 -- a section that groups what follows\n\n"
-        "### [Zed20] Z, \"Fifth\" (2020)\n\n**Full title:** Fifth\n\n---\n\n"
-        "### [Jon72] J, \"Fourth\" (1972)\n\n**Full title:** Fourth\n"
+        "### [Zed20]\n\n**Note:** Fifth\n\n---\n\n"
+        "### [Jon72]\n\n**Note:** Fourth\n"
     )
     bank = parse_bank(bank_text)
     if bank.serialise() != bank_text:
@@ -470,18 +499,17 @@ def _self_test(bank_paths, config=None):
         "## Entry format\n"
         "\n"
         "```\n"
-        '### [<Key>] Author(s), "Short Title" (Year)\n'
+        "### [<Key>]\n"
         "\n"
-        "**Full title:** the title as printed\n"
+        "**Access URLs:** where the source can be read\n"
         "```\n"
         "\n"
         "---\n"
         "---\n"
-        '### [AAA01] A, "First" (2001)\n'
+        "### [AAA01]\n"
         "\n"
-        "**Full title:** First\n"
-        "**Authors:** Author, A.\n"
-        "**Year:** 2001\n"
+        "**Access URLs:** https://example.org/aaa01.pdf\n"
+        "**Access status:** fetched\n"
         "**Note:** a value that runs on\n"
         "  and continues here with **bold** inside it\n"
         "**Findings:** see the other bank\n"
@@ -515,14 +543,15 @@ def _self_test(bank_paths, config=None):
           "a non-entry ### heading became a Break, not part of the entry above")
 
     first = bank.entry("AAA01")
-    check(first.field_names(), ["Full title", "Authors", "Year", "Note", "Findings"],
+    check(first.field_names(), ["Access URLs", "Access status", "Note", "Findings"],
           "fields in written order")
-    check(first.field("Year"), "2001", "single-line value")
+    check(first.field("Access status"), "fetched", "single-line value")
     check("continues here" in first.field("Note"), True,
           "multi-line value continued by absence of a label")
     check("**bold**" in first.field("Note"), True, "bold inside a value survives")
     check(first.rebuild(), first.raw, "entry rebuilt from its parsed fields")
-    check(first.missing(False), [], "required fields present")
+    check(first.missing(False), [], "no field is required")
+    check(first.identity_problems(), [], "an access-only entry has no identity problem")
     check(first.field("Findings"), "see the other bank",
           "the value stops at the `---` separator")
     check("---" in first.raw, True, "the separator is still inside raw, so raw round-trips")
@@ -533,36 +562,41 @@ def _self_test(bank_paths, config=None):
           "a quotes-bank name in the sources list is reported, not approved")
     check(second.unapproved(True), ["Full title"],
           "the two field lists are separate and neither approves the other's names")
-    check(second.missing(False), ["Authors", "Year"], "missing required fields")
+    check(len(second.identity_problems()), 2,
+          "an old heading and an identity field are both reported")
+    check("belongs in the .bib entry" in second.identity_problems()[1], True,
+          "the identity finding says where the field belongs")
     check(second.rebuild(), second.raw, "second entry rebuilt")
 
     if "Relation" in SOURCE_FIELDS or "Full title" in FINDINGS_FIELDS:
         failures.append("the two field lists have been merged")
     if FINDINGS_FIELDS & SOURCE_FIELDS:
         failures.append(f"field lists overlap: {sorted(FINDINGS_FIELDS & SOURCE_FIELDS)}")
+    if set(IDENTITY_FIELDS) & SOURCE_FIELDS:
+        failures.append(f"identity fields are approved in the sources list: "
+                        f"{sorted(set(IDENTITY_FIELDS) & SOURCE_FIELDS)}")
     check(len(FINDINGS_FIELDS), 9, "the quotes-bank field list is nine names")
 
     check(separator_defects(bank),
           [("AAA01", "\n\n---\n---\n"), ("BBB02", "\n\n---\n")],
           "every entry not introduced by the declared separator, and only those")
-    check(split_separator("### [X] x\n\n**Full title:** T\n\n---\n\n"),
-          ("### [X] x\n\n**Full title:** T", ENTRY_SEPARATOR),
+    check(split_separator("### [X]\n\n**Note:** T\n\n---\n\n"),
+          ("### [X]\n\n**Note:** T", ENTRY_SEPARATOR),
           "a canonical segment splits into content and the declared separator")
-    check(with_separator("### [X] x\n\n**Full title:** T\n\n---\n\n"),
-          "### [X] x\n\n**Full title:** T\n\n---\n\n",
+    check(with_separator("### [X]\n\n**Note:** T\n\n---\n\n"),
+          "### [X]\n\n**Note:** T\n\n---\n\n",
           "normalising an already-canonical segment changes nothing")
-    check(with_separator("### [X] x\n\n**Full title:** T\n---\n---\n"),
-          "### [X] x\n\n**Full title:** T\n\n---\n\n",
+    check(with_separator("### [X]\n\n**Note:** T\n---\n---\n"),
+          "### [X]\n\n**Note:** T\n\n---\n\n",
           "a doubled rule collapses and the missing blank line is restored")
-    fenced_tail = "### [X] x\n\n**Note:** an example\n```\n---\n```\n\n---\n\n"
+    fenced_tail = "### [X]\n\n**Note:** an example\n```\n---\n```\n\n---\n\n"
     check(split_separator(fenced_tail)[1], ENTRY_SEPARATOR,
           "a fenced `---` is content, not part of the separator run")
     check(with_separator(fenced_tail), fenced_tail, "and it survives normalisation")
 
     fenced = parse_bank(
-        "# X\n\n## Entry format\n\n```\n### [<Key>] x\n```\n\n"
-        '### [CCC03] C, "Third" (2003)\n\n'
-        "**Full title:** Third\n"
+        "# X\n\n## Entry format\n\n```\n### [<Key>]\n```\n\n"
+        "### [CCC03]\n\n"
         "**Note:** an example follows\n"
         "```\n"
         "**Not A Field:** inside a fence\n"
@@ -572,7 +606,7 @@ def _self_test(bank_paths, config=None):
     check(third.rebuild(), third.raw, "fenced value rebuilt")
 
     for broken, label in [
-        ('### [AAA01] A, "First" (2001)\n\n**Full title:** First\n', "no header"),
+        ("### [AAA01]\n\n**Note:** First\n", "no header"),
         ("# Bank\n\nno entries here at all\n", "no entries"),
     ]:
         try:
@@ -608,13 +642,31 @@ def _self_test(bank_paths, config=None):
         print(f"    bad entry separators  {data['bad_separators']}")
         if data["unapproved"]:
             print(f"    unapproved names      {', '.join(data['unapproved'])}")
-        if data["missing"]:
-            print(f"    missing required      {', '.join(data['missing'])}")
+        if data["identity"]:
+            print(f"    identity in the list  {data['identity']} entr"
+                  f"{'y' if data['identity'] == 1 else 'ies'} (check with --check)")
     for path in skipped:
         print(f"not found, not round-tripped: {path}")
     print(f"\ncontract {CONTRACT}")
     print(f"self-test: {'PASS' if not failures else str(len(failures)) + ' failure(s)'}")
     return 1 if failures else 0
+
+
+CHECK_CLASSES = {IDENTITY_IN_LIST: SHARED_CLASSES[IDENTITY_IN_LIST]}
+
+
+def check_sources_list(path, output_format):
+    report = CheckReport("source-registry", CHECK_CLASSES)
+    if report.skip_unless_present(path, "sources list"):
+        return report.emit(output_format)
+    try:
+        bank = read_bank(path)
+    except (OSError, ValueError) as error:
+        return tool_failed(f"cannot read {path}: {error}", TOOL)
+    for entry in bank.entries:
+        for problem in entry.identity_problems():
+            report.add(entry.key, IDENTITY_IN_LIST, problem)
+    return report.emit(output_format)
 
 
 def main():
@@ -632,6 +684,10 @@ def main():
                     help="with --sort, rewrite the bank with its entries in order")
     ap.add_argument("--fields", metavar="BANK",
                     help="list every field name used in a bank, with counts")
+    ap.add_argument("--check", action="store_true",
+                    help="report sources-list entries that still carry identity (authors, "
+                         "title, year, DOI, ISBN): it belongs in the .bib entry")
+    add_output_arguments(ap)
     args = ap.parse_args()
 
     try:
@@ -640,6 +696,8 @@ def main():
         sys.stderr.write(f"source_registry: {error}\n")
         return 2
 
+    if args.check:
+        return check_sources_list(args.sources or config.sources.list, args.format)
     if args.self_test:
         sources = args.sources or config.sources.list
         findings = args.findings or config.sources.quotes
@@ -692,4 +750,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    run_main(main)

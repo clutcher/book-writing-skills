@@ -35,7 +35,6 @@ sys.dont_write_bytecode = True
 from book_files import (ConfigError, FIXTURES_DIR, SAMPLE_BOOK, add_config_arguments,
                         coined_words, config_for_targets, is_english_book, markdown_files,
                         skipped_for_language, tool_failed)
-from citation_key import BIB_ENTRY
 from terminal_colors import CYAN, GREEN, NC, RED, YELLOW
 from voice_profile import load_voice_profile
 
@@ -51,7 +50,11 @@ MAX_SENTENCES = 8
 
 CODE_BLOCK_MARKER = '\n\n<<<CODE_BLOCK>>>\n\n'
 
-CITATION_START = r'\[[A-Za-z][A-Za-z+]*\d{2,4}[a-z]?[\],]'
+CITATION_START = r'\[[^\[\]\n]*@'
+
+CITATION_GROUP = r'\[[^\[\]\n]*@[^\[\]\n]*\](?!\()'
+
+DIV_FENCE = re.compile(r'^:{3,}(?:\s*\{[^}]*\}|\s*[\w-]+)?\s*$')
 
 DEFAULT_PARAGRAPH_LENGTH_EXEMPT_PATTERNS = [
     r'^(\d+-)?part-[\w-]+\.md$',
@@ -817,7 +820,7 @@ def is_list_item(line: str) -> bool:
 
 
 def is_reference_line(line: str) -> bool:
-    return bool(BIB_ENTRY.match(line.strip()))
+    return bool(DIV_FENCE.match(line.strip()))
 
 
 def is_blockquote(line: str) -> bool:
@@ -965,7 +968,7 @@ def split_into_sentences(content: str) -> List[Tuple[str, int]]:
 
 def is_entirely_quote(sentence: str) -> bool:
     stripped = sentence.strip()
-    stripped = re.sub(r'\s*\[[A-Za-z\+]+\d{2,4}\][.!?]?\s*$', '', stripped)
+    stripped = re.sub(rf'\s*{CITATION_GROUP}[.!?]?\s*$', '', stripped)
     stripped = stripped.strip()
 
     quote_pairs = [
@@ -994,7 +997,7 @@ def is_entirely_quote(sentence: str) -> bool:
 
 def count_words(sentence: str) -> int:
     cleaned = remove_inline_code(sentence)
-    cleaned = re.sub(r'\[[A-Za-z\+]+\d{2,4}\][.!?]?', '', cleaned)
+    cleaned = re.sub(rf'{CITATION_GROUP}[.!?]?', '', cleaned)
     cleaned = re.sub(r'["""\'\']', '', cleaned)
     words = [w for w in cleaned.split() if re.search(r'[a-zA-Z0-9]', w)]
     return len(words)

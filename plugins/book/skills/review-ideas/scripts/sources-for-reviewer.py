@@ -8,8 +8,9 @@ free full-text link, what each source establishes, and a Nuance line where the s
 is commonly misread or the book's wording sits at its edge. It ends with an index of
 the free links. It is a reading list, never an argument for the book.
 
-`draft` builds the skeleton from the banks: book locations come from the manuscript,
-titles and links from the sources list, and "what it establishes" from the quotes
+`draft` builds the skeleton from the banks: book locations come from the `@Key` citations in
+the manuscript, authors, titles, years and identifiers from the book's .bib file
+(sources.bibliography), links from the sources list and the .bib entry, and "what it establishes" from the quotes
 bank's Key findings and Scope. The Guardrail is copied under Nuance as raw material and
 must be rewritten neutrally by the person or agent finishing the list. Claims come
 from a claims file (one claim per line: `claim title<TAB>Key1,Key2`), or one section
@@ -44,6 +45,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 from source_files import add_config_arguments, load_book, shown_path, tool_failed
 from check_output import DEFECT, CheckReport, add_output_arguments
 from source_registry import read_bank
+from bibliography import plain_text, read_identities
+from citations import find_citations
 
 TOOL = "sources-for-reviewer"
 CLASSES = {"argues-for-the-book": DEFECT}
@@ -81,21 +84,40 @@ def arguing_sentences(text):
 
 
 def citing_sites(manuscript_files, key, root):
-    pattern = re.compile(r"\[[^\]\n]*\b%s\b[^\]\n]*\]" % re.escape(key))
     sites = []
     for path in manuscript_files:
-        for number, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
-            if pattern.search(line) and not line.startswith("[%s]" % key):
-                sites.append("%s:%d" % (shown_path(root, path), number))
+        text = Path(path).read_text(encoding="utf-8")
+        lines = sorted({citation.line for citation in find_citations(text) if citation.key == key})
+        sites.extend("%s:%d" % (shown_path(root, path), number) for number in lines)
     return sites
 
 
-def free_link(entry):
-    if entry is None:
+def person_name(name):
+    if name.corporate:
+        return plain_text(name.last)
+    return " ".join(part for part in (plain_text(name.first), name.surname,
+                                      plain_text(name.jr)) if part)
+
+
+def authors_of(identity):
+    if identity is None:
+        return ""
+    names = identity.authors or identity.editors
+    people = [person_name(name) for name in names if not name.others]
+    shown = ", ".join(people)
+    if len(people) < len(names):
+        shown += " and others"
+    return shown
+
+
+def free_link(entry, identity):
+    if entry is None and identity is None:
         return None, True
-    urls = URL_RE.findall(entry.field("Access URLs") or "") + URL_RE.findall(entry.field("DOI/URL") or "")
-    closed = bool(CLOSED.search(entry.field("Access status") or ""))
-    doi = (entry.field("DOI") or "").strip()
+    urls = URL_RE.findall(entry.field("Access URLs") or "") if entry else []
+    if identity is not None:
+        urls += URL_RE.findall(identity.field("url") or "")
+    closed = bool(CLOSED.search(entry.field("Access status") or "")) if entry else False
+    doi = (identity.plain("doi") if identity is not None else "").strip()
     if urls:
         return urls[0].rstrip(".,;"), closed
     if doi:
@@ -103,13 +125,14 @@ def free_link(entry):
     return None, True
 
 
-def source_block(key, sources, quotes):
+def source_block(key, identities, sources, quotes):
     entry = sources.get(key)
+    identity = identities.get(key)
     finding = quotes.get(key)
-    title = (entry.field("Full title") if entry else None) or key
-    authors = (entry.field("Authors") if entry else None) or "authors not recorded"
-    year = (entry.field("Year") if entry else None) or "year not recorded"
-    link, closed = free_link(entry)
+    title = (identity.plain("title", "booktitle") if identity is not None else "") or key
+    authors = authors_of(identity) or "authors not recorded"
+    year = (identity.plain("year") if identity is not None else "") or "year not recorded"
+    link, closed = free_link(entry, identity)
     lines = ["- [%s] %s. %s (%s)." % (key, authors, title, year)]
     if link:
         lines.append("  - Link: %s%s" % (link, " (not free: look for an open copy)" if closed else ""))
@@ -129,7 +152,7 @@ def source_block(key, sources, quotes):
     return lines, (key, title, link) if link and not closed else None
 
 
-def draft(claims, sources, quotes, manuscript_files, root):
+def draft(claims, identities, sources, quotes, manuscript_files, root):
     out = ["# Sources for the reviewer", "",
            "## What this is", "",
            "A neutral reading list for the book's main claims: where the book makes",
@@ -148,7 +171,7 @@ def draft(claims, sources, quotes, manuscript_files, root):
         out.append("")
         out.append("Primary sources:")
         for key in keys:
-            lines, free = source_block(key, sources, quotes)
+            lines, free = source_block(key, identities, sources, quotes)
             out.extend(lines)
             if free:
                 index.append(free)
@@ -175,17 +198,24 @@ FIXTURE_LIST = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
+
+**Access URLs:** where the source can be read
 ```
 
-### [Smi99] Smith, "Morning walks" (1999)
+### [Smi99]
 
-**Full title:** Morning walks and sleep
-**Authors:** Nora Smith
-**Year:** 1999
 **Access URLs:** https://example.org/smith.pdf
 
 ---
+"""
+
+FIXTURE_BIBLIOGRAPHY = """@article{Smi99,
+  author = {Smith, Nora},
+  title = {Morning walks and sleep},
+  journal = {Journal of Invented Examples},
+  year = {1999},
+}
 """
 
 FIXTURE_QUOTES = """# Quotes Bank
@@ -212,13 +242,17 @@ def self_test():
         root = Path(root)
         (root / "list.md").write_text(FIXTURE_LIST, encoding="utf-8")
         (root / "quotes.md").write_text(FIXTURE_QUOTES, encoding="utf-8")
+        (root / "references.bib").write_text(FIXTURE_BIBLIOGRAPHY, encoding="utf-8")
         chapter = root / "110-chapter-1.md"
-        chapter.write_text("Morning walkers sleep longer [Smi99].\n", encoding="utf-8")
+        chapter.write_text("Morning walkers sleep longer [@Smi99].\n\nSee also @Smi99.\n",
+                           encoding="utf-8")
+        identities = read_identities(root / "references.bib")
         sources = {e.key: e for e in read_bank(root / "list.md").entries}
         quotes = {e.key: e for e in read_bank(root / "quotes.md").entries}
-        text = draft([("Morning walks lengthen sleep", ["Smi99"])], sources, quotes,
+        text = draft([("Morning walks lengthen sleep", ["Smi99"])], identities, sources, quotes,
                      [chapter], root)
-    for expected in ("110-chapter-1.md:1", "https://example.org/smith.pdf",
+    for expected in ("110-chapter-1.md:1, 110-chapter-1.md:3", "https://example.org/smith.pdf",
+                     "Nora Smith. Morning walks and sleep (1999).",
                      "slept about twenty minutes longer", "REWRITE NEUTRALLY",
                      "Quick index of free full-text links"):
         if expected not in text:
@@ -269,11 +303,12 @@ def main():
         claims = [(key, [key]) for key in args.keys.split(",") if key.strip()]
     else:
         return tool_failed("draft needs --claims or --keys", TOOL)
+    identities = read_identities(config.sources.bibliography)
     sources = {e.key: e for e in read_bank(config.sources.list).entries}
     quotes = {e.key: e for e in read_bank(config.sources.quotes).entries}
     files = [item.path for item in config.manuscript_files()
              if item.kind not in ("references",)]
-    text = draft(claims, sources, quotes, files, config.root)
+    text = draft(claims, identities, sources, quotes, files, config.root)
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")
         print("wrote %s" % args.out)

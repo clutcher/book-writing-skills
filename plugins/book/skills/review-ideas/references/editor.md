@@ -28,7 +28,7 @@ eval "$(python3 "$LIB/book_config.py" paths --shell)"      # BOOK_ROOT, BOOK_WOR
 python3 "$LIB/book_config.py" files                         # manuscript files in reading order, with their kind
 ```
 
-Keys this skill uses: `manuscript.dir`, `manuscript.references` (the bibliography),
+Keys this skill uses: `manuscript.dir`, `sources.bibliography` (the `.bib` file, the bibliography),
 `manuscript.summary_heading`, `rules.glossary`, `glossary_format.location_pattern`,
 `glossary_format.heading_separator`, `rules.decisions`, `work.runs`, and for Verify `sources.library`,
 `sources.list`, `sources.quotes`.
@@ -69,7 +69,7 @@ or any part of it, as "done" anywhere else. Findings that survive reach the auth
 
 ## What the stage agents read
 
-**The manuscript and the bibliography, and nothing else about the book**: no notes, plans,
+**The manuscript and the bibliography (the book's `.bib` file, `sources.bibliography`; the references page in the manuscript is only a placeholder the build fills), and nothing else about the book**: no notes, plans,
 style guides, author position files, source banks or `decisions.md`. The review judges the book
 as a reader meets it. List the files with `book_config.py files` and give them in that order;
 never assume a chapter count or a file-name shape.
@@ -197,7 +197,7 @@ line per finding, a summary, exit 0 clean / 1 defects / 2 the tool failed. All t
 
 | Script | What it does | Classes |
 |---|---|---|
-| `citation-check.py` (check-facts) | citations in every manuscript file vs the bibliography; `--report` writes the Stage 2 report (counts and density per file, single-use keys, most cited, shared keys, `[K1][K2]` misuse) | `cited-not-listed`, `listed-not-cited`, `adjacent-brackets` (defects); `density-outlier` |
+| `citation-check.py` (check-facts) | citations in every manuscript file vs the .bib; `--report` writes the Stage 2 report (counts and density per file, single-use keys, most cited, shared keys, `[@A][@B]` misuse) | `not-in-bibliography`, `adjacent-brackets` (defects); `not-cited`, `density-outlier` (informational) |
 | `glossary-check.py` (write-text) | every glossary term in the manuscript: first use vs the definition's file, uses per file; `--verbose` adds context windows | `used-before-defined`, `never-found` (advisory); `location-not-found` |
 | `glossary-seed.py` | terms the glossary lacks, from the definitions index and from definition-shaped sentences; `--fix` adds the index terms | `new-term`, `location-not-found`; `unregistered-definition` (advisory) |
 | `match-decisions.py` | each finding of a stage file vs `decisions.md`; `--id-prefix M` keeps only Stage 3's own findings; `--report` writes `decision-matches.md` | `matches-decided`, `matches-fix-owed`, `matches-decision-owed`, `matches-undiscussed` (advisory); `new-finding`, `no-decisions-file` |

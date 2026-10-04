@@ -27,7 +27,7 @@ study) are not part of the paper, and the skills do not read them.
 | `rules/glossary.md` | The terms the paper defines, with their canonical wording |
 | `rules/voice.md` | The voice of the paper |
 | `rules/vale/` | `vale.ini`, the paper's own Vale rules, and `config/vocabularies/Book/` (accepted and rejected spellings) |
-| `sources/` | `sources/list.md` (who wrote what, where to get it), `sources/quotes.md` (what each source says), `sources/library-index/` (one record per library file); `sources/library/` holds the copies and is kept out of git |
+| `sources/` | `sources/references.bib` (who wrote what, in BibTeX; cite a source as `[@Key]`), `sources/list.md` (where to get it), `sources/quotes.md` (what each source says), `sources/library-index/` (one record per library file); `sources/library/` holds the copies and is kept out of git |
 | `notes/` | Open notes only, one file per manuscript file, plus `whole-book.md` for notes on the whole paper |
 | `.book/` | Work state, kept out of git: `runs/` (one folder per run, newest three per skill and mode), `output/` (the built paper), `caches/`, `sources-to-add/` |
 | `.claude/` | `settings.json`: the tools Claude Code may use without asking |

@@ -28,7 +28,7 @@ check reports. When one is missing, the check runs without it; it never fails fo
 
 | Key | Used by | What it does | When it is missing |
 |---|---|---|---|
-| `terms.watch_words.titles_used_as_names` | `reference-format-check.py` | short titles that are also ordinary names in the prose (a language, a tool); matched only in full | every title is matched |
+| `terms.watch_words.titles_used_as_names` | `reference-format-check.py --titles` | short titles that are also ordinary names in the prose (a language, a tool); matched only in full | every title is matched |
 | `terms.watch_words.internal_first_nouns` | `uncited-claim-check.py` | the book's own nouns, so "the first principle" of the book is not a priority claim | only the built-in nouns |
 | `terms.watch_words.notes_about_the_book` | `stale-argument-pointer-check.py` | argument files whose subject is the book's own structure (paths from the book root); their pointers are `exempt` | no file is exempt |
 | `terms.watch_words.reading_topics` | `unread-sources.py` | words or regular expressions; only matching unread sources are queued | every unread source is queued |
@@ -44,24 +44,22 @@ check reports. When one is missing, the check runs without it; it never fails fo
 | `entry-format-check.py` | both banks against the format each declares: required fields, closed vocabularies, label colons, DOI placement, dated or verdict field names, premature hashes, missing cache files, the default library folder named in a book that keeps its library in its own folder, a pointer at an old bank path, truncated or two-key headings, key order, separators, fields after an entry's `---`, cached text with no entry, stale "not read" notes, a book entry that links an unofficial copy (a file in a person's GitHub repository or on a shadow-library site; advisory) |
 | `entry-format-fix.py` | the mechanical subset of the same rules. **Must report 0 changed** on a clean bank: the gate and the fixer are one rule |
 | `list-quotes-join-check.py` | the two banks against each other by key: quotes with no list entry, dangling or missing pointers, duplicate keys; `--stale DAYS` for old readings |
-| `key-authors-check.py` | every key against its own Authors field |
-| `key-bibtex-check.py` | every bibliography key against the label the real bibtex with alpha.bst prints (docker fallback, SKIPPED without either) |
+| `key-bibtex-check.py` | every .bib key against the label the real bibtex with alpha.bst prints for the book's own .bib (docker fallback, SKIPPED without either) |
 | `duplicate-source-check.py` (collect-sources) | one source under two keys: same DOI, ISBN or cached text (defects); stubs, edition pairs, same headings (advisory) |
 
 ## The banks against the book
 
 | Script | What it checks |
 |---|---|
-| `list-bibliography-check.py` | the list joins the bibliography by key; near-miss key pairs; `--no-verdicts` for verdicts and misplaced quotes-bank fields in either bank |
-| `citation-key-check.py` | bibliography keys against the key rule; `--fix` renames across the book and proves every citation still resolves |
-| `reference-format-check.py` | book titles in italics and paper titles in quotes in the prose; `--completeness` for cited-but-missing, never-cited and adjacent brackets |
-| `reference-sort.py` | bibliography order; `--fix` sorts |
-| `edition-duplicate-check.py` | one work under two editions, a designated edition with no `First published`, an unexplained pair, a moving-target URL |
+| `list-bibliography-check.py` | the list and the .bib hold the same keys; near-miss key pairs; `--no-verdicts` for verdicts and misplaced quotes-bank fields in either bank |
+| `citation-check.py` | every `@Key` in the manuscript has a .bib entry; .bib entries nothing cites (informational); adjacent brackets `[@A][@B]`; old `[Key]` citations without `@`; a hand-written references list |
+| `citation-key-check.py` | .bib keys against the key rule, from each entry's names; `--fix` renames in the .bib, both banks, the manuscript and the thinking files, and proves every citation still resolves |
+| `reference-format-check.py` | the .bib entries: the fields each entry type needs, known types and fields, a bare DOI, a 13-digit ISBN, repeated fields and keys (`--fix` writes the DOI and ISBN); `--titles` for book titles in italics and paper titles in quotes in the prose |
+| `edition-duplicate-check.py` | one work under two editions, a later `edition` with no `origdate`, an unexplained pair, a moving-target URL |
 | `guardrail-prose-check.py` | each guardrail beside the sentences citing its key. It surfaces and never enforces |
 | `uncited-claim-check.py` | checkable claims with no citation nearby, eight classes; recall first |
 | `stale-argument-pointer-check.py` | thinking files (all of `thinking.dir`; `--argument <folder>` for one folder) pointing into the book, and quotations of the book that went stale |
-| `argument-key-check.py` | keys in thinking files (all of `thinking.dir`; a path for one file or folder) against the bibliography and the list; `--fix` for declared aliases, `--fix-derived` for derived renames |
-| `cited-source-check.py` | every `[Key]` in the manuscript and the thinking files has a sources list entry, and a library copy or a line in `needed.txt` |
+| `cited-source-check.py` | every `@Key` in the manuscript and the thinking files has a .bib entry and a sources list entry, and a library copy or a line in `needed.txt` |
 
 ## The cache
 
@@ -83,7 +81,7 @@ In `${CLAUDE_PLUGIN_ROOT}/skills/collect-sources/scripts/`, except the rows mark
 | `manual-downloads.py` | sources a person must download by hand (a worklist) |
 | `${CLAUDE_PLUGIN_ROOT}/lib/proposed_entries.py --run <run folder>` | fold the entries a run proposed into the banks, never overwriting |
 | `link-check.py` | every URL against what it resolves to today (network; not in the suite) |
-| `metadata-check.py` (check-facts) | bibliography metadata against two independent registries (network; not in the suite) |
+| `metadata-check.py` (check-facts) | .bib metadata against two independent registries (network; not in the suite) |
 | `sources-for-reviewer.py` (review-ideas) | drafts a list of neutral sources for the reviewer and checks one for bias |
 
 ## Run them all: the run-checks skill
@@ -124,8 +122,8 @@ Verification is the expensive step, so run the cheap structural checks first:
 F="${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts"
 C="${CLAUDE_PLUGIN_ROOT}/skills/collect-sources/scripts"
 python3 $F/citation-key-check.py
-python3 $F/reference-format-check.py --completeness
-python3 $F/reference-sort.py
+python3 $F/reference-format-check.py
+python3 $F/citation-check.py
 python3 $F/list-bibliography-check.py            # before EVERY --only-changed run
 python3 $F/list-quotes-join-check.py
 python3 $F/entry-format-check.py && python3 $F/entry-format-fix.py      # the fixer must report 0 changed
@@ -142,19 +140,19 @@ python3 $F/metadata-check.py --only-disagreements
 A citation with no entry, or an entry nothing cites, is a defect no fetching will reveal, and
 fetching for a key about to be renamed wastes the run. A key spelled one character differently in
 two files is silently verified from scratch on every run. **What the first checks cannot tell you:**
-the structural checks check shape, not truth; a bibliography can pass them all with a wrong year, a
+the structural checks check shape, not truth; a .bib can pass them all with a wrong year, a
 wrong author, or a title lifted from a file name.
 
 ## After a run: the checklist (every step ends in a number)
 
 1. Write the chapter files and then the summary into the run folder (`verdict-format.md`).
-2. Update the sources list with identity and access for **every** key checked; no verdicts, no
-   quotes, no field for where the book cites it.
+2. Update the .bib with identity and the sources list with access for **every** key checked; no
+   verdicts, no quotes, no field for where the book cites it.
 3. Update the quotes bank: verified quotes (anchored where the source allows), key findings,
    `Last verified` for every source read; correct wrong entries in place and fold the lesson forward
    as a guardrail.
-4. **Completeness**: every cited key has a list entry. Report "List: N entries covering all N
-   citations" (`list-bibliography-check.py`).
+4. **Completeness**: every cited key has a .bib entry and a list entry. Report "List: N entries
+   covering all N citations" (`cited-source-check.py`, `list-bibliography-check.py`).
 5. **No verdicts in the banks**: `list-bibliography-check.py --no-verdicts`. Report "Banks: 0
    entries carrying verdicts". A misplaced finding is MOVED to the quotes bank, never deleted.
 6. **The banks join**: `list-quotes-join-check.py`. Report "N sources, M quotes, K joined";

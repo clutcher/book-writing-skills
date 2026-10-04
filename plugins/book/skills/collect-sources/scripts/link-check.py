@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Hold every URL in the bibliography and the sources list to what it resolves to today.
+"""Hold every URL in the .bib file and the sources list to what it resolves to today.
+
+The bibliography is the book's .bib file (`sources.bibliography`): its `url` fields, and its
+`doi` fields read as https://doi.org/<doi>. The sources list adds its `Access URLs`.
 
 Every other check reads files; this one's answer lives on the network, so a clean run is
 a verdict about today, not a property of the book. Run it before a build that readers will
@@ -80,7 +83,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 from source_files import add_config_arguments, load_book, tool_cache_folder, tool_failed
 from check_output import (DEFECT, INFORMATIONAL, SHARED_CLASSES, CheckReport, add_output_arguments,
                           skipped_for_missing)
-from citation_key import BIB_ENTRY_ANY, ENTRY_HEADING
+from citation_key import ENTRY_HEADING
 from user_agent import USER_AGENT
 
 TOOL = "link-check"
@@ -106,7 +109,12 @@ WEB_SCHEMES = ("http", "https")
 URL_RE = re.compile(r"https?://[^\s<>\]]+")
 DOI_URL_RE = re.compile(r"^https?://(dx\.)?doi\.org/", re.IGNORECASE)
 
-ACCESS_FIELDS = ("DOI/URL", "URL", "Access URLs", "Mirror")
+ACCESS_FIELDS = ("Access URLs",)
+
+BIB_ENTRY_START = re.compile(r"^\s*@\s*(\w+)\s*[{(]\s*([^,\s]+)\s*,")
+BIB_URL_FIELD = re.compile(r"^\s*(url|doi)\s*=\s*[{\"]\s*([^}\"]*?)\s*[}\"]\s*,?\s*$",
+                           re.IGNORECASE)
+DOI_PREFIX = "https://doi.org/"
 
 WAYBACK_RE = re.compile(
     r"^(https?://web\.archive\.org/web/)(\d{1,14})(id_|if_)?/(.*)$", re.IGNORECASE)
@@ -284,14 +292,20 @@ def strip_trailing(url):
 
 
 def bibliography_urls(path):
+    key = None
     for index, line in enumerate(open(path, encoding="utf-8").read().split("\n")):
-        entry = BIB_ENTRY_ANY.match(line)
-        if not entry:
+        entry = BIB_ENTRY_START.match(line)
+        if entry:
+            key = None if entry.group(1).lower() in ("comment", "string", "preamble") \
+                else entry.group(2)
             continue
-        for match in URL_RE.finditer(line):
-            url = strip_trailing(match.group(0))
-            if url:
-                yield index, entry.group(1), url
+        field = BIB_URL_FIELD.match(line)
+        if not (field and key and field.group(2)):
+            continue
+        value = field.group(2)
+        url = value if field.group(1).lower() == "url" else DOI_PREFIX + value
+        if URL_RE.match(url):
+            yield index, key, strip_trailing(url)
 
 
 def list_urls(path):
@@ -534,28 +548,73 @@ FIXTURE_PROBES = {
 }
 
 FIXTURE_REFERENCES = """\
-[Fry83a] Fry, H.L. (1983). Notes on a Mill Race. https://doi.org/10.5555/gated.1983
-[Lee86] Lee, S. (1986). Plans for a Village Hall. https://doi.org/10.5555/unregistered.1986
-[HKS05] Hart, M., Kahn, R. & Sole, C. (2005). A Survey of Village Ponds. https://www.conf.example.org/2005/village-ponds-talk
-[Wyn12] Wynn, B.T. (2012). Soak, Rinse, Sprout. https://blog.example.com/articles/soak-rinse-sprout/
-[Col14] Cole, J.O. (2014). Waste. https://web.archive.org/web/2020/https://papers.example.com/x.pdf
-[Riv25] River Data Project. Gauge levels. https://github.com/riverdata/riverdata/blob/main/data/levels.csv
-[Gon99] Gone, A. (1999). Vanished. https://dead.example.org/gone.html
-[Pub00] Publisher, P. (2000). Registered But Broken. https://doi.org/10.9999/registered.but.broken
+@article{Fry83a,
+  author = {Fry, H. L.},
+  title = {Notes on a Mill Race},
+  year = {1983},
+  doi = {10.5555/gated.1983},
+}
+
+@article{Lee86,
+  author = {Lee, S.},
+  title = {Plans for a Village Hall},
+  year = {1986},
+  doi = {10.5555/unregistered.1986},
+}
+
+@inproceedings{HKS05,
+  author = {Hart, M. and Kahn, R. and Sole, C.},
+  title = {A Survey of Village Ponds},
+  year = {2005},
+  url = {https://www.conf.example.org/2005/village-ponds-talk},
+}
+
+@misc{Wyn12,
+  author = {Wynn, B. T.},
+  title = {Soak, Rinse, Sprout},
+  year = {2012},
+  url = {https://blog.example.com/articles/soak-rinse-sprout/},
+}
+
+@misc{Col14,
+  author = {Cole, J. O.},
+  title = {Waste},
+  year = {2014},
+  url = {https://web.archive.org/web/2020/https://papers.example.com/x.pdf},
+}
+
+@misc{Riv25,
+  author = {{River Data Project}},
+  title = {Gauge levels},
+  year = {2025},
+  url = {https://github.com/riverdata/riverdata/blob/main/data/levels.csv},
+}
+
+@misc{Gon99,
+  author = {Gone, A.},
+  title = {Vanished},
+  year = {1999},
+  url = {https://dead.example.org/gone.html},
+}
+
+@article{Pub00,
+  author = {Publisher, P.},
+  title = {Registered But Broken},
+  year = {2000},
+  doi = {10.9999/registered.but.broken},
+}
 """
 
 FIXTURE_LIST = """\
-### [HKS05] Hart, Kahn & Sole, "Village Ponds" (2005)
+### [HKS05]
 
-**Full title:** A Survey of Village Ponds
-**DOI/URL:** https://www.conf.example.org/legacy/2005/papers/hart.pdf
+**Access URLs:** https://www.conf.example.org/legacy/2005/papers/hart.pdf
 **Cached original:** `sources/library/HKS05.pdf` (fetched 2025-08-09, from https://dead.example.org/gone.html)
 
 ---
 
-### [Col14] Cole, "Waste" (2014)
+### [Col14]
 
-**Full title:** Waste
 **Access URLs:** https://web.archive.org/web/20201122105532id_/https://papers.example.com/x.pdf (working)
 
 ---
@@ -599,7 +658,7 @@ def self_test():
             failures.append(message)
 
     with tempfile.TemporaryDirectory() as root:
-        references = Path(root, "references.md")
+        references = Path(root, "references.bib")
         sources_list = Path(root, "list.md")
         with open(references, "w", encoding="utf-8") as handle:
             handle.write(FIXTURE_REFERENCES)
@@ -672,7 +731,8 @@ def main():
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     add_config_arguments(parser)
     add_output_arguments(parser)
-    parser.add_argument("--references", help="the bibliography (default: manuscript.references)")
+    parser.add_argument("--bibliography", dest="references",
+                        help="the .bib file (default: sources.bibliography)")
     parser.add_argument("--list", dest="sources_list", help="the sources list (default: sources.list)")
     parser.add_argument("--bibliography-only", action="store_true")
     parser.add_argument("--verbose", action="store_true", help="also list every URL that resolves")
@@ -692,12 +752,12 @@ def main():
         return self_test()
 
     config = load_book(args, TOOL)
-    references = args.references or config.manuscript.references
+    references = args.references or config.sources.bibliography
     sources_list = args.sources_list or config.sources.list
     cache = args.cache or os.environ.get("LINK_CHECK_CACHE") or str(tool_cache_folder(config, "link-check"))
     if args.references and not Path(references).exists():
-        return tool_failed("references not found: %s" % references, TOOL)
-    if skipped_for_missing(TOOL, references, "bibliography", args.format):
+        return tool_failed(".bib file not found: %s" % references, TOOL)
+    if skipped_for_missing(TOOL, references, ".bib file", args.format):
         return 0
 
     items = collect(references, sources_list, args.bibliography_only)

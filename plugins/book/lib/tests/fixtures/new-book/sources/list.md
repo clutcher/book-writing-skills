@@ -3,24 +3,20 @@
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 
-**Full title:** the title as printed
+**Access URLs:** where the source can be read
 ```
 
 ---
 
-### [Jon74] Jones, "A First Work" (1974)
+### [Jon74]
 
-**Full title:** A First Work
-**Authors:** Ann Jones
-**Year:** 1974
+**Access URLs:** https://example.org/jones-first-work
 **Findings:** see the quotes bank
 
 ---
 
-### [Smi99] Smith, "A Second Work" (1999)
+### [Smi99]
 
-**Full title:** A Second Work
-**Authors:** Smith, Bob
-**Year:** 1999
+**Access status:** MANUAL FETCH REQUIRED

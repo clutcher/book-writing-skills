@@ -79,7 +79,7 @@ paper, download the template, unzip it and put the PNG in `cover.templates`. Wit
 it says `SKIPPED`.
 
 `overlay.py` picks the template by page count, checks that the art and
-the template have the size the formula says, and writes an overlay image. **The overlay is for
+the template have the size the formula says, and with `--fix` writes an overlay image. **The overlay is for
 looking only. Never upload it.** Review every layout change with the overlay on, so the barcode
 box and the spine folds are visible.
 

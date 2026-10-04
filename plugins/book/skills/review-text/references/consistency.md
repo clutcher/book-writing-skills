@@ -361,7 +361,7 @@ Per-chapter reviews check whether headings and formatting are correct. This sect
 
 ### Citation Density
 
-Run the check-facts skill's completeness check (`python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/reference-format-check.py --completeness`) first to get per-chapter citation counts and orphaned entries.
+Run the check-facts skill's citation check (`python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/citation-check.py --report <run folder>/citation-report.md`) first to get per-chapter citation counts and density, and the keys missing from the `.bib` file.
 
 Run the person-introduction check to find persons whose first mention (anywhere in the book) lacks a proper introduction, uses only a bare surname, or is re-introduced with full credentials after the first mention. Rule 2.7 is a whole-book property, so this check belongs to the cross-chapter review rather than any per-chapter pass:
 
@@ -405,7 +405,7 @@ python3 $SCRIPTS/sentence-and-paragraph-check.py --inversions
 python3 $SCRIPTS/term-density-check.py                    # coined terms; phases from writing.term_phases or --phases
 ```
 
-Add the check-facts skill's `python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/reference-format-check.py --completeness` for per-chapter citation counts.
+Add the check-facts skill's `python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/citation-check.py --report <run folder>/citation-report.md` for per-chapter citation counts.
 
 ### What to Compare
 

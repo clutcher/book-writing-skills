@@ -8,7 +8,9 @@ acmart, IEEEtran and llncs as arXiv does), with no network, and reads the bundle
 arXiv's rules: a main .tex with \\documentclass; no .aux, .log or other LaTeX work files; no
 PDF made from a .tex of the bundle; no hidden files; no space in a file name; no path that
 leaves the bundle; every .bbl named like a .tex; every image the .tex uses present; and no
-\\pdfoutput line, which arXiv says not to use to change the output format.
+\\pdfoutput line, which arXiv says not to use to change the output format. An anonymous bundle
+(--anonymous, paper.anonymous: true, or a bundle named *-anonymous-arxiv.tar.gz) also has no
+image whose own metadata holds a name (image-metadata; see image_metadata.py).
 
 The bundle is the one named on the command line, or the newest *-arxiv.tar.gz in the
 output folder of a paper (build-book.sh --arxiv writes it). The engine is paper.engine
@@ -35,10 +37,12 @@ from check_output import (ADVISORY, DEFECT, INFORMATIONAL, CheckReport, add_outp
                           run_main, tool_failed)
 from container_run import calling_user_arguments, folder_mount
 from output_files import newest_in_folder
-from paper_source import find_image, image_paths, name_problem, without_comments
+from image_metadata import add_findings, sample_files
+from paper_source import IMAGE_ENDINGS, find_image, image_paths, name_problem, without_comments
 
 TOOL = "arxiv-bundle-check"
 BUNDLE_ENDING = "-arxiv.tar.gz"
+ANONYMOUS_BUNDLE_ENDING = "-anonymous" + BUNDLE_ENDING
 CLASSES = {
     "unsafe-path": DEFECT,
     "space-in-name": DEFECT,
@@ -49,6 +53,7 @@ CLASSES = {
     "no-main-tex": DEFECT,
     "pdfoutput-line": DEFECT,
     "missing-image": DEFECT,
+    "image-metadata": DEFECT,
     "compile-failed": DEFECT,
     "several-main-files": ADVISORY,
     "compiled": INFORMATIONAL,
@@ -140,6 +145,12 @@ def file_rules(names, folder, report):
     return main_files
 
 
+def image_metadata_rules(names, folder, report):
+    for name in sorted(names):
+        if name.lower().endswith(IMAGE_ENDINGS):
+            add_findings(report, name, Path(folder) / name)
+
+
 def docker_ready():
     if not shutil.which("docker"):
         raise SkipCheck("docker not found on PATH; the bundle is compiled in Docker")
@@ -198,12 +209,14 @@ def compile_bundle(folder, main_name, engine, image, report):
     report.add(main_name, "compiled", f"compiles with {engine} in {image} in a clean folder")
 
 
-def check_bundle(bundle, engine, image, report):
+def check_bundle(bundle, engine, image, anonymous, report):
     docker_ready()
     image_ready(image)
     with tempfile.TemporaryDirectory(prefix="arxiv-bundle-") as folder:
         names = unpack(bundle, folder, report)
         main_files = file_rules(names, folder, report)
+        if anonymous:
+            image_metadata_rules(names, folder, report)
         if not main_files:
             report.add(Path(bundle).name, "no-main-tex", "no .tex file with \\documentclass")
             return
@@ -225,6 +238,11 @@ def chosen_bundle(args, config):
         raise SkipCheck(f"no *{BUNDLE_ENDING} in {config.work.output}; build one with "
                         f"build-book.sh --arxiv")
     return newest
+
+
+def is_anonymous(args, config, bundle):
+    return (args.anonymous or config.paper.anonymous
+            or Path(bundle).name.endswith(ANONYMOUS_BUNDLE_ENDING))
 
 
 def self_test():
@@ -249,6 +267,13 @@ def self_test():
             ("main.tex", "pdfoutput-line"), ("other.bbl", "bbl-name")]))
         checks.append(("a figure PDF is not the PDF made from the .tex",
                        any(key == "images/plot.pdf" for key, _, _ in report.items), False))
+    with tempfile.TemporaryDirectory() as scratch:
+        sample_files(scratch)
+        report = CheckReport(TOOL, CLASSES)
+        image_metadata_rules(["photo.jpg", "clean.png", "main.tex"], scratch, report)
+        checks.append(("an image whose metadata holds a name is a defect in an anonymous bundle",
+                       ([(key, finding_class) for key, finding_class, _ in report.items],
+                        report.exit_code()), ([("photo.jpg", "image-metadata")], 1)))
     member_found = sorted((name, finding_class) for name, finding_class, _ in member_problems(
         ["main.tex", "my figure.png", "../escape.tex", "/etc/passwd", ".hidden", "a/.cache/x"]))
     checks.append(("member names break the rules they should", member_found, sorted([
@@ -278,6 +303,10 @@ def main():
                              f"the paper's output folder)")
     parser.add_argument("--engine", choices=PAPER_ENGINES,
                         help="the LaTeX engine (default: paper.engine)")
+    parser.add_argument("--anonymous", action="store_true",
+                        help="the bundle is for an anonymous paper: also report images whose "
+                             "metadata holds a name (default: paper.anonymous, or a bundle "
+                             f"named *{ANONYMOUS_BUNDLE_ENDING})")
     parser.add_argument("--self-test", action="store_true",
                         help="run the built-in tests; needs no Docker")
     args = parser.parse_args()
@@ -294,7 +323,7 @@ def main():
     try:
         bundle = chosen_bundle(args, config)
         check_bundle(bundle, args.engine or config.paper.engine, config.tools.paper_tex_image,
-                     report)
+                     is_anonymous(args, config, bundle), report)
     except SkipCheck as reason:
         report.skip(str(reason))
     except tarfile.TarError as problem:

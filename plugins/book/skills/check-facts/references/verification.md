@@ -7,7 +7,7 @@ Read `reference-standard.md` first: it is the standard every verdict is graded a
 | Input | What | When |
 |---|---|---|
 | review artifacts | the citation and claim tables of a review-ideas `editor` run | after its Stage 1; faster, the claims are already extracted |
-| manuscript | the chapter files and the bibliography | no review run, or quotes must be checked in context |
+| manuscript | the chapter files and the .bib | no review run, or quotes must be checked in context |
 
 | Run | What | When |
 |---|---|---|
@@ -30,7 +30,7 @@ entries with `decisions.py show ID`, and never raise an item it marks DECIDED.
 
 1. Find the newest run folder holding the review's citation and claim tables (or the one named).
    None: ask for a review stage 1 first, or use manuscript mode.
-2. Filter to the chapter asked for; read the bibliography to decode keys before searching.
+2. Filter to the chapter asked for; read the .bib to decode keys before searching.
 3. Deduplicate: verify each source once, and point every row that uses it at that finding.
 4. `--only-changed`: skip keys already in the list whose claim text did not change.
 5. **Run the detector and the missed-claims pass anyway.** Review mode inherits whatever stage 1
@@ -41,8 +41,8 @@ entries with `decisions.py show ID`, and never raise an item it marks DECIDED.
 
 1. Run `uncited-claim-check.py <chapters> > <run>/uncited-claim-report.md` first; its flags are
    candidates for the UNCITED list.
-2. Read the chapters and the bibliography.
-3. Extract every `[Key]` with the claim it supports, any direct quote, and the section.
+2. Read the chapters and the .bib.
+3. Extract every `@Key` (`[@Key]`, `[@A; @B, p. 3]`, narrative `@Key`) with the claim it supports, any direct quote, and the section.
 4. Extract checkable claims by walking the categories below, not by scanning for what looks
    citable (attention anchors on citations and digits and skips the rest):
 
@@ -61,7 +61,7 @@ entries with `decisions.py show ID`, and never raise an item it marks DECIDED.
    conclusions argued from earlier material are legitimate. The failure prevented is a checkable
    assertion nobody ever decided about.
 6. Run `missed-claims-pass.md`, as its own agent per chapter.
-7. Cross-check every key against the bibliography for title, author and year.
+7. Cross-check every key against its .bib entry for title, author and year.
 
 ## Priority
 

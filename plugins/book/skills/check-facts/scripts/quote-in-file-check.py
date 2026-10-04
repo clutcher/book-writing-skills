@@ -22,6 +22,8 @@ Classes:
                                   download interstitial (many hosts answer HTTP 200
                                   for those, so `status: cached` proves nothing)
   identity-mismatch     DEFECT    almost no title word and no author surname appear
+                                  (title and authors come from the .bib entry,
+                                  sources.bibliography; the cache lines from the list)
   cache-title-mismatch  DEFECT    no title word in the OPENING of the document: a page
                                   that NAMES the author but is somebody else's
   text-unusable         DEFECT    under 90% printable ASCII: a broken font encoding or
@@ -71,6 +73,7 @@ from source_files import (FETCH, OCR, SourceFolders, add_config_arguments,
 from check_output import (ADVISORY, DEFECT, INFORMATIONAL, SHARED_CLASSES, CheckReport,
                           add_output_arguments, skipped_for_missing)
 from source_registry import read_bank
+from bibliography import plain_text as bib_plain_text, read_identities
 from quote_match import (has_surname, locate_in, quotes_in, squash, surnames, title_share,
                          title_words)
 
@@ -119,7 +122,21 @@ def entries(path):
 
 
 def field_block(block, name):
-    return block.field(name) or ""
+    return (block.field(name) or "") if block else ""
+
+
+def title_of(key, identities):
+    entry = identities.get(key)
+    return entry.plain("title") if entry else ""
+
+
+def authors_of(key, identities):
+    entry = identities.get(key)
+    if entry is None:
+        return ""
+    names = [name for name in (entry.authors or entry.editors) if not name.others]
+    return ", ".join(" ".join(part for part in (bib_plain_text(name.first), name.surname)
+                              if part) for name in names)
 
 
 def plain_text(key, sources):
@@ -212,8 +229,8 @@ def printable_share(text):
 PROVENANCE = re.compile(r"^=== OCR-PROVENANCE ===.*?=== END OCR-PROVENANCE ===\s*", re.S)
 
 
-def opening_mismatch(key, registry, text):
-    title = field_block(registry.get(key, ""), "Full title")
+def opening_mismatch(key, identities, text):
+    title = title_of(key, identities)
     wanted = title_words(title)
     if not wanted:
         return None
@@ -223,10 +240,9 @@ def opening_mismatch(key, registry, text):
     return 'no title word of "%s" in the first %d characters' % (title, OPENING_SAMPLE)
 
 
-def identity(key, block, registry, text):
-    source = registry.get(key, "")
-    title = field_block(source, "Full title") or re.sub(r"[*\"]", "", block.split("\n")[0])
-    authors = field_block(source, "Authors")
+def identity(key, block, identities, text):
+    title = title_of(key, identities) or re.sub(r"[*\"]", "", block.heading_tail)
+    authors = authors_of(key, identities)
     hay = squash(text[:IDENTITY_SAMPLE]) or squash(text)
     whole = squash(text)
     wanted = title_words(title)
@@ -252,7 +268,7 @@ def is_ocr(key, sources, source_block, text):
     return "OCR-PROVENANCE" in text[:800]
 
 
-def assess(key, block, registry, sources, cache):
+def assess(key, block, registry, identities, sources, cache):
     facts = {"key": key, "issues": [], "quotes": [], "chars": 0, "ocr": False}
     txt = str(sources.file(key + ".txt"))
     source_block = registry.get(key, "")
@@ -304,7 +320,7 @@ def assess(key, block, registry, sources, cache):
                 markers and len(text) < LANDING_ONE_MARKER_CHARS):
             facts["issues"].append(("cache-landing", "%s -- %d characters"
                                     % ("; ".join(markers[:3]), len(text))))
-        mismatch = (identity(key, block, registry, text)
+        mismatch = (identity(key, block, identities, text)
                     if len(text.strip()) >= STUB_CHARS else None)
         final = fetch.get("final_url") or fetch.get("url")
         if mismatch:
@@ -313,7 +329,7 @@ def assess(key, block, registry, sources, cache):
                 detail += "; fetched from %s" % final
             facts["issues"].append(("identity-mismatch", detail))
         else:
-            opening = (opening_mismatch(key, registry, text)
+            opening = (opening_mismatch(key, identities, text)
                        if len(text.strip()) >= STUB_CHARS else None)
             if opening:
                 detail = opening + ("; fetched from %s" % final if final else "")
@@ -349,10 +365,11 @@ def assess(key, block, registry, sources, cache):
     return facts
 
 
-def run(findings, sources_list, sources):
+def run(findings, sources_list, bibliography, sources):
     registry = dict(entries(sources_list))
+    identities = read_identities(bibliography)
     cache = {}
-    return [assess(key, block, registry, sources, cache)
+    return [assess(key, block, registry, identities, sources, cache)
             for key, block in entries(findings)]
 
 
@@ -419,52 +436,73 @@ FIXTURE_LIST = '''# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author, "Title" (Year)
+### [<Key>]
 
-**Full title:** a template that must not be parsed as an entry
+**Access status:** a template that must not be parsed as an entry
 ```
 
 ---
 
-### [Orr15] Orr, social post (2015)
+### [Orr15]
 
-**Full title:** Has anyone else seen herons on the canal this week
-**Authors:** Ines Orr
-**Year:** 2015
+**Access URLs:** https://social.example.com/orr/1
 
 ---
 
-### [Ped09] Pedersen, "Planting Shallots in Clay" (2009)
+### [Ped09]
 
-**Full title:** Planting Shallots in Clay
-**Authors:** Dana Pedersen
-**Year:** 2009
+**Access URLs:** https://blog.example.com/a-different-page.html
 
 ---
 
-### [XYZW26] Xu et al., "Rethinking Flow" (2026)
+### [XYZW26]
 
-**Full title:** Rethinking River Flow Through the Lens of Satellite Images
-**Authors:** Chen Xu, Xiao Yang, Yu Zhao, Bei Wang
-**Year:** 2026
+**Access URLs:** https://arxiv.org/abs/0000.00000
 
 ---
 
-### [GLN14] Gale, Lim & Noor (2014)
+### [GLN14]
 
-**Full title:** From stomach to brain: neural signs of hunger and fullness
-**Authors:** Mira Gale, Nora Lim, Anat Noor
-**Year:** 2014
+**Access URLs:** https://journal.example.org/article-pdf
 
 ---
 
-### [Hea01] Healthy, "A Well Formed Entry" (2001)
+### [Hea01]
 
-**Full title:** A Well Formed Entry About Ligatures
-**Authors:** Hilary Healthy
-**Year:** 2001
+**Access URLs:** https://example.org/hea01.pdf
 
 ---
+'''
+
+FIXTURE_BIBLIOGRAPHY = '''@misc{Orr15,
+  author = {Orr, Ines},
+  title = {Has anyone else seen herons on the canal this week},
+  year = {2015},
+}
+
+@book{Ped09,
+  author = {Pedersen, Dana},
+  title = {Planting Shallots in Clay},
+  year = {2009},
+}
+
+@misc{XYZW26,
+  author = {Xu, Chen and Yang, Xiao and Zhao, Yu and Wang, Bei},
+  title = {Rethinking River Flow Through the Lens of Satellite Images},
+  year = {2026},
+}
+
+@article{GLN14,
+  author = {Gale, Mira and Lim, Nora and Noor, Anat},
+  title = {From stomach to brain: neural signs of hunger and fullness},
+  year = {2014},
+}
+
+@book{Hea01,
+  author = {Healthy, Hilary},
+  title = {A Well Formed Entry About Ligatures},
+  year = {2001},
+}
 '''
 
 FIXTURE_CACHE = {
@@ -520,12 +558,14 @@ def self_test():
             sources_list = Path(root) / "list.md"
             quotes.write_text(FIXTURE_FINDINGS, encoding="utf-8")
             sources_list.write_text(FIXTURE_LIST, encoding="utf-8")
+            bibliography = Path(root) / "references.bib"
+            bibliography.write_text(FIXTURE_BIBLIOGRAPHY, encoding="utf-8")
             for name, text in FIXTURE_CACHE.items():
                 (files / name).write_text(text, encoding="utf-8")
             for key, record in FIXTURE_FETCH.items():
                 folders.write_origin_record(key, FETCH, record)
             (files / "GLN14.pdf").write_bytes(b"%PDF-1.4\n" + b"0" * 60000)
-            findings = run(quotes, sources_list, folders)
+            findings = run(quotes, sources_list, bibliography, folders)
         found = set((facts["key"], rule) for facts in findings for rule, _ in facts["issues"])
         for key, rule in sorted(FIXTURE_EXPECTED - found):
             print("FAIL %-10s %-18s NOT REPORTED (merged=%s)" % (key, rule, merged))
@@ -544,6 +584,9 @@ def main():
     add_output_arguments(parser)
     parser.add_argument("--quotes", help="the quotes bank (default: sources.quotes)")
     parser.add_argument("--list", dest="sources_list", help="the sources list (default: sources.list)")
+    parser.add_argument("--bibliography",
+                        help="the .bib file with each source's title and authors "
+                             "(default: sources.bibliography)")
     parser.add_argument("--key", action="append", help="only this key (repeatable)")
     parser.add_argument("--verbose", action="store_true",
                         help="also print every quote and the route that matched it")
@@ -556,6 +599,7 @@ def main():
     config = load_book(args, TOOL)
     quotes = args.quotes or config.sources.quotes
     sources_list = args.sources_list or config.sources.list
+    bibliography = args.bibliography or config.sources.bibliography
     folders = folders_from_config(config)
     if args.quotes and not Path(quotes).exists():
         return tool_failed("quotes bank not found: %s" % quotes, TOOL)
@@ -563,7 +607,7 @@ def main():
             or skipped_for_missing(TOOL, folders.files, "source library", args.format)):
         return 0
 
-    findings = run(quotes, sources_list, folders)
+    findings = run(quotes, sources_list, bibliography, folders)
     if args.key:
         wanted = set(args.key)
         findings = [facts for facts in findings if facts["key"] in wanted]

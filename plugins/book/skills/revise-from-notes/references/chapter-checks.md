@@ -41,7 +41,7 @@ the next chapter get it.
 | a coined term or a compound made from it | the coined terms in `book.yaml` (`terms.families`, `terms.compounds`) |
 | a plain-English word swap | `decisions.md`: earlier word decisions (`decisions.py match "<word>"`) |
 | a word borrowed from another field | the book's term-mapping file (what the book uses, does not use, and why), if the book has one; else the glossary |
-| a citation or a fact | the quotes file `sources.quotes`, then the sources list `sources.list` |
+| a citation (`[@Key]`, `@Key`) or a fact | the quotes file `sources.quotes`, then the `.bib` entry `sources.bibliography` (authors, title, year) and the sources list `sources.list` (where to read it) |
 | the reason the book says something | the `thinking.argument` folder, the file named for the topic |
 | what the author believes | `thinking.stance` |
 

@@ -83,7 +83,7 @@ def check_setup(check, book, room, checks_file):
 
     code, output = run(CLEAN_ROOM, "setup", "--checks", str(checks_file), "--fix", cwd=book)
     check.expect("setup --fix exits 0", code == 0, output)
-    for relative in ("review/mechanical-checks.txt", "manuscript/010-preface.md", "manuscript/110-chapter-1.md", "sources/list.md",
+    for relative in ("review/mechanical-checks.txt", "manuscript/010-preface.md", "manuscript/110-chapter-1.md", "sources/list.md", "sources/references.bib",
                      "sources/sources-for-reviewer.md", "decisions.md", "book/facts.md",
                      "book/back-cover.md", "REVIEW-PLAN.md", "CLAUDE.md", "plan/lenses.md",
                      "plan/readers.md", "plan/skeptic-rules.md", "plan/merge-and-verify.md",
@@ -100,7 +100,7 @@ def check_setup(check, book, room, checks_file):
     check.expect("plan lists four lenses", plan.count("`review/lens-") == 4)
     lenses = (room / "plan" / "lenses.md").read_text(encoding="utf-8")
     check.expect("custom lens rendered", "Lens 4: Legal risk" in lenses)
-    check.expect("load-bearing sources filled", "[Abc20], [DE21]" in lenses)
+    check.expect("load-bearing sources filled", "@Abc20, @DE21" in lenses)
     check.expect("room lenses omit book.yaml how-to", "Changing the lenses" not in lenses)
     settings = json.loads((room / ".claude" / "settings.local.json").read_text(encoding="utf-8"))
     check.expect("settings switch the plugin off",

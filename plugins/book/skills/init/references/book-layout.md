@@ -32,7 +32,8 @@ every script follows it.
 | `rules/glossary.md` | `rules.glossary` | The terms the book defines, with their canonical wording | yes |
 | `rules/voice.md` | `rules.voice` | The author's voice profile; `new.py` copies the write-text skill's default profile | yes |
 | `rules/vale/` | `rules.vale`, `rules.vale_ini` | `vale.ini`, the book's own Vale rules, `config/vocabularies/Book/` word lists | yes |
-| `sources/list.md` | `sources.list` | Who wrote what and where to get it; the one place a key resolves. A new list holds only its `## Entry format` header, so every facts check says SKIPPED until it has an entry or a file cites a `[Key]` | yes |
+| `sources/references.bib` | `sources.bibliography` | The bibliography in BibTeX: one entry per source the book tracks, its key the citation key, the one place a key resolves. `new.py` writes it with a comment and no entry | yes |
+| `sources/list.md` | `sources.list` | Where to get each source, under the same `### [Key]`. A new list holds only its `## Entry format` header, so every facts check says SKIPPED until the list or the .bib has an entry or a file cites an `@Key` | yes |
 | `sources/quotes.md` | `sources.quotes` | What each source says: quotes, scope, guardrails | yes |
 | `sources/library-index/` | `sources.library_index` | `<Key>.json`: how each library file was fetched and read | yes |
 | `sources/library/` | `sources.library` | The copies of the sources; the collect-sources skill restores them | no |
@@ -76,7 +77,7 @@ The full convention, including raw LaTeX blocks and a manual contents page, is i
 | `manuscript/050-results.md` | What was found, one question per subsection |
 | `manuscript/060-threats-to-validity.md` | Every reason the results could be wrong or fail to hold elsewhere |
 | `manuscript/070-conclusion.md` | The answer, what it changes, the next question |
-| `manuscript/900-references.md` | The references, as for a book |
+| `manuscript/900-references.md` | The references, as for a book: the heading and `::: {#refs}`, filled by the build from the .bib |
 | `manuscript/images/` | Figures |
 | `CLAUDE.md` | The paper variant: what the paper is, its folders, the skills a paper uses |
 

@@ -74,8 +74,9 @@ WRITING_CHECKS = ("ascii-normalize.py", "sentence-and-paragraph-check.py",
                   "person-introduction-check.py")
 WRITING_CHECKS_NEEDING_TERMS = ("definition-check.py", "term-density-check.py")
 SOURCES_CHECKS = ("entry-format-check.py", "list-quotes-join-check.py", "files-hash-check.py",
-                  "ocr-marker-check.py", "duplicate-source-check.py", "key-authors-check.py",
-                  "list-bibliography-check.py", "citation-key-check.py")
+                  "ocr-marker-check.py", "duplicate-source-check.py", "cited-source-check.py",
+                  "list-bibliography-check.py", "citation-key-check.py", "citation-check.py",
+                  "reference-format-check.py")
 NEW_BOOK_FOLDERS = ("thinking/argument", "thinking/doubts", "notes", "publishing/cover/final",
                     "publishing/cover/font-widths", "sources/library", "sources/library-index",
                     ".book/runs", ".book/output", ".book/caches", ".book/sources-to-add")

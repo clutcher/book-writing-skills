@@ -9,7 +9,9 @@ its first heading, so the abstract goes into the abstract field and never into t
 An email has its @ escaped, so pandoc writes it as plain text and not as a link, which the
 \\email command of some classes cannot take. With --anonymous, or paper.anonymous: true, no
 author, affiliation or email is written at all, and `anonymous: true` is, so a venue
-template can switch on its own review options.
+template can switch on its own review options. With --output it prints one line that names
+the authors and where they came from: paper.authors, or book.author when paper.authors lists
+nobody.
 """
 
 import argparse
@@ -91,6 +93,17 @@ def paper_metadata(config, anonymous):
     return metadata
 
 
+def authors_line(config, anonymous):
+    if anonymous:
+        return "none (anonymous)"
+    names = ", ".join(author.name for author in config.paper.authors)
+    if not names:
+        return "none (paper.authors and book.author are empty)"
+    if config.get("paper.authors", None):
+        return f"{names} (from paper.authors)"
+    return f"{names} (from book.author, because paper.authors lists nobody)"
+
+
 def self_test():
     from book_config import load_config
     config = load_config(start=FIXTURES / "new-paper")
@@ -128,7 +141,19 @@ def self_test():
         ("an anonymous paper keeps its abstract", hidden.get("abstract") == named.get("abstract"),
          True),
     ]
+    checks.append(("the authors line says they come from paper.authors",
+                   authors_line(config, anonymous=False),
+                   "Sam Example, Lee Sample (from paper.authors)"))
+    checks.append(("the authors line of an anonymous paper names nobody",
+                   authors_line(config, anonymous=True), "none (anonymous)"))
     with tempfile.TemporaryDirectory() as scratch:
+        (Path(scratch) / "book.yaml").write_text(
+            "version: 1\nkind: paper\nbook:\n  title: Pond Notes\n  author: Robin Field\n",
+            encoding="utf-8")
+        fallback = load_config(start=Path(scratch))
+        checks.append(("the authors line says when the name comes from book.author",
+                       authors_line(fallback, anonymous=False),
+                       "Robin Field (from book.author, because paper.authors lists nobody)"))
         try:
             abstract_text(Path(scratch) / "missing.md")
             refused = False
@@ -158,13 +183,15 @@ def main():
         return self_test()
     try:
         config = config_from_args(args)
-        metadata = paper_metadata(config, args.anonymous or config.paper.anonymous)
+        anonymous = args.anonymous or config.paper.anonymous
+        metadata = paper_metadata(config, anonymous)
     except (ConfigError, AbstractMissing) as problem:
         sys.stderr.write(f"paper-metadata: {problem}\n")
         return EXIT_TOOL_FAILED
     text = json.dumps(metadata, indent=2, ensure_ascii=False)
     if args.output:
         Path(args.output).write_text(text + "\n", encoding="utf-8")
+        print(authors_line(config, anonymous))
     else:
         print(text)
     return 0

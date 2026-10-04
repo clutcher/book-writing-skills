@@ -1,6 +1,9 @@
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
 \documentclass[$if(fontsize)$$fontsize$$else$11pt$endif$,$if(papersize)$$papersize$$else$a4$endif$paper]{article}
+$if(anonymous)$
+\ifdefined\pdfsuppressptexinfo\pdfsuppressptexinfo=-1\fi
+$endif$
 
 \usepackage[$if(papersize)$$papersize$$else$a4$endif$paper,margin=1in]{geometry}
 \usepackage{iftex}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Find one source registered under two citation keys in the sources list.
+"""Find one source registered under two citation keys in the .bib file and the sources list.
 
 A list collects the same work twice by ordinary means: a source is added under a
 guessed year, added again later under the corrected one, and both survive because
@@ -11,12 +11,17 @@ Signals, strongest first:
     same DOI             two keys, one document                      duplicate  DEFECT
     same ISBN            likewise, unless one is a deliberate reprint duplicate DEFECT
     identical text       the cached text of both keys hashes the same duplicate DEFECT
-    stub beside entry    a key with no Full title and no citations,  suspect    ADVISORY
+    stub beside entry    a key with no .bib title and no citations,  suspect    ADVISORY
                          beside a cited key with the same author stem
     same title           edition words removed, so 1st and 2nd       suspect    ADVISORY
-                         editions collide here on purpose
-    same heading         the `### [Key] ...` line matches word for   suspect    ADVISORY
-                         word
+                         editions collide here on purpose; an
+                         ordinal counts only before "ed." or
+                         "edition", so "A First Work" and "A Second
+                         Work" stay two titles
+
+The DOI, ISBN and title come from the book's .bib file (`sources.bibliography`); the keys
+are those of the .bib file and of the sources list together. Citations are the pandoc
+citations (`[@Key]`, `@Key`) in the manuscript.
 
 A suspect group is ADVISORY because two printings of one book correctly hold two keys
 when both were read; the script cannot tell that from a real duplicate. Each group
@@ -43,6 +48,8 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
+from bibliography import read_identities
+from citations import find_citations
 from source_files import (add_config_arguments, folders_for_directory, folders_from_config,
                           load_book, manuscript_paths, markdown_files_under, tool_failed)
 from check_output import ADVISORY, DEFECT, CheckReport, add_output_arguments, skipped_for_missing
@@ -52,29 +59,35 @@ TOOL = "duplicate-source-check"
 CLASSES = {"duplicate": DEFECT, "suspect": ADVISORY}
 
 EDITION_RE = re.compile(
-    r"\b(\d+(st|nd|rd|th)|first|second|third|fourth|anniversary|revised|updated)\b[ ,]*(ed(ition)?\.?)?",
+    r"\b(\d+(st|nd|rd|th)|first|second|third|fourth|anniversary|revised|updated)[ ,]*ed(ition)?\b\.?",
     re.I,
 )
 
 
-def field(block, name):
-    return block.field(name) or ""
+class Source:
+    def __init__(self, key, identity):
+        self.key = key
+        self.identity = identity
+
+    def field(self, name):
+        return self.identity.plain(name) if self.identity is not None else ""
 
 
-def parse(path):
-    return {entry.key: entry for entry in read_bank(path).entries}
+def field(source, name):
+    return source.field(name)
+
+
+def parse(list_path, bibliography_path):
+    identities = read_identities(bibliography_path)
+    listed = ([entry.key for entry in read_bank(list_path).entries]
+              if list_path and Path(list_path).is_file() else [])
+    keys = list(identities) + [key for key in listed if key not in identities]
+    return {key: Source(key, identities.get(key)) for key in keys}
 
 
 def normalise_title(title):
     title = EDITION_RE.sub(" ", title.lower())
     return " ".join(re.sub(r"[^a-z0-9 ]", " ", title).split())
-
-
-def normalise_heading(block):
-    head = block.heading
-    head = re.sub(r"^### \[[^\]]+\]\s*[-—–]*\s*", "", head)
-    head = EDITION_RE.sub(" ", head.lower())
-    return " ".join(re.sub(r"[^a-z0-9 ]", " ", head).split())
 
 
 def digest(path):
@@ -83,9 +96,10 @@ def digest(path):
 
 
 def citation_counts(entries, manuscript_files):
-    text = " ".join(Path(path).read_text(encoding="utf-8") for path in manuscript_files)
-    return {key: len(re.findall(r"\[[^\]]*\b%s\b[^\]]*\]" % re.escape(key), text))
-            for key in entries}
+    counts = collections.Counter(
+        citation.key for path in manuscript_files
+        for citation in find_citations(Path(path).read_text(encoding="utf-8")))
+    return {key: counts.get(key, 0) for key in entries}
 
 
 def group(entries, keyfunc):
@@ -108,20 +122,19 @@ def find_groups(entries, cites, folders):
 
     stale = {}
     for value, keys in group(entries, stem).items():
-        thin = [k for k in keys if entries[k].field("Full title") is None and cites.get(k, 0) == 0]
+        thin = [k for k in keys if not entries[k].field("title") and cites.get(k, 0) == 0]
         live = [k for k in keys if cites.get(k, 0) > 0]
         if thin and live:
             stale[value] = sorted(thin + live)
 
     checks = [
-        ("duplicate", "same DOI", group(entries, lambda k, b: field(b, "DOI").lower().rstrip("."))),
+        ("duplicate", "same DOI", group(entries, lambda k, b: field(b, "doi").lower().rstrip("."))),
         ("duplicate", "same ISBN",
-         group(entries, lambda k, b: re.sub(r"[^0-9X]", "", field(b, "ISBN").upper()))),
+         group(entries, lambda k, b: re.sub(r"[^0-9X]", "", field(b, "isbn").upper()))),
         ("duplicate", "identical cached text", group(entries, cached_digest)),
         ("suspect", "stub beside a fuller entry by the same author", stale),
         ("suspect", "same title, editions ignored",
-         group(entries, lambda k, b: normalise_title(field(b, "Full title")))),
-        ("suspect", "same heading", group(entries, lambda k, b: normalise_heading(b))),
+         group(entries, lambda k, b: normalise_title(field(b, "title")))),
     ]
     seen, found = set(), []
     for name, label, groups in checks:
@@ -149,72 +162,97 @@ FIXTURE_LIST = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 ```
 
-### [Aaa01] Adams, "One paper" (2001)
+### [Ddd10]
 
-**Full title:** One paper
-**DOI:** 10.1234/one
-
----
-
-### [Aaa02] Adams, "One paper, again" (2002)
-
-**Full title:** One paper, filed again
-**DOI:** 10.1234/one
+**Note:** added from a reading list, never filled in
 
 ---
 
-### [Bbb05] Baker, "A book" (2005)
+### [Eee15]
 
-**Full title:** A Book About Things
-**ISBN:** 978-0-00-000000-2
-
----
-
-### [Bbb06] Baker, "A book reprint" (2006)
-
-**Full title:** A Book About Things, reprinted
-**ISBN:** 9780000000002
-
----
-
-### [Ccc90] Clark, "Bread Craft" (1990)
-
-**Full title:** Bread Craft, 1st edition
-
----
-
-### [Ccc04] Clark, "Bread Craft" (2004)
-
-**Full title:** Bread Craft, Second Edition
-
----
-
-### [Ddd10] Davis
-
----
-
-### [Ddd11] Davis, "A cited paper" (2011)
-
-**Full title:** A cited paper
-
----
-
-### [Eee15] Evans, "A page" (2015)
-
-**Full title:** A page
 **Access URLs:** https://example.org/shared.pdf
 
 ---
 
-### [Fff16] Ford, "Another page" (2016)
+### [Fff16]
 
-**Full title:** Another page
 **Access URLs:** https://example.org/shared.pdf
 
 ---
+"""
+
+FIXTURE_BIBLIOGRAPHY = """@article{Aaa01,
+  author = {Adams, Ann},
+  title = {One paper},
+  year = {2001},
+  doi = {10.1234/one},
+}
+
+@article{Aaa02,
+  author = {Adams, Ann},
+  title = {One paper, filed again},
+  year = {2002},
+  doi = {10.1234/one},
+}
+
+@book{Bbb05,
+  author = {Baker, Bob},
+  title = {A Book About Things},
+  year = {2005},
+  isbn = {978-0-00-000000-2},
+}
+
+@book{Bbb06,
+  author = {Baker, Bob},
+  title = {A Book About Things, reprinted},
+  year = {2006},
+  isbn = {9780000000002},
+}
+
+@book{Ccc90,
+  author = {Clark, Cat},
+  title = {Bread Craft, 1st edition},
+  year = {1990},
+}
+
+@book{Ccc04,
+  author = {Clark, Cat},
+  title = {Bread Craft, Second Edition},
+  year = {2004},
+}
+
+@article{Ddd11,
+  author = {Davis, Dan},
+  title = {A cited paper},
+  year = {2011},
+}
+
+@misc{Eee15,
+  author = {Evans, Eve},
+  title = {A page},
+  year = {2015},
+}
+
+@misc{Fff16,
+  author = {Ford, Fay},
+  title = {Another page},
+  year = {2016},
+}
+
+@book{Ggg74,
+  author = {Green, Gus},
+  title = {A First Work},
+  year = {1974},
+}
+
+@book{Hhh99,
+  author = {Hill, Hal},
+  title = {A Second Work},
+  year = {1999},
+}
 """
 
 
@@ -226,11 +264,12 @@ def self_test():
         (files / "Eee15.txt").write_text("same bytes\n", encoding="utf-8")
         (files / "Fff16.txt").write_text("other bytes\n", encoding="utf-8")
         (Path(root) / "list.md").write_text(FIXTURE_LIST, encoding="utf-8")
+        (Path(root) / "references.bib").write_text(FIXTURE_BIBLIOGRAPHY, encoding="utf-8")
         manuscript = Path(root) / "manuscript"
         manuscript.mkdir()
         (manuscript / "110-chapter-1.md").write_text(
-            "As shown [Ddd11, Ccc04]. Again [Ccc90].\n", encoding="utf-8")
-        entries = parse(Path(root) / "list.md")
+            "As shown [@Ddd11; @Ccc04]. Again @Ccc90 says so.\n", encoding="utf-8")
+        entries = parse(Path(root) / "list.md", Path(root) / "references.bib")
         cites = citation_counts(entries, markdown_files_under(manuscript))
         found = find_groups(entries, cites, folders_for_directory(files))
     got = {(name, label, tuple(keys)) for name, label, _value, keys in found}
@@ -258,6 +297,8 @@ def main():
     add_config_arguments(parser)
     add_output_arguments(parser)
     parser.add_argument("--list", dest="sources_list", help="the sources list (default: sources.list)")
+    parser.add_argument("--bibliography",
+                        help="the .bib file (default: sources.bibliography)")
     parser.add_argument("--manuscript-dir", help="a manuscript folder (default: the book's manuscript files)")
     parser.add_argument("--self-test", action="store_true", help="run on a built-in example")
     args = parser.parse_args()
@@ -266,9 +307,13 @@ def main():
 
     config = load_book(args, TOOL)
     sources_list = args.sources_list or config.sources.list
+    bibliography = args.bibliography or config.sources.bibliography
     if args.sources_list and not Path(sources_list).exists():
         return tool_failed("sources list not found: %s" % sources_list, TOOL)
-    if skipped_for_missing(TOOL, sources_list, "sources list", args.format):
+    if args.bibliography and not Path(bibliography).exists():
+        return tool_failed(".bib file not found: %s" % bibliography, TOOL)
+    if not Path(bibliography).exists() and skipped_for_missing(TOOL, sources_list,
+                                                               "sources list", args.format):
         return 0
 
     report = CheckReport(TOOL, CLASSES)
@@ -276,7 +321,7 @@ def main():
     if not manuscript:
         report.skip("no manuscript files at %s" % (args.manuscript_dir or config.manuscript.dir))
         return report.emit(args.format)
-    entries = parse(sources_list)
+    entries = parse(sources_list, bibliography)
     cites = citation_counts(entries, manuscript)
     for name, label, value, keys in find_groups(entries, cites, folders_from_config(config)):
         counted = ", ".join("%s (%d cites)" % (k, cites.get(k, 0)) for k in keys)

@@ -195,62 +195,62 @@ def _fixture_list(shown, hashes):
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 
 **Cached text:** `{d}/<Key>.txt` (fetched YYYY-MM-DD, sha256 ...)
 ```
 
-### [Smi01] Smith, "Winter sowing" (2001)
+### [Smi01]
 
 **Cached text:** `{d}/Smi01.txt` (fetched 2025-08-09, sha256 {stale})
 **Cached original:** `{d}/Smi01.pdf` (fetched 2025-08-09, sha256 {stale}, from {landing})
 
 ---
 
-### [Kem77] Kemp, "Reading the colour of field soil" (1977)
+### [Kem77]
 
 **Cached text:** `{d}/Kem77.txt` (fetched 2025-08-01, sha256 {stale})
 
 ---
 
-### [Vin00] Vince, "A talk" (2000)
+### [Vin00]
 
 **Cached text:** `{d}/Vin00.txt` (fetched 2025-08-10)
 
 ---
 
-### [VM98] Voss & Moreau, "A seed catalogue" (1998)
+### [VM98]
 
 **Cached text:** `{d}/VM98.txt`
 
 ---
 
-### [KFR11] Kern & Fisher, "A review" (2011)
+### [KFR11]
 
 **Cached original:** `{d}/KFR11.html` (fetched 2025-08-11, sha256 {kfr11}, from {publisher})
 
 ---
 
-### [Ree74] Reed, "On a river: old flood marks" (1974)
+### [Ree74]
 
 **Cached text:** `{d}/Ree74.txt` (fetched 2025-08-12, sha256 {ree74}, from http://www.publisher.example.org/chapter/10.0000/ree74/)
 
 ---
 
-### [Bla15] Blake, "A script-rendered page" (2015)
+### [Bla15]
 
 **Cached text:** `{d}/Bla15.txt` (fetched 2025-08-09, sha256 {stale})
 
 ---
 
-### [Pet21] Peters, "Abstract only" (2021)
+### [Pet21]
 
 **Cached text:** NOT YET FETCHED
 **Cached original:** NOT YET FETCHED
 
 ---
 
-### [TR73] Thomas & Rowe, "A hand-ingested scan" (1973)
+### [TR73]
 
 **Cached text:** `{d}/TR73.txt` (fetched 2025-08-01, sha256 {tr73})
 

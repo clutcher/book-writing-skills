@@ -36,7 +36,7 @@ class SourceBankTest(unittest.TestCase):
 
     def test_should_read_a_new_book_bank_that_holds_only_its_format_header(self):
         # given
-        text = "# Sources List\n\n## Entry format\n\n```\n### [<Key>] A, \"T\" (Y)\n```\n"
+        text = "# Sources List\n\n## Entry format\n\n```\n### [<Key>]\n```\n"
 
         # when
         bank = parse_bank(text)
@@ -55,9 +55,53 @@ class SourceBankTest(unittest.TestCase):
         entry = read_bank(NEW_BOOK / "sources" / "list.md").entry("Jon74")
 
         # then
-        self.assertEqual(entry.unapproved(is_findings=True),
-                         ["Full title", "Authors", "Year", "Findings"])
+        self.assertEqual(entry.unapproved(is_findings=True), ["Access URLs", "Findings"])
         self.assertEqual(entry.unapproved(is_findings=False), [])
+
+    def test_should_say_identity_belongs_in_the_bib_when_a_list_entry_carries_it(self):
+        # given
+        text = ("# Sources List\n\n## Entry format\n\n```\n### [<Key>]\n```\n\n"
+                "### [Hal19] Hale, \"Bread at Home\" (2019)\n\n**Full title:** Bread at Home\n"
+                "**DOI:** 10.5555/bread\n**Access status:** fetched\n")
+
+        # when
+        problems = parse_bank(text).entry("Hal19").identity_problems()
+
+        # then
+        self.assertEqual(len(problems), 3)
+        self.assertIn("### [Hal19]", problems[0])
+        self.assertIn("as title", problems[1])
+        self.assertIn("as doi", problems[2])
+
+    def test_should_find_no_identity_problem_when_the_list_holds_access_only(self):
+        # given
+        bank = read_bank(NEW_BOOK / "sources" / "list.md")
+
+        # then
+        self.assertEqual([entry.identity_problems() for entry in bank.entries], [[], []])
+
+    def test_should_report_identity_in_the_list_as_a_defect_when_checked(self):
+        with TemporaryBook(NEW_BOOK) as folder:
+            # given
+            bank_path = folder / "sources" / "list.md"
+            text = bank_path.read_text(encoding="utf-8")
+            bank_path.write_text(text.replace("### [Smi99]\n",
+                                              "### [Smi99]\n\n**Year:** 1999\n"),
+                                 encoding="utf-8")
+
+            # when
+            result = run_script("source_registry.py", "--check", "--format", "tsv", cwd=folder)
+
+        # then
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(result.stdout.split("\t")[:2], ["Smi99", "identity-in-list"])
+
+    def test_should_pass_the_check_when_the_list_holds_access_only(self):
+        # when
+        result = run_script("source_registry.py", "--check", cwd=NEW_BOOK)
+
+        # then
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_should_pass_self_test_on_the_banks_the_config_names(self):
         # when
@@ -89,10 +133,10 @@ class SourceBankTest(unittest.TestCase):
 
     def test_should_keep_a_sub_heading_inside_its_entry(self):
         # given
-        text = ("# Sources List\n\n## Entry format\n\n```\n### [<Key>] A, \"T\" (Y)\n```\n\n"
-                "### [Smi99] Smith, \"Rye Notes\" (1999)\n\n**Full title:** Rye Notes\n\n"
-                "#### Reading notes\n\n**Year:** 1999\n\n---\n\n"
-                "### [Ada85] Adams, \"Wheat Notes\" (1985)\n\n**Full title:** Wheat Notes\n")
+        text = ("# Sources List\n\n## Entry format\n\n```\n### [<Key>]\n```\n\n"
+                "### [Smi99]\n\n**Access status:** fetched\n\n"
+                "#### Reading notes\n\n**Note:** read twice\n\n---\n\n"
+                "### [Ada85]\n\n**Access status:** fetched\n")
 
         # when
         bank = parse_bank(text)
@@ -100,7 +144,7 @@ class SourceBankTest(unittest.TestCase):
         # then
         self.assertEqual(bank.keys, ["Smi99", "Ada85"])
         self.assertEqual(bank.breaks, [])
-        self.assertEqual(bank.entry("Smi99").field("Year"), "1999")
+        self.assertEqual(bank.entry("Smi99").field("Note"), "read twice")
         self.assertEqual(bank.out_of_order(), [("Smi99", "Ada85")])
 
     def test_should_keep_windows_line_endings_when_sorting(self):

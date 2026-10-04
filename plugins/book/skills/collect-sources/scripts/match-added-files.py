@@ -6,9 +6,9 @@ under whatever name the browser gave them. For each file this script:
 
   1. reads its text: pdftotext for a PDF, OCR (tesseract) when the PDF is a scan with no
      text layer, the page text for HTML, the file itself for plain text
-  2. finds candidate entries in the sources list: a DOI or ISBN on the first pages that
-     the entry also has, and entries whose title and an author surname are on the first
-     pages
+  2. finds candidate sources: a DOI or ISBN on the first pages that the source's .bib
+     entry (`sources.bibliography`) also has, and sources whose .bib title and an author
+     surname are on the first pages; only keys with an entry in the sources list count
   3. confirms each candidate with the entry's `Verified quotes` from the quotes bank: at
      least half of them must be found in the file (the same matching as check-facts'
      quote-in-file-check). An entry with no verified quotes is confirmed only by a DOI
@@ -52,6 +52,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 import fetch
 import ocr
 import script_tests
+from bibliography import read_identities
 from citation_key import is_safe_file_key
 from quote_match import (ALL_WINDOWS, ELLIPSIS_PIECES, ELSEVIER, FULL, has_surname, locate_in,
                          quotes_in, squash, title_share, title_words)
@@ -95,6 +96,16 @@ class AddedFile:
         pages = self.text.split("\f")
         head = "\n".join(pages[:OPENING_PAGES]) if len(pages) > 1 else self.text
         return head[:OPENING_CHARS]
+
+
+@dataclass
+class Source:
+    key: str
+    access_urls: str
+    identity: object
+
+    def identity_text(self, *names):
+        return self.identity.plain(*names) if self.identity is not None else ""
 
 
 @dataclass
@@ -173,21 +184,22 @@ def dois_in(text):
     return {fetch.trim_doi(doi).lower() for doi in fetch.DOI_RE.findall(text)}
 
 
-def entry_field(entry, name):
-    return (entry.field(name) or "").strip()
-
-
-def entry_text(entry, names):
-    return " ".join(entry_field(entry, name) for name in names)
+def sources_of(list_path, bibliography_path):
+    identities = read_identities(bibliography_path)
+    return [Source(entry.key, (entry.field("Access URLs") or "").strip(),
+                   identities.get(entry.key))
+            for entry in read_bank(list_path).entries]
 
 
 def by_identifier(opening, entries):
     dois, isbns = dois_in(opening), isbns_in(opening)
     found = {}
     for entry in entries:
-        shared_dois = dois & dois_in(entry_text(entry, ("DOI", "DOI/URL", "Access URLs",
-                                                        "Identifier")))
-        shared_isbns = isbns & isbns_in(entry_text(entry, ("ISBN", "Identifier")))
+        doi_text = " ".join((entry.identity_text("doi"), entry.identity_text("url"),
+                             entry.identity_text("note"), entry.access_urls))
+        isbn_text = " ".join((entry.identity_text("isbn"), entry.identity_text("note")))
+        shared_dois = dois & dois_in(doi_text)
+        shared_isbns = isbns & isbns_in(isbn_text)
         if shared_dois:
             found[entry.key] = (entry, "DOI " + sorted(shared_dois)[0])
         elif shared_isbns:
@@ -199,8 +211,9 @@ def by_title(opening, entries):
     hay = squash(opening)
     found = {}
     for entry in entries:
-        title = entry_field(entry, "Full title")
-        if not title_words(title) or not has_surname(entry_field(entry, "Authors"), hay):
+        title = entry.identity_text("title")
+        if not title_words(title) or not has_surname(entry.identity_text("author", "editor"),
+                                                     hay):
             continue
         if squash(title) in hay or title_share(title, hay) >= TITLE_SHARE_FOR_CANDIDATE:
             found[entry.key] = (entry, FOUND_BY_TITLE)
@@ -210,7 +223,7 @@ def by_title(opening, entries):
 def confirm(entry, found_by, added, quotes_by_key):
     quotes = quotes_by_key.get(entry.key, [])
     if not quotes:
-        title_seen = title_share(entry_field(entry, "Full title"), squash(added.opening))
+        title_seen = title_share(entry.identity_text("title"), squash(added.opening))
         if found_by != FOUND_BY_TITLE and title_seen >= TITLE_SHARE_FOR_IDENTITY:
             return Candidate(entry, found_by, True, "no verified quotes; the title is there too")
         return Candidate(entry, found_by, False, "no verified quotes to confirm with")
@@ -352,7 +365,7 @@ def run(options, config):
         return 0
     if not list_path or not Path(list_path).is_file():
         return tool_failed("sources list not found: %s" % list_path, TOOL)
-    entries = read_bank(list_path).entries
+    entries = sources_of(list_path, config.sources.bibliography)
     quotes_by_key = verified_quotes(config.sources.quotes)
     counts = {}
     for path in files:

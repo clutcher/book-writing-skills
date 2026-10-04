@@ -1,40 +1,69 @@
-# The sources list: what an entry holds
+# The sources list and the .bib: what an entry holds
 
-The sources list (`sources.list` in book.yaml) answers one question: **where do I read this
-source?** It holds identity and access only. What the source *says* goes to the quotes bank
-(see `quotes-format.md`); a verdict about the book goes to a dated run report, and to neither
-bank.
+Two files describe each source the book tracks, under one key:
+
+- **the .bib** (`sources.bibliography`, default `sources/references.bib`) answers **what is this
+  source?** One BibTeX entry: who wrote it, its title, year, venue, DOI, ISBN. The entry key is
+  the citation key, and the build prints the reference list from it.
+- **the sources list** (`sources.list`) answers **where do I read this source?** Access and
+  cache lines only.
+
+What the source *says* goes to the quotes bank (see `quotes-format.md`); a verdict about the
+book goes to a dated run report, and to none of the three.
 
 | What | Where | Why there |
 |---|---|---|
-| Identity and access: title, authors, year, ISBN, DOI, URLs, cache lines | sources list | Static facts about the work; they let any later run fetch the source again without searching |
+| Identity: authors, title, year, venue, publisher, edition, DOI, ISBN | the .bib | Static facts about the work; the build prints them and the key checks derive the key from them |
+| Access: URLs, access status, fetch notes, cache lines | sources list | They let any later run fetch the source again without searching |
 | What the source says: verbatim quotes, findings, scope, guardrails | quotes bank | Durable and expensive to establish again; some sources can no longer be fetched at all |
 | Verdicts about the book: VERIFIED / MINOR ISSUE, confidence, suggested fix | run report under `<work.runs>/<YYYY-MM-DD-HHMM>-check-facts-all/` | They expire the moment the book is edited, and the run folder carries the date |
 
-A list entry is a **pointer to the real source**, never the source itself. Its fields can be
-stale or wrong, so verification never trusts the entry as ground truth: it follows the cache
-and reads the source again.
+Both entries are **pointers to the real source**, never the source itself. Their fields can be
+stale or wrong, so verification never trusts them as ground truth: it follows the cache and
+reads the source again.
 
-## The entry
+## The .bib entry
+
+```bibtex
+@book{Smi99,
+  author = {Smith, Jane and van Berg, Ann},
+  title = {Kitchen Gardens},
+  edition = {2},
+  publisher = {Example Press},
+  address = {Example City},
+  year = {1999},
+  origdate = {1988},
+  isbn = {9780000000002},
+}
+```
+
+- **Standard BibTeX entry types and these fields only:** author, editor, title, booktitle,
+  journal, year, volume, number, pages, publisher, address, edition, doi, isbn, url, note,
+  howpublished, institution, school, series, chapter, month, type (the kind of thesis or
+  report), origdate (the first publication of a later printing), language, and three biblatex
+  fields: date (only for a date that is not a plain year, such as `1975~` for "c. 1975"; keep
+  `year` too, because BibTeX reads only `year`), eid (an article or paper number, printed as
+  "Article 12", or "Paper 12" in proceedings) and pagetotal (the page count of a work that has no page range). Access,
+  cache and findings never go here.
+- **Names as BibTeX writes them**: `Surname, Given and Surname, Given`; `and others` for a list
+  the source itself shortens. A company or a project is a corporate author in double braces:
+  `author = {{Example Research Group}}`, so it is one name and never split.
+- **A bare DOI** (`10.5555/abc`, no `https://doi.org/`), and **an ISBN of 13 digits** with no
+  hyphens. `reference-format-check.py` checks both, the fields each entry type needs and the
+  field names; `--fix` writes the bare DOI and the 13-digit ISBN.
+- **No date that cannot be established**: leave `year` out, and the key ends in `--` (`Wal--`).
+
+## The sources list entry
 
 ```markdown
-### [<Key>] Author, "Short Title" (Year)
+### [<Key>]
 
-**Full title:** the exact title of the work
-**Authors:** the full author list
-**Year:** the year of the printing read (and the basis, for a web page)
-**Edition:** which printing this is, and how it relates to another entry
-**Venue:** journal, conference, publisher or platform
-**Publisher:** when Venue carries something else
-**DOI:** a bare DOI, the permanent identifier
-**ISBN:** 13 digits, no hyphens
-**Identifier:** an LCCN or OCLC number, for a work older than ISBNs
-**DOI/URL:** the canonical landing page (a URL or a DOI, never a citation string)
 **Access URLs:** where the source can be read: full text, abstract, mirrors
 **Access status:** present only when something blocks or qualifies the reading
 **Cached text:** `<sources.library>/<Key>.txt` (fetched <date>, sha256 <hash>)
 **Cached original:** `<sources.library>/<Key>.pdf` (fetched <date>, sha256 <hash>, from <URL>)
-**Record history:** key renames and corrections to this entry's own identity fields
+**Record history:** key renames and corrections to this entry
+**Supersedes:** the key this entry replaced, when a source moved to a new key
 **Fetch note:** dead hosts, bot checks, extraction traps, what the cache really holds
 **Note:** anything else durable: naming traps, attribution cautions, why an uncited source is kept
 **Findings:** see `<sources.quotes>`
@@ -43,27 +72,30 @@ and reads the source again.
 Rules, each one enforced by `entry-format-check.py` and repaired where it is mechanical by
 `entry-format-fix.py` (a gate and a fixer over one rule: change both together):
 
-- **The heading names exactly one key**, then a space, then author, short title and year, with
-  no separator. A heading naming two keys hides the second from every tool.
-- **Only Full title, Authors and Year are required.** Every other field appears when it applies;
-  an omitted field is the signal, so never write `none`.
+- **The heading is only the key**: `### [Smi99]`. Authors, a title or a year in the heading, or
+  an identity field (Full title, Authors, Year, DOI, ISBN, Venue ...) in the list, is
+  `identity-in-list`: write it in the .bib entry and delete it here. The fixer refuses it,
+  because it needs a person.
+- **Every list key has a .bib entry and every .bib key a list entry**
+  (`list-bibliography-check.py`).
+- **No field is required.** Every field appears when it applies; an omitted field is the signal,
+  so never write `none`.
 - **Fields appear in the order above.** Order is guidance for new entries; old ones are not
   reordered.
 - **The field vocabulary is closed.** A field name outside the list is invisible to every tool
-  that reads by name. A qualifier on an approved name (`**Scope, and first:**`) is a new name:
-  use the bare name and put the qualifier in the prose. A label ends in `:**`: `**Key findings.**`
-  and `**Verified quotes** (pages):` both read as fields to a person and as prose to a tool.
+  that reads by name. A qualifier on an approved name (`**Note, and first:**`) is a new name:
+  use the bare name and put the qualifier in the prose. A label ends in `:**`: `**Note.**`
+  and `**Access URLs** (mirrors):` both read as fields to a person and as prose to a tool.
 - **No dates in field names, and no verdicts** (Verdict, Confidence, Last verdict). The one
-  permitted date in either bank is `Last verified` in the quotes bank.
+  permitted date in the banks is `Last verified` in the quotes bank.
 - **A sha256 describes a file on disk**; never write one on a `NOT YET FETCHED` line.
-- **A DOI has its own field.** A DOI buried in DOI/URL or Venue prose is a source nothing can
-  resolve, look up on Unpaywall or check against a registry.
 - **One `---` with a blank line either side before every entry heading.** A doubled rule hides
   entries from parsers; a `---` directly under prose is a heading in Markdown.
 - **Write `Findings:` in the same step as the quotes entry**, not as a later clean-up.
 - **Keys are sorted**, case-insensitively, within a section.
-- **A list entry is never removed when the book stops citing it**; only the bibliography loses
-  the entry. The data about the source may be useful later, and its cache stays verifiable.
+- **An entry is never removed when the book stops citing it**, in the list or in the .bib: the
+  build prints only the cited entries, the data about the source may be useful later, and its
+  cache stays verifiable.
 
 ## A bank stores what cannot be recomputed
 
@@ -72,8 +104,8 @@ stale while nobody notices:
 
 ```bash
 SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts"
-grep -n '\[Smi99[,\]]' manuscript/*.md
-python3 $SCRIPTS/list-bibliography-check.py            # every listed source nothing cites
+grep -nE '@\{?Smi99\b' manuscript/*.md
+python3 $SCRIPTS/citation-check.py                     # every .bib entry nothing cites
 ```
 
 What is NOT derivable belongs in `Note`: why an uncited source is on file, what it was
@@ -97,39 +129,39 @@ status and is never copied in as one.
 
 Say which wall it is. A 403 from a bot check looks identical to a 403 from a subscription, and a
 free source written off as "paywalled" is never tried again. A source that was never read can
-support a bibliography entry and nothing else, and any report that cites it must say it was not
+support a .bib entry and nothing else, and any report that cites it must say it was not
 read.
 
 ## Keys: resolve before concluding a source is missing
 
-- **Keys are scope-local.** An a/b letter resolves a clash inside one file; the bibliography is
-  one scope and each argument file another. A key that "does not match" may belong to another scope:
-  grep the bibliography first.
+- **One scope.** The manuscript and the thinking files cite the same .bib; an a/b letter
+  resolves a clash inside it. A key that "does not match" is grepped in the .bib first.
 - **A one-character key error makes a held source look unheld.** Before recording UNHELD, try the
   key with and without its `+`, and with the author count corrected.
-- **Derive the key from the author list, never from a label.** When an entry's key cannot be
+- **Derive the key from the .bib names, never from a label.** When an entry's key cannot be
   derived from its own author list, re-read the source: keys built from a memorable label have
-  hidden authors who were never on the paper. `key-authors-check.py` and `key-bibtex-check.py`
-  check this.
-- **A rename is identity, recorded in `Record history`**, and a `_formerly registered as [Old]_`
-  line there is the declared alias that `argument-key-check.py` rewrites. Do not invent a
-  `Supersedes` field.
+  hidden authors who were never on the paper. `citation-key-check.py` and `key-bibtex-check.py`
+  check this, and `citation-key-check.py --fix` renames a key in the .bib, both banks, the
+  manuscript and the thinking files in one pass.
+- **A rename is recorded in the list**: `Supersedes` names the old key and `Record history`
+  says why.
 
-## Editions: one entry per printing here, one per work in the bibliography
+## Editions: one entry per printing, one cited per work
 
 A cached second edition and a cached first printing are two files with two checksums, so each
-needs its own list entry to be verifiable. The bibliography cites the printing that was read and
-records the first publication inside that one entry (`First published 1988.`).
+needs its own entry to be verifiable. The book cites the printing that was read, whose .bib
+entry records the first publication in `origdate` (`edition = {2}`, `origdate = {1988}`).
 
-- **A printing the book no longer cites stays**, as edition history. Its `Edition:` names the
+- **A printing the book no longer cites stays**, as edition history. Its list `Note` names the
   entry that replaced it and why. Retiring it would orphan its cache.
-- **`Edition:` carries the warning, not just the fact.** The dangerous case is a key whose year
+- **The list carries the warning, not just the fact.** The dangerous case is a key whose year
   names one printing while its cache holds another; say so in `Access status`, or the next run
   quotes the wrong text under the right-looking key.
 - **Verify an edition difference in both cached texts before acting on it**: grep both for the
   exact term.
 
-`duplicate-source-check.py` reports edition pairs as suspects: a prompt to look, not a defect.
+`duplicate-source-check.py` and `edition-duplicate-check.py` report edition pairs: a prompt to
+look; a later edition with no `origdate` is a defect.
 
 ## Dating a web source
 
@@ -145,9 +177,10 @@ An access date describes the reader, never the source. In descending authority:
    was published, not the date of the event
 6. for Wikipedia history, the MediaWiki revisions API
 
-Put the basis in the field: `**Year:** 2026 (from the server Last-Modified; the page shows no
-date)`. When nothing can be established, the year is `--` in the entry and the key, and the
-entry says which routes were tried.
+Put the year in the .bib entry and the basis in the list `Note`: `**Note:** the year is from the
+server Last-Modified; the page shows no date`. When nothing can be established, the .bib entry
+has no year, the key ends in `--` (cite it as `@{Wal--}`), and the Note says which routes were
+tried.
 
 ## Source code and living pages
 

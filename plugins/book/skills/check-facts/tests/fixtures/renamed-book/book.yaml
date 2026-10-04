@@ -10,6 +10,7 @@ manuscript:
   references: text/zz-bibliography.md
 sources:
   list: evidence/bank.md
+  bibliography: evidence/works.bib
   quotes: evidence/says.md
   library: evidence/cache
   library_index: evidence/origin

@@ -2,12 +2,11 @@
 name: build-editions
 description: >-
   Builds the book from its Markdown manuscript into a print PDF for a KDP paperback, a PDF for
-  screens and a checked EPUB 3 for ebook stores and Kindle. Use it when the author asks to
-  build, make or export the book, a PDF, an EPUB or a Kindle file, a draft or a reviewer copy,
-  one chapter as PDF, or a copy that shows what changed since the last review. For a paper
-  (kind: paper) it builds the paper PDF and its LaTeX source, an anonymous copy for
-  double-blind review, and the arXiv source bundle, checked by compiling it in a clean folder.
-  For the cover files use design-cover; for the store texts use prepare-sales-text.
+  screens and a checked EPUB 3 for ebook stores and Kindle. Use it to build or export the book,
+  a PDF, an EPUB or a Kindle file, a draft or reviewer copy, one chapter as PDF, or a copy that
+  shows what changed. For a paper it builds the PDF, its LaTeX source, an anonymous copy for
+  double-blind review and the checked arXiv bundle. For the cover use design-cover; for store
+  texts use prepare-sales-text.
 argument-hint: "[all|print|digital|epub|paper] [--final|--reviewer-copy NAME|--changes-since COMMIT|--arxiv|--anonymous]"
 ---
 
@@ -65,8 +64,8 @@ The script finds the book root by walking up to `book.yaml`. Every value is take
 order:
 
 1. a command-line option (`--font garamond`), or `--set book.font=garamond`;
-2. `book.yaml`, under `book:` (build settings), `manuscript:` and `work:` (folders), `tools:`
-   (Docker image and TeX Live volume);
+2. `book.yaml`, under `book:` (build settings), `manuscript:` and `work:` (folders), `sources:`
+   (bibliography and citation style), `tools:` (Docker image and TeX Live volume);
 3. the built-in default.
 
 `--config FILE` names a `book.yaml` directly. Every key, with its values and default, is in
@@ -95,6 +94,25 @@ edition failing never stops the others; failures are listed again at the very en
 What each edition changes, and why, is in [editions.md](references/editions.md). The EPUB
 package metadata and the EPUB template copied into this skill are in [epub.md](references/epub.md).
 
+## Citations
+
+Every edition, the paper too, cites through pandoc `--citeproc` from the book's BibTeX file
+(`sources.bibliography`, default `sources/references.bib`). The text cites `[@Key]`,
+`[@A; @B]`, `[@A, p. 12]` or `@A says`; the references file holds its heading and an empty
+`::: {#refs}` div, and the build writes the list there.
+
+| `sources.citation_style` | Citation | Reference list |
+|--------------------------|----------|----------------|
+| `alpha` (default) | `[Abc99]`, `[Abc99, Def01]`, `[Abc99, p. 12]` | sorted by label; `[Abc99]` then an APA-like reference (`assets/csl/alpha.csl`) |
+| `numeric` | `[1]`, `[1, 3]` | IEEE-style, in order of first citation (`assets/csl/numeric.csl`) |
+
+`sources.citation_style_file` names the book's own CSL file instead, to fine-tune the list.
+`bibliography-to-csl.py` turns the `.bib` into CSL-JSON first (titles keep the case written in
+the `.bib`; with `alpha` each entry's label is its key). On screen (digital PDF, EPUB, paper)
+each citation links to its entry; in print both are plain text. **A key the `.bib` does not
+hold stops the build** and the message names it; without a `.bib` the build runs without
+citations and stops if the text cites a key. Details: [editions.md](references/editions.md).
+
 ## Draft and final
 
 | | Draft (default) | Final (`--final`) |
@@ -105,7 +123,8 @@ package metadata and the EPUB template copied into this skill are in [epub.md](r
 | File name | `title-lastname-draft-TIMESTAMP.pdf` (`-draft-reviewer-` with `--reviewer-copy`) | `title-lastname.pdf` |
 
 The digital PDF adds `-digital`; the EPUB ends in `.epub`; `--azw3` writes `.azw3` beside it.
-Without a title and author the name is `book`. `--output <name>` sets the name yourself.
+When the title or the author is missing, or still holds the placeholder text (`TO BE ASSIGNED`),
+the name is `book` (for a paper `paper`, or `paper-anonymous`). `--output <name>` sets the name yourself.
 Protected drafts carry metadata: author, subject ("DRAFT for Name"), keywords (the unique draft
 ID) and the copyright notice.
 
@@ -128,7 +147,7 @@ When `book.yaml` says `kind: paper`, the default edition and `all` build `paper`
 |------|--------|
 | (none) | `title-lastname-draft-TIMESTAMP.pdf` and `.tex` (the draft has no marks; only its name says draft) |
 | `--final` | `title-lastname.pdf` and `title-lastname.tex` |
-| `--anonymous` | no author, affiliation or email in the PDF or the `.tex`; the names end in `-anonymous` (also `paper.anonymous: true`) |
+| `--anonymous` | no author, affiliation or email in the title block, the PDF properties or the `.tex`; pdflatex does not copy the properties of an included PDF image (xelatex never does); the names end in `-anonymous` (also `paper.anonymous: true`). An image whose own metadata names someone (PDF Author, EXIF Artist, XMP creator, an email or home folder path) is reported after `Done!` as `image-metadata`, not removed: a JPEG goes into the PDF with its metadata as it is |
 | `--arxiv` | also `title-lastname-arxiv.tar.gz`, the arXiv source bundle, then checks it |
 
 How it is built: pandoc (in `tools.pandoc_image`) writes the `.tex` from the built-in template
@@ -150,17 +169,18 @@ both engines. The abstract file (`paper.abstract`) fills the abstract
 field and is never part of the body. Each section file starts with one `#` heading, which
 becomes a numbered `\section`; `##` becomes `\subsection`. The references heading is left
 unnumbered. Images are written relative to the manuscript folder, as `images/plot.pdf` for
-`manuscript/images/plot.pdf`. `[Key]` citations link to the references file as in the screen
-PDF of a book. The paper size is `paper.format` (`a4` or `letter`); `paper.arxiv_category` is
+`manuscript/images/plot.pdf`. Citations link to the reference list as in the screen PDF of a
+book; the list is text in the `.tex`, so no BibTeX run and no `.bbl` are needed. The paper size is `paper.format` (`a4` or `letter`); `paper.arxiv_category` is
 shown in the build report only.
 
 **The arXiv bundle.** arXiv takes TeX source, not a PDF made from TeX, and compiles it itself
 with pdflatex, xelatex or DVI latex (not lualatex), on TeX Live 2025 by default. The bundle
-holds the main `.tex`, the images it uses and a `.bbl` named like the main `.tex` when there is
-one; never `.aux`, `.log`, the PDF or a hidden file. A file name with a space stops the build.
+holds the main `.tex` and the images it uses (the reference list is text in the `.tex`, so
+there is no `.bbl`); never `.aux`, `.log`, the PDF or a hidden file. A file name with a space stops the build.
 The templates set no `\pdfoutput`: arXiv says not to use it to change the output format.
 After writing the bundle the build runs `arxiv-bundle-check.py` on it, which unpacks it into a
-clean folder, compiles it in `tools.paper_tex_image` with no network and checks those rules.
+clean folder, compiles it in `tools.paper_tex_image` with no network and checks those rules;
+for an anonymous paper it also reports an image whose metadata names someone (`image-metadata`).
 arXiv has the classes `acmart`, `IEEEtran` and `llncs`, so a venue bundle needs no class file. Upload the bundle; never
 upload the PDF to arXiv.
 
@@ -234,10 +254,12 @@ handling and limits: [changes-since.md](references/changes-since.md).
 | `epub-check.py` | runs epubcheck; SKIPPED without java |
 | `diff-preprocess.py` | marks changed text for a `--changes-since` copy |
 | `code-font-check.py` | lists characters in the manuscript's code that the bundled EPUB code font lacks |
-| `key-pattern-check.py` | checks that the citation-link filter reads keys the same way `${CLAUDE_PLUGIN_ROOT}/lib/citation_key.py` does |
+| `citations.sh` | sourced by `build-book.sh`: the bibliography, the citation style and the pandoc citation options |
+| `bibliography-to-csl.py` | turns the `.bib` into the CSL-JSON pandoc `--citeproc` reads, in `tools.pandoc_image`; with `alpha` sets each entry's label to its key |
 | `paper-build.sh` | sourced by `build-book.sh`: the paper edition |
 | `paper-metadata.py` | writes the paper title block for pandoc: authors (none when anonymous) and the abstract |
 | `paper_source.py` | gathers the `.tex` and the images it uses into the build folder; writes the arXiv bundle |
+| `image_metadata.py` | reports images whose metadata names someone; run on an anonymous paper's images by the build and by `arxiv-bundle-check.py` |
 | `arxiv-bundle-check.py` | compiles an arXiv bundle in a clean folder in Docker and checks arXiv's file rules; SKIPPED without Docker or without a bundle |
 | `self-check.py` | runs every script's self-test on the fixture books and paper in `scripts/fixtures/`; needs no Docker (the steps that read settings through `build-book.sh` need bash) |
 
@@ -254,8 +276,9 @@ Every Python script has `--help` and `--self-test`; those that read the book tak
 - **A step that did not run says so.** epubcheck without java, a template drift check without
   an unchanged copy of pandoc's own template, leading without the font: each prints SKIPPED or the fallback it used.
   Never report a check as passed when it was skipped.
-- **The citation-link filter always prints its summary line** (`linked N citations into ...`).
-  That line is the difference between a filter that linked nothing and one never wired in.
+- **The citation filter always prints its summary line** (`N citation(s) of K key(s) linked to
+  M bibliography entries; 0 unresolved keys.`). That line is the difference between a filter
+  that linked nothing and one never wired in.
 - **The EPUB template copied into this skill and the unchanged copy of pandoc's own template
   are one thing** and are refreshed together ([epub.md](references/epub.md)).
 - **The EPUB identifier never changes** once a book is published ([epub.md](references/epub.md)).

@@ -1,8 +1,51 @@
 # Citing in prose: naming authors and works in running text
 
 How a book names other books, papers and people inside its sentences. The names and titles in
-the examples are invented. The format of citation keys and bibliography entries belongs to the check-facts skill; this file is about the prose around
-them. Rules 2.7, 2.9 and 2.16 apply.
+the examples are invented. The format of citation keys and of the entries in the book's `.bib`
+file belongs to the check-facts skill; this file is about the citation marks in the text and the
+prose around them. Rules 2.7, 2.9 and 2.16 apply.
+
+## How a citation is written: pandoc citations
+
+The book cites with pandoc citations. The key is the key of an entry in the book's `.bib` file
+(`sources.bibliography`, default `sources/references.bib`); the build turns each mark into the
+book's citation style (`sources.citation_style`: `alpha` prints `[Abc99]`, `numeric` prints
+`[1]`) and fills the references page from the `.bib` file.
+
+| Written in the manuscript | What it means |
+|---|---|
+| `[@Abc99]` | one source |
+| `[@Abc99; @Def01]` | two sources, in one pair of brackets, separated by `;` |
+| `[@Abc99, p. 12]` | a source with a locator: `p.`, `pp.`, `ch.`, `sec.` after a comma |
+| `[see @Abc99, ch. 2; @Def01]` | words before a key (a prefix) and a locator, per source |
+| `@Abc99 says ...` | a narrative citation: the key stands in the sentence, with no brackets |
+| `[-@Abc99]` | the year or label only, when the author is already named in the sentence |
+| `@{Wal--}` | a key in braces, for a key the bare form cannot hold |
+
+**Which keys need braces.** A bare key (`@Key`) is letters, digits and `_`, and may hold the
+characters `: . # $ % & - + ? < > ~ /` only when a letter, a digit or `_` follows them (checked
+with pandoc 3.8.3). So `@ABC+99` and `@Abc99a` work bare, and a key that ends in such a
+character must be written in braces: a key with no year ends in `--`, so it is always
+`@{Wal--}` and `[@{Wal--}, p. 3]`. Braces are always allowed: `@{Abc99}` is the same as
+`@Abc99`.
+
+**What is not a citation.** An `@` right after a letter, a digit, `.` or `\` is not a citation,
+so an e-mail address (`name@example.org`) stays text. The build also reads a bare web address
+(`https://example.org/@name/post`) and an e-mail-like word (`x_@Key`, `a-@Key`) as links, not
+citations, while `-@Key`, `/@Key` and `_@Key` with nothing before them still cite. An `@` inside code (a code span or a code
+block) is never a citation. The page that holds the references is only its heading and an empty
+pandoc div, which the build fills:
+
+```
+# References
+
+::: {#refs}
+:::
+```
+
+Never type a reference entry by hand into that page. A source's authors, title, year and
+identifiers live in its `.bib` entry; where to read it (links, the library copy) lives in the
+sources list (`sources.list`).
 
 ## Two systems
 
@@ -12,7 +55,7 @@ them. Rules 2.7, 2.9 and 2.16 apply.
 | APA | (Author, Year) | social sciences |
 | Chicago notes | superscript numbers with footnotes | humanities |
 | Chicago author-date | (Author Year) | sciences |
-| BibTeX alpha | [Abc99], [ABCD99], [ABC+99] | academic computer science books |
+| BibTeX alpha | [Abc99], [ABCD99], [ABC+99] (written `[@Abc99]`) | academic computer science books |
 
 Practitioner books mix a formal key with narrative mentions woven into the sentence. The key
 says where the idea lives; the narrative carries authority and flow.
@@ -29,8 +72,9 @@ says where the idea lives; the narrative carries authority and flow.
 | F. "As X writes" | "As Doe writes, '...'" | conversational flow around a quotation |
 
 Prefer C and F for flow, B for iconic works, A before a direct quotation. Keep the key with the
-narrative mention: "Doe [Doe19] showed ...". Do not open a sentence with a bare key
-("[Abc99] says ...") and do not mix numbered and narrative citations in one sentence.
+narrative mention: "Doe [@Doe19] showed ...". Do not open a sentence with a key alone
+("[@Abc99] says ..." or "@Abc99 says ..." when the style prints only a label) and do not mix
+numbered and narrative citations in one sentence.
 
 An authority phrase is only worth keeping when the authority carries the claim. Test it by
 removing the name and the phrase ("X showed that"): if the sentence still stands on its data,
@@ -62,7 +106,8 @@ than "argues" and "suggests"; match the verb to the evidence (Rule 4.12).
 
 ## The citation key in print
 
-Set the bracketed key in the body face, roman, at body size. A bracketed mark does not take on
+The build sets the printed mark; these are the rules it follows. Set the bracketed key in the
+body face, roman, at body size. A bracketed mark does not take on
 the formatting of the text around it. Do not italicize it: italic usually means a title, and an
 italic key reads as a title fragment. Do not give keys a font of their own. If keys ever need
 to stand apart, a slightly smaller bracket applied in the build is the smallest change; the
@@ -70,8 +115,9 @@ default is to leave them as body text.
 
 ## Multiple sources
 
-Group keys inside one pair of brackets, separated by commas: "... [Abc99, Def01]". Never write
-adjacent brackets ("[Abc99][Def01]").
+Group keys inside one pair of brackets, separated by semicolons: "... [@Abc99; @Def01]". The
+build prints them as one mark ("[Abc99, Def01]"). Never write adjacent brackets
+("[@Abc99][@Def01]").
 
 ## Representing a position the book disagrees with
 
@@ -89,4 +135,5 @@ legitimate; readers need to know which is which.
 
 O'Reilly style guide; Purdue OWL (in-text citations); *Technical Writing Essentials*
 (referring to authors and titles); Chicago Manual of Style citation guide; IEEE citation guide;
-Butterick, *Typography for Lawyers* (brackets take the formatting of the text outside them).
+Butterick, *Typography for Lawyers* (brackets take the formatting of the text outside them);
+the pandoc manual, "Citation syntax".

@@ -1,14 +1,12 @@
 ---
 name: init
 description: >-
-  Sets up a book or a research paper for the book plugin: in a new folder it writes book.yaml,
-  CLAUDE.md, the folders and the starter files, then checks which outside tools are missing and
-  what each one turns off. Mode new paper writes a paper for arXiv instead (abstract, numbered
-  sections, references, no cover and no sales text), also inside a study folder that already
-  holds code and data. It also sets up a book from any folder that already holds one: it drafts
-  a move plan and moves the files only after the author agrees. Use it to start a new book or
-  paper, or set up a book folder. To check the tools later, use run-checks; for text, sources,
-  editions or cover, use the skill for that job.
+  Sets up a book or a research paper for the book plugin. Mode new writes book.yaml, CLAUDE.md,
+  the folders and the starter files, then checks which outside tools are missing; new paper
+  writes a paper for arXiv (no cover, no sales text), also in a folder that already holds code
+  and data; existing drafts a move plan for a book in any folder and moves the files only after
+  the author agrees. Use it to start a new book or paper or set up a book folder. To check the
+  tools later, use run-checks.
 argument-hint: "[new|new paper|existing] [folder]"
 ---
 
@@ -78,7 +76,7 @@ The new book passes `book_config.py check` with no unknown key and `build-book.s
 --show-settings`. `run-checks.py all` on a new book shows one expected `FIND`: the sync check
 of the selling texts reports `surface-missing` until the author writes `book.description`.
 A check with nothing to read yet says `SKIPPED` with the reason and exits 0: every facts check that needs sources while the source banks hold
-only their `## Entry format` headers and no file cites a `[Key]` (`uncited-claim-check.py` and
+only their `## Entry format` headers, the .bib has no entry and no file cites an `@Key` (`uncited-claim-check.py` and
 `stale-argument-pointer-check.py` read only the book's own text, so they run); `definition-check.py` until the glossary
 has an entry; `term-density-check.py` until `terms.families` is set; Vale when Docker is missing; the cover checks that need a page count until the first build.
 
@@ -127,7 +125,8 @@ procedure and the plan rules: [references/existing.md](references/existing.md).
 2. **Draft the move plan and show it.** Read every file name (open the unclear ones) and write
    a table: file, where it goes, why. Chapters in book order go to `manuscript/NNN-name.md`,
    numbered like the starter book (`110`, `120`, ...). Notes go to `notes/`, copies of sources to
-   `sources/library/`, one list of sources to `sources/list.md`, images to
+   `sources/library/`, a `.bib` file to `sources/references.bib`, one list of sources to
+   `sources/list.md` (after the move it becomes `.bib` entries plus a slim list), images to
    `manuscript/images/`. Anything unclear stays where it is.
 3. **The author edits the table and agrees.** Move nothing before that.
 4. **Move** with plain moves, one row at a time: never change a byte, never delete, never write
@@ -135,7 +134,8 @@ procedure and the plan rules: [references/existing.md](references/existing.md).
 5. **Add what is missing:** `new.py FOLDER` (dry run, show it), then the same with `--fix`. It
    writes only files that do not exist; moved chapters get no starter files beside them.
 6. **Check:** the run-checks skill, `run-checks.py setup`, then `run-checks.py facts` and
-   `run-checks.py text`. Each finding is its own step with the author.
+   `run-checks.py text`. Each finding is its own step with the author; text citations become
+   `[@Key]`, and every source gets its entry in `sources/references.bib`.
 7. **Report** where the backup is, what moved, what stayed, what `new.py` added and what the
    checks found. The author commits.
 

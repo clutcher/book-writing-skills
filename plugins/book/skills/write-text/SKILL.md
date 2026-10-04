@@ -1,11 +1,11 @@
 ---
 name: write-text
 description: >-
-  Writes and rewrites the author's prose, in the manuscript and in the thinking files: plan,
-  draft, show, apply, then the text checks. Holds the prose rules, the voice profile and the
-  text check scripts the other skills use. Use it when the author asks to write, draft, rewrite,
-  polish, fix, tighten or edit book text, or pastes a paragraph of the book with no instruction.
-  To run the text checks on the book, use run-checks; to review prose, use review-text; to
+  Writes and rewrites the author's prose of a book or paper, in the manuscript and in the
+  thinking files: plan, draft, show, apply, then the text checks. Holds the prose rules, the
+  voice profile and the text check scripts the other skills use. Use it when the author asks to
+  write, draft, rewrite, polish, fix, tighten or edit the text, or pastes a paragraph with no
+  instruction. To run the text checks, use run-checks; to review prose, use review-text; to
   answer open notes, use revise-from-notes.
 argument-hint: "[what to write or change]"
 ---
@@ -91,7 +91,7 @@ a person's name (2.7), naming before evidence (1.3).
 2.6. Background concepts: a definition ("X is ...") is enough.
 2.7. Introduce a person before quoting them; full name first, later mentions per the voice profile.
 2.8. Develop with reasoning that explains the examples.
-2.9. Ground claims with references (the book's citation style, e.g. [Abc99]).
+2.9. Ground claims with references (pandoc citations, e.g. [@Abc99]; `references/citing-in-prose.md`).
 2.10. Grounding varies: introductions use narrative, evidence uses facts and quotes, conclusions refer back.
 2.11. Every concept introduced is used later; later sections refer back to it.
 2.12. Content serves its section's topic.

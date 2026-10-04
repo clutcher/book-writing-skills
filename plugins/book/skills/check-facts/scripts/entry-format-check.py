@@ -7,14 +7,18 @@ synonym is invisible to the reader that needs it (a URL filed under `Source link
 URL nothing will fetch). Each bank's `## Entry format` header is the specification; the
 field lists live once, in lib/source_registry.py.
 
+The sources list holds only how to reach a source (Access URLs, Access status, Fetch
+note, Cached text, Cached original, Findings, Note, Record history, Supersedes) under a
+`### [Key]` heading; who wrote it, its title, year, DOI and ISBN live in the .bib
+(sources.bibliography).
+
 Classes (DEFECT unless marked):
-  required            Full title, Authors, Year (sources list only)
+  identity-in-list    a sources list heading that still carries authors, title or year,
+                      or an identity field (Full title, Authors, Year, DOI, ISBN, Venue,
+                      ...) in the sources list: it belongs in the .bib entry
   known-field         the field name is outside this bank's closed vocabulary
   label-colon         a label ends `.**`, or the bold closes before the colon; both
                       read as a field to a person and as prose to every tool
-  doi-shape           DOI holds a bare DOI; DOI/URL holds a URL or a DOI
-  doi-misfiled        a DOI reachable only inside DOI/URL or Venue prose, so nothing
-                      resolves it (entry-format-fix.py moves it; same rule)
   dated-field         a date inside a field name (banks are dateless)
   verdict-field       a judgment about the book as a field name
   superseded          a "this supersedes the earlier entry" marker; correct in place
@@ -23,7 +27,6 @@ Classes (DEFECT unless marked):
   cache-folder        a cache line names the default folder (sources/library) while
                       the book keeps its library in its own folder
                       (entry-format-fix.py rewrites it to sources.library)
-  heading-truncated   the heading's short title is a mid-word cut of Full title
   heading-multi-key   a heading naming two keys hides the second
   entry-order         entries sorted by key, case-insensitively, within a section
   entry-separator     one `---` with a blank line either side before every entry;
@@ -32,7 +35,7 @@ Classes (DEFECT unless marked):
   orphan-cache        cached text with no list entry claiming it
   pointer-path        a `Findings:` / `Source:` pointer names another path than the
                       configured bank (after the bank was moved; entry-format-fix.py rewrites it)
-  unofficial-copy     ADVISORY. A book entry (one with an ISBN) links a file in a person's
+  unofficial-copy     ADVISORY. A book (a .bib entry with an isbn) links a file in a person's
                       GitHub repository or on a shadow-library site. In a public repository
                       that reads as linking to pirated books: link the publisher page or give
                       the ISBN only, and keep the download link in the private backup
@@ -65,18 +68,18 @@ from source_files import (SourceFolders, add_config_arguments, cache_references,
                           tool_failed)
 from check_output import (ADVISORY, DEFECT, INFORMATIONAL, SHARED_CLASSES, CheckReport,
                           add_output_arguments)
+from bibliography import BibliographyError, read_identities
 from citation_key import KEY_SHAPE
-from source_registry import (FIELD_LINE_M, FINDINGS_FIELDS, SOURCE_FIELDS,
-                             SOURCE_REQUIRED, is_findings_bank, read_bank,
-                             separator_defects, show_separator)
+from source_registry import (FIELD_LINE_M, FINDINGS_FIELDS, IDENTITY_FIELDS, IDENTITY_IN_LIST,
+                             SOURCE_FIELDS, is_findings_bank, read_bank, separator_defects,
+                             show_separator)
 
 TOOL = "entry-format-check"
 CLASSES = {
-    "required": DEFECT, "known-field": DEFECT, "label-colon": DEFECT, "doi-shape": DEFECT,
-    "doi-misfiled": SHARED_CLASSES["doi-misfiled"], "dated-field": SHARED_CLASSES["dated-field"],
+    IDENTITY_IN_LIST: SHARED_CLASSES[IDENTITY_IN_LIST], "known-field": DEFECT,
+    "label-colon": DEFECT, "dated-field": SHARED_CLASSES["dated-field"],
     "verdict-field": DEFECT, "superseded": DEFECT, "premature-hash": DEFECT,
-    "cache-pointer": DEFECT, "cache-folder": DEFECT, "heading-truncated": DEFECT,
-    "heading-multi-key": DEFECT, "entry-order": DEFECT, "entry-separator": DEFECT,
+    "cache-pointer": DEFECT, "cache-folder": DEFECT, "heading-multi-key": DEFECT, "entry-order": DEFECT, "entry-separator": DEFECT,
     "field-outside-entry": DEFECT, "orphan-cache": DEFECT, "stale-not-read": INFORMATIONAL,
     "pointer-path": DEFECT, "unofficial-copy": ADVISORY,
 }
@@ -86,7 +89,6 @@ UNOFFICIAL_COPY = re.compile(
     re.I)
 POINTER_PATH = re.compile(r"^see `([^`]+)`\s*$")
 
-REQUIRED = SOURCE_REQUIRED
 KNOWN = SOURCE_FIELDS
 KNOWN_FINDINGS = FINDINGS_FIELDS
 
@@ -95,9 +97,6 @@ DATE_IN_NAME = re.compile(
     re.I,
 )
 VERDICT_WORDS = re.compile(r"\b(verdict|resolved|fix applied|correction|supersedes?|superseded)\b", re.I)
-DOI_SHAPE = re.compile(r"^10\.\d{4,9}/\S+$")
-BARE_DOI = re.compile(r"^(doi:)?10\.\d{4,9}/\S+$", re.I)
-DOI_IN_TEXT = re.compile(r"\b(10\.\d{4,9}/[^\s,;)\]]+)")
 SUPERSEDED_LEAD = re.compile(
     r"^\*\*[^*\n]{0,80}\b(supersedes|superseded|replaces the (prior|previous|earlier))\b",
     re.I | re.M,
@@ -164,13 +163,22 @@ def cache_line_issues(key, values, folders):
     return issues
 
 
-def check(path, folders, quotes_path=None, is_findings=None, pointer_paths=None):
+def book_keys(bibliography_path):
+    return frozenset(key for key, entry in read_identities(bibliography_path).items()
+                     if entry.field("isbn"))
+
+
+def identity_issues(path):
+    return [(entry.key, IDENTITY_IN_LIST, problem)
+            for entry in read_bank(path).entries for problem in entry.identity_problems()]
+
+
+def check(path, folders, quotes_path=None, is_findings=None, pointer_paths=None, books=()):
     issues = []
     pointer_paths = pointer_paths or {}
     if is_findings is None:
         is_findings = is_findings_bank(path)
     known = KNOWN_FINDINGS if is_findings else KNOWN
-    required = () if is_findings else REQUIRED
     with_quotes = frozenset() if is_findings else quoted_keys(quotes_path)
 
     try:
@@ -211,12 +219,8 @@ def check(path, folders, quotes_path=None, is_findings=None, pointer_paths=None)
         if "not a citation key" in block.split("\n")[0].lower():
             continue
 
-        for req in required:
-            if req not in names:
-                issues.append((key, "required", "missing **%s:**" % req))
-
         for name in names:
-            if name in known:
+            if name in known or not is_findings and name in IDENTITY_FIELDS:
                 continue
             if DATE_IN_NAME.search(name):
                 issues.append((key, "dated-field", "field name carries a date: %r" % name))
@@ -224,33 +228,6 @@ def check(path, folders, quotes_path=None, is_findings=None, pointer_paths=None)
                 issues.append((key, "verdict-field", "field name states a verdict: %r" % name))
             else:
                 issues.append((key, "known-field", "unapproved field name: %r -- not in this bank's vocabulary" % name))
-
-        doi = values.get("DOI", "").strip()
-        if doi and not DOI_SHAPE.match(doi):
-            issues.append((key, "doi-shape", "DOI is not a bare DOI: %r" % doi[:60]))
-
-        url = values.get("DOI/URL", "").strip()
-        if url and not re.match(r"https?://", url) and not BARE_DOI.match(url):
-            issues.append((key, "doi-shape", "DOI/URL holds neither URL nor DOI: %r" % url[:60]))
-
-        if not doi:
-            for carrier in ("DOI/URL", "Venue"):
-                buried = DOI_IN_TEXT.search(values.get(carrier, ""))
-                if buried:
-                    issues.append((key, "doi-misfiled",
-                                   "%s holds %s but there is no **DOI:** field" % (carrier, buried.group(1)[:40])))
-                    break
-
-        full_title = values.get("Full title", "").strip()
-        quoted = re.search(r'"([^"]*)"', heading)
-        if full_title and quoted:
-            short = quoted.group(1)
-            stem = short.rstrip()
-            if stem and len(stem) < len(full_title) and full_title.lower().startswith(stem.lower()):
-                following = full_title[len(stem):len(stem) + 1]
-                if short != stem or (following and following not in " :,.;-"):
-                    issues.append((key, "heading-truncated",
-                                   "heading title %r is a mid-word cut of Full title" % short[-40:]))
 
         cached = values.get("Cached text", "")
         if "NOT YET FETCHED" in cached and "sha256" in cached:
@@ -265,8 +242,8 @@ def check(path, folders, quotes_path=None, is_findings=None, pointer_paths=None)
                                    % claim.group(0)))
                     break
 
-        if "ISBN" in values:
-            for name in ("Access URLs", "Cached original", "DOI/URL"):
+        if key in books:
+            for name in ("Access URLs", "Cached original"):
                 found = UNOFFICIAL_COPY.search(values.get(name, ""))
                 if found:
                     issues.append((key, "unofficial-copy",
@@ -287,6 +264,7 @@ def check(path, folders, quotes_path=None, is_findings=None, pointer_paths=None)
                        "blank line either side" % show_separator(written)))
 
     if not is_findings:
+        issues.extend(identity_issues(path))
         issues.extend(orphan_caches(path, folders))
     return issues
 
@@ -313,29 +291,23 @@ FIXTURE_SOURCES = '''# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 
-**Full title:** the title as printed on the work
+**Access URLs:** where the source can be read
 **Findings:** see `sources/quotes.md`
 ```
 
 ---
 
-### [Aaa01] Aaa, "A Field In Its Place" (2001)
+### [Aaa01]
 
-**Full title:** A Field In Its Place
-**Authors:** A. Aaa
-**Year:** 2001
 **Cached text:** `{d}/Aaa01.txt` (fetched 2025-01-01, sha256 abc)
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Bbb02] Bbb, "A Field Past The Separator" (2002)
+### [Bbb02]
 
-**Full title:** A Field Past The Separator
-**Authors:** B. Bbb
-**Year:** 2002
 **Cached text:** `{other}/Bbb02.txt` (fetched 2025-01-01, sha256 abc)
 
 ---
@@ -344,83 +316,65 @@ FIXTURE_SOURCES = '''# Sources List
 
 ---
 
-### [Ccc03] Ccc, "Read, And Recorded As Unread" (2003)
+### [Ccc03]
 
-**Full title:** Read, And Recorded As Unread
-**Authors:** C. Ccc
-**Year:** 2003
 **Note:** Surfaced by a keyword search; the paper was not read.
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Ddd04] Ddd, "Genuinely Unread" (2004)
+### [Ddd04]
 
-**Full title:** Genuinely Unread
-**Authors:** D. Ddd
-**Year:** 2004
 **Note:** Not read; nothing in the book may rest on it.
 **Cached text:** `{d}/Ddd04.txt` (fetched 2025-01-01, sha256 abc)
 
 ---
-### [Eee05] Eee, "Findings Without Quotes" (2005)
+### [Eee05]
 
-**Full title:** Findings Without Quotes
-**Authors:** E. Eee
-**Year:** 2005
 **Note:** Not yet read, so the summary here is the abstract only.
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Fff06] Fff, "Abstract Only Is An Access Limit" (2006)
+### [Fff06]
 
-**Full title:** Abstract Only Is An Access Limit
-**Authors:** F. Fff
-**Year:** 2006
 **Access status:** READABLE (abstract only), a recorded talk with no transcript
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Ggg07] Ggg, "Do Not Read It As Evidence" (2007)
+### [Ggg07]
 
-**Full title:** Do Not Read It As Evidence
-**Authors:** G. Ggg
-**Year:** 2007
 **Note:** The page is an error in the printed book, so do not read it as evidence that the extraction is corrupt.
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Iii09] Iii, "Abstract-Derived Beside Full-Text Quotes" (2009)
+### [Iii09]
 
-**Full title:** Abstract-Derived Beside Full-Text Quotes
-**Authors:** I. Iii
-**Year:** 2009
 **Note:** Surfaced by a keyword search. Abstract-derived (paper-level).
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Jjj10] Jjj, "A Book Linked From Someone's Repository" (2010)
+### [Jjj10]
 
-**Full title:** A Book Linked From Someone's Repository
-**Authors:** J. Jjj
-**Year:** 2010
-**ISBN:** 9780000000002
 **Access URLs:** https://github.com/someone/books/raw/master/a-book.pdf
 **Findings:** see `sources/quotes.md`
 
 ---
 
-### [Kkk11] Kkk, "A Paper The Author Shares Freely" (2011)
+### [Kkk11]
 
-**Full title:** A Paper The Author Shares Freely
-**Authors:** K. Kkk
-**Year:** 2011
 **Access URLs:** https://github.com/kkk/papers/raw/main/paper.pdf
 **Findings:** see `sources/quotes.md`
+
+---
+
+### [Lll12] Lll, "An Entry In The Old Form" (2012)
+
+**Full title:** An Entry In The Old Form
+**Access URLs:** https://example.org/old-form
 
 ---
 '''
@@ -507,6 +461,7 @@ FIXTURE_EXPECTED = {
         ("Ddd04", "cache-pointer"),
         ("Zzz99", "orphan-cache"),
         ("Jjj10", "unofficial-copy"),
+        ("Lll12", "identity-in-list"),
     },
     "quotes.md": {
         ("Hhh08", "field-outside-entry"),
@@ -531,7 +486,8 @@ def self_test():
                              .replace("{other}", other), encoding="utf-8")
         quotes_path.write_text(FIXTURE_FINDINGS, encoding="utf-8")
         found = {
-            "list.md": {(k, r) for k, r, _ in check(list_path, folders, quotes_path, False)},
+            "list.md": {(k, r) for k, r, _ in check(list_path, folders, quotes_path, False,
+                                                    books={"Jjj10"})},
             "quotes.md": {(k, r) for k, r, _ in check(quotes_path, folders, None, True)},
         }
 
@@ -573,6 +529,10 @@ def main():
             targets.append((config.sources.quotes, True))
 
     report = CheckReport(TOOL, CLASSES)
+    try:
+        books = book_keys(config.sources.bibliography)
+    except (OSError, BibliographyError) as error:
+        return tool_failed("cannot read %s: %s" % (config.sources.bibliography, error), TOOL)
     for path, is_findings in targets:
         if args.file and not Path(path).exists():
             return tool_failed("bank not found: %s" % path, TOOL)
@@ -581,7 +541,7 @@ def main():
         label = "quotes" if (is_findings if is_findings is not None else is_findings_bank(path, config)) else "list"
         pointers = {"Findings": shown_path(config.root, config.sources.quotes),
                     "Source": shown_path(config.root, config.sources.list)}
-        for key, rule, detail in check(path, folders, quotes_path, is_findings, pointers):
+        for key, rule, detail in check(path, folders, quotes_path, is_findings, pointers, books):
             report.add(key, rule, "%s: %s" % (label, detail))
     return report.emit(args.format)
 

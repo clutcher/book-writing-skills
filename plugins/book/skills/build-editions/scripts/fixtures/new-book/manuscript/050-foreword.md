@@ -1,3 +1,3 @@
 # Foreword
 
-A short foreword that cites [Smi99].
+A short foreword that cites [@Smi99].

@@ -4,7 +4,7 @@ This is the standard every verdict is graded against. Read it before grading any
 references as if they were strict citations is a common source of false findings, including
 findings graded SIGNIFICANT that later have to be withdrawn.
 
-A `[Key]` in the book is a **reference**. It points a reader to where an idea lives. It is NOT a
+An `@Key` in the book (`[@Key]`) is a **reference**. It points a reader to where an idea lives. It is NOT a
 claim that:
 
 - the source contains the book's exact words;
@@ -43,16 +43,15 @@ claim that:
 
 ## Cite ideas, not credentials
 
-A `[Key]` attaches to an **idea taken from a work**, never to a work named as a credential. "An
+An `@Key` attaches to an **idea taken from a work**, never to a work named as a credential. "An
 author known for a famous series of books applied..." carries the key on the guideline, and the
-famous series stays uncited and out of the bibliography. The bibliography is a set of sources for
-claims, not a reading list: before proposing a new entry, ask what idea it supplies to the
-argument. If the answer is "it shows the author is worth listening to", add nothing. (A credential
-entry would also be the one uncited entry, which `reference-format-check.py --completeness`
-reports.)
+famous series stays uncited and out of the reference list. The reference list is a set of
+sources for claims, not a reading list: before proposing a new citation, ask what idea it
+supplies to the argument. If the answer is "it shows the author is worth listening to", cite
+nothing.
 
 The person-introduction pattern shows the rule: "X was a market gardener whose notes on Y became
-a foundation..." (uncited), then "X tackled this directly in a short field guide [Key]" (cited).
+a foundation..." (uncited), then "X tackled this directly in a short field guide [@Key]" (cited).
 
 **Direct mention or inline reference?** Name the person when their authority matters to the
 sentence; use the bracket alone when the source only supports a claim with evidence. Either way

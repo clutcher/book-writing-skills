@@ -1,13 +1,21 @@
-epub3-template.html and epub3-template.pandoc-default.html
+This licence covers these files and lines, all taken from pandoc
+(https://github.com/jgm/pandoc):
 
-Both files come from pandoc's default epub3 template (pandoc 3.8.3,
-https://github.com/jgm/pandoc, data/templates/default.epub3).
-epub3-template.pandoc-default.html is an unchanged copy; epub3-template.html
-carries three small changes, described in references/epub.md.
+- epub3-template.html and epub3-template.pandoc-default.html, from pandoc's
+  default epub3 template (pandoc 3.8.3, data/templates/default.epub3).
+  epub3-template.pandoc-default.html is an unchanged copy; epub3-template.html
+  carries three small changes, described in references/epub.md.
+- the standard lines in templates/paper-article.tex, templates/paper-acm.tex,
+  templates/paper-ieee.tex and templates/paper-lncs.tex (the package options,
+  the font switch between pdflatex and xelatex, the table, \pandocbounded image
+  and \tightlist definitions, the hypersetup block), from pandoc's default
+  LaTeX template and its partials.
+- a few standard lines in templates/book-template.tex, from pandoc's default
+  LaTeX template.
 
 Pandoc's templates are offered under two licences: the GNU General Public
 License, version 2 or any later version, and the BSD 3-Clause License. These
-two files are used here under the BSD 3-Clause License:
+files and lines are used here under the BSD 3-Clause License:
 
 Copyright (c) John MacFarlane and pandoc contributors
 All rights reserved.

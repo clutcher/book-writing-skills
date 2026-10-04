@@ -122,7 +122,7 @@ python3 "$SCRIPTS/color-check.py"                          # color roles, contra
 python3 "$SCRIPTS/color-check.py" --icc <cmyk-profile.icc> # real conversion, with and without BPC
 python3 "$SCRIPTS/font-check.py"                           # every font the cover asks for is installed
 python3 "$SCRIPTS/layout-check.py"                         # safe area, barcode box, spine text
-python3 "$SCRIPTS/overlay.py"                              # art against the KDP template, overlay image
+python3 "$SCRIPTS/overlay.py"                              # art against the KDP template (--fix: overlay image)
 ```
 
 - `color-check.py` finds every color constant in the design and its base class, changes it,
@@ -140,8 +140,9 @@ python3 "$SCRIPTS/overlay.py"                              # art against the KDP
 - `font-check.py` reads the rendered SVG and asks fontconfig for each family, weight and style.
   A missing font is replaced without an error when rendering, so a PNG is not proof.
 - `overlay.py` picks the KDP template by page count, checks that art and template have the size
-  the formula gives (1 px allowed), that trim and paper in the template name match the book, and
-  writes `wrap-overlay.png`. The overlay is for looking; never upload it. With no template for
+  the formula gives (1 px allowed), that trim and paper in the template name match the book;
+  with `--fix` it also writes `wrap-overlay.png` (run-checks never passes it, so a check run
+  writes nothing). The overlay is for looking; never upload it. With no template for
   the page count it says `SKIPPED` or `template-nearest` and names `kdp-template.py --fix`.
 - All checks follow the plugin's check contract (`${CLAUDE_PLUGIN_ROOT}/lib/check_contract.md`):
   exit 0 clean, 1 defects, 2 the tool failed; `--format tsv|json` for machines.

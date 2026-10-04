@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Join the sources list to the bibliography by key, and keep verdicts out of both banks.
+"""Join the sources list to the .bib by key, and keep verdicts out of both banks.
 
 Reads files, talks to nothing, writes nothing.
 
-The bibliography and the sources list are keyed by citation key and describe the same
-sources. A key spelled one character differently in the two files is not cosmetic:
-every --only-changed run looks a citation up by key, a miss reads as "never
-verified", and the source is fetched and verified again on every run while the entry
-holding its access URLs sits unused.
+The .bib (sources.bibliography) holds who wrote each source and where it appeared; the
+sources list (sources.list) holds how to reach it. Both are keyed by citation key and hold
+the same sources, one entry each. A key spelled one character differently in the two files
+is not cosmetic: every --only-changed run looks a citation up by key, a miss reads as
+"never verified", and the source is fetched and verified again on every run while the
+entry holding its access URLs sits unused.
 
 Classes:
-  near-miss            DEFECT  an unmatched key from each file, 0-2 edits apart once the
-                               `+` and the trailing a/b letter are removed: probably one
-                               source under two names ([ABC+06] vs [ABC06])
-  missing-from-list    DEFECT  cited in the bibliography, no list entry
-  orphan-list-entry    INFORMATIONAL  a list entry nothing cites: often deliberate (a
-                               source checked and not used); say why in its Note
+  near-miss                  DEFECT  an unmatched key from each file, 0-2 edits apart once
+                                     the `+` and the trailing a/b letter are removed:
+                                     probably one source under two names (ABC+06 vs ABC06)
+  missing-from-list          DEFECT  a .bib entry with no sources list entry
+  missing-from-bibliography  DEFECT  a sources list entry with no .bib entry
   --no-verdicts adds, for BOTH banks:
   verdict-field        DEFECT  a field label that IS a verdict (Verdict, Confidence, a bare
                                VERIFIED) or a dated verification claim ("Verified
@@ -42,7 +42,7 @@ rewritten as a block: access data and guardrails stay; only the dated verdict go
 Usage:
   list-bibliography-check.py
   list-bibliography-check.py --no-verdicts
-  list-bibliography-check.py --references <refs.md> --list <list.md> --max-distance 1
+  list-bibliography-check.py --bibliography <refs.bib> --list <list.md> --max-distance 1
   list-bibliography-check.py --self-test
 """
 
@@ -58,16 +58,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 from source_files import add_config_arguments, load_book, tool_failed
 from check_output import (ADVISORY, DEFECT, INFORMATIONAL, CheckReport, add_output_arguments,
                           skipped_for_missing)
-from citation_key import BIB_ENTRY_ANY, ENTRY_HEADING
+from bibliography import BibliographyError, read_bibliography
+from citation_key import ENTRY_HEADING
 from source_registry import is_findings_bank
 
 TOOL = "list-bibliography-check"
 CLASSES = {
-    "near-miss": DEFECT, "missing-from-list": DEFECT, "orphan-list-entry": INFORMATIONAL,
+    "near-miss": DEFECT, "missing-from-list": DEFECT, "missing-from-bibliography": DEFECT,
     "verdict-field": DEFECT, "verdict-in-value": ADVISORY, "misplaced-finding": DEFECT,
 }
 
-BIB_ENTRY_RE = BIB_ENTRY_ANY
 REGISTRY_HEADING_RE = ENTRY_HEADING
 
 FIELD_LABEL_RE = re.compile(r'^\*\*(.+?)\*\*')
@@ -117,6 +117,10 @@ def read_keys(path, pattern):
         if match and match.group(1) not in keys:
             keys[match.group(1)] = number
     return keys
+
+
+def bibliography_keys(path):
+    return {key: entry.line for key, entry in read_bibliography(path).entries.items()}
 
 
 def field_label(line):
@@ -267,11 +271,23 @@ def verdict_items(path, split_banks):
     return items
 
 
-FIXTURE_REFERENCES = """# References
+FIXTURE_BIBLIOGRAPHY = """@article{ABC+06,
+  author = {Adams, A. and Baker, B. and Clark, C. and Davis, D. and Evans, E.},
+  title = {A Paper},
+  year = {2006},
+}
 
-[ABC+06] Adams, A., Baker, B., Clark, C., Davis, D., & Evans, E. (2006). A paper.
-[Smi99] Smith, J. (1999). A book.
-[Jon24] Jones, K. (2024). A post.
+@book{Smi99,
+  author = {Smith, J.},
+  title = {A Book},
+  year = {1999},
+}
+
+@misc{Jon24,
+  author = {Jones, K.},
+  title = {A Post},
+  year = {2024},
+}
 """
 
 FIXTURE_LIST = """# Sources List
@@ -279,30 +295,28 @@ FIXTURE_LIST = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
-**Full title:** the title
+### [<Key>]
+**Access URLs:** where it can be read
 ```
 
 ---
 
-### [ABC06] Adams et al., "A paper" (2006)
+### [ABC06]
 
-**Full title:** A paper
+**Access URLs:** https://example.org/a-paper
 
 ---
 
-### [Smi99] Smith, "A book" (1999)
+### [Smi99]
 
-**Full title:** A book
 **Access status:** READABLE (verified by curl, HTTP 200)
 **Verdict:** VERIFIED
 **Key findings:** the book says what the chapter says it says
 
 ---
 
-### [Old80] Old, "Kept on file" (1980)
+### [Old80]
 
-**Full title:** Kept on file
 **Note:** fix applied to the chapter wording
 
 ---
@@ -312,11 +326,11 @@ FIXTURE_LIST = """# Sources List
 def self_test():
     failures = []
     with tempfile.TemporaryDirectory() as root:
-        refs = Path(root) / "references.md"
+        refs = Path(root) / "references.bib"
         listed = Path(root) / "list.md"
-        refs.write_text(FIXTURE_REFERENCES, encoding="utf-8")
+        refs.write_text(FIXTURE_BIBLIOGRAPHY, encoding="utf-8")
         listed.write_text(FIXTURE_LIST, encoding="utf-8")
-        near, missing, orphans, matched = join(read_keys(refs, BIB_ENTRY_RE),
+        near, missing, orphans, matched = join(bibliography_keys(refs),
                                                read_keys(listed, REGISTRY_HEADING_RE), 2)
         items = {(key, name) for key, name, _m in verdict_items(listed, True)}
     if [(d, a, b) for d, a, b in near] != [(0, "ABC+06", "ABC06")]:
@@ -338,7 +352,7 @@ def main():
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     add_config_arguments(parser)
     add_output_arguments(parser)
-    parser.add_argument('--references', help='the bibliography (default: manuscript.references)')
+    parser.add_argument('--bibliography', help='the .bib file (default: sources.bibliography)')
     parser.add_argument('--list', dest='sources_list', help='the sources list (default: sources.list)')
     parser.add_argument('--quotes', help='the quotes bank (default: sources.quotes)')
     parser.add_argument('--max-distance', type=int, default=2,
@@ -353,28 +367,32 @@ def main():
         return self_test()
 
     config = load_book(args, TOOL)
-    references = args.references or config.manuscript.references
+    references = args.bibliography or config.sources.bibliography
     sources_list = args.sources_list or config.sources.list
     quotes = args.quotes or config.sources.quotes
-    for path, label, given in ((references, 'bibliography', args.references),
+    for path, label, given in ((references, 'bibliography', args.bibliography),
                                (sources_list, 'sources list', args.sources_list)):
         if given and not Path(path).exists():
             return tool_failed('no such file: %s' % path, TOOL)
         if skipped_for_missing(TOOL, path, label, args.format):
             return 0
 
-    bibliography = read_keys(references, BIB_ENTRY_RE)
+    try:
+        bibliography = bibliography_keys(references)
+    except (OSError, BibliographyError) as error:
+        return tool_failed('cannot read %s: %s' % (references, error), TOOL)
     listed = read_keys(sources_list, REGISTRY_HEADING_RE)
     near, missing, orphans, matched = join(bibliography, listed, args.max_distance)
 
     report = CheckReport(TOOL, CLASSES)
     for distance, bib_key, list_key in near:
-        report.add(bib_key, 'near-miss', 'bibliography [%s] line %d <-> list [%s] line %d: %s'
+        report.add(bib_key, 'near-miss', '.bib %s line %d <-> list [%s] line %d: %s'
                    % (bib_key, bibliography[bib_key], list_key, listed[list_key], describe(distance)))
     for key in missing:
-        report.add(key, 'missing-from-list', 'references line %d' % bibliography[key])
+        report.add(key, 'missing-from-list', '.bib line %d: no sources list entry'
+                   % bibliography[key])
     for key in orphans:
-        report.add(key, 'orphan-list-entry', 'list line %d: nothing cites it' % listed[key])
+        report.add(key, 'missing-from-bibliography', 'list line %d: no .bib entry' % listed[key])
     if args.no_verdicts:
         banks = [(sources_list, not args.merged_bank)]
         if quotes and Path(quotes).exists():
@@ -384,7 +402,7 @@ def main():
             for key, name, message in verdict_items(path, split):
                 report.add(key, name, '%s %s' % (Path(path).name, message))
     if args.format == 'text':
-        print('Bibliography entries: %d   List entries: %d   Joined by key: %d\n'
+        print('.bib entries: %d   List entries: %d   Joined by key: %d\n'
               % (len(bibliography), len(listed), len(matched)))
     return report.emit(args.format)
 

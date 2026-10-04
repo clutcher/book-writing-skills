@@ -27,6 +27,7 @@ draft the plan as a table, one row per file or folder:
 | `ideas.txt` | `notes/ideas.txt` | the author's notes |
 | `papers/` | `sources/library/` | copies of sources |
 | `research/reading-list.md` | `sources/list.md` | the list of sources |
+| `research/refs.bib` | `sources/references.bib` | the BibTeX file |
 | `pics/map.png` | `manuscript/images/map.png` | an image in the text |
 | `old-stuff/` | stays | not clear; ask the author |
 
@@ -37,8 +38,9 @@ Rules for the plan:
   `120`, ...), back matter `900`-`999`. The number gives the book order, so ask the author when
   the order is not clear. `name` is short, lower case, words joined by `-`.
 - **Notes** (ideas, to-do lists, reader comments) go to `notes/`.
-- **Sources**: copies of papers, books and web pages go to `sources/library/`. One file that
-  lists the sources goes to `sources/list.md`.
+- **Sources**: copies of papers, books and web pages go to `sources/library/`. A `.bib` file
+  goes to `sources/references.bib`. One file that lists the sources goes to `sources/list.md`;
+  after the move it is split in step 5.
 - **Images** go to `manuscript/images/`.
 - **Anything unclear stays where it is.** Write `stays` and ask. A file that stays is never lost.
 - A file that would have to be split, joined or rewritten moves whole. Changing text is a later
@@ -82,6 +84,19 @@ want.
 Run the run-checks skill: `run-checks.py setup`. Then `run-checks.py facts` and
 `run-checks.py text` show what the moved files still need, for example a source list whose
 entries are not in the entry format yet. Each of these is its own step with the author.
+
+A book that cited its sources in another way needs three changes, each shown to the author
+before it is made:
+
+- **The bibliography.** Every source gets one entry in `sources/references.bib`, whose key is
+  the citation key. A moved `.bib` is kept as it is; a source list without one becomes `.bib`
+  entries: authors, title, year and the other identity fields go there.
+- **A slim list.** `sources/list.md` then keeps only how to reach each source and its library
+  copy (access URLs, access status, notes) under `### [Key]` headings. A heading or field that
+  still holds identity is reported as `identity-in-list`.
+- **The text citations** become pandoc citations: `[Key]` becomes `[@Key]` and `[A, B]` becomes
+  `[@A; @B]`. What is left is reported as `old-citation`, and a references file that still
+  holds entries as `hand-written-references`; its body becomes `::: {#refs}` and `:::`.
 
 ## 6. Report
 

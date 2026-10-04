@@ -523,6 +523,34 @@ class CommandTest(unittest.TestCase):
         self.assertIn('art-size-wrong', other.stdout)
         self.assertIn('template-nearest', other.stdout)
 
+    @unittest.skipUnless(HAS_RENDERER and HAS_IMAGE_TOOL, 'no SVG renderer or ImageMagick')
+    def test_should_write_the_overlay_image_only_when_asked(self):
+        # given
+        templates = self.book / 'templates'
+        templates.mkdir()
+        size = CoverSize(120, 'bw-white', 6, 9)
+        write_blank_png(templates / 'PAPERBACK_6.000x9.000_120_BW_WHITE_en_US.png',
+                        size.width_px * 2, size.height_px * 2)
+        made = run_script('make.py', '--panel', 'wrap', '--no-download', cwd=self.book)
+        overlay = next(self.book.rglob('wrap.png')).with_name('wrap-overlay.png')
+        overlay.unlink(missing_ok=True)
+
+        # when
+        checked = run_script('overlay.py', '--templates', str(templates), '--format', 'tsv',
+                             cwd=self.book)
+        written_after_check = overlay.exists()
+        fixed = run_script('overlay.py', '--templates', str(templates), '--fix',
+                           '--format', 'tsv', cwd=self.book)
+
+        # then
+        self.assertEqual(made.returncode, 0, made.stderr)
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        self.assertIn('overlay-not-written', checked.stdout)
+        self.assertFalse(written_after_check)
+        self.assertEqual(fixed.returncode, 0, fixed.stderr)
+        self.assertIn('overlay-written', fixed.stdout)
+        self.assertTrue(overlay.is_file())
+
     @unittest.skipUnless(HAS_RENDERER, 'no SVG renderer installed')
     def test_should_name_the_download_command_when_no_template_is_there(self):
         # given

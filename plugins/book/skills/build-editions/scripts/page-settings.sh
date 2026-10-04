@@ -206,7 +206,7 @@ EOF
 }
 
 texlive_marker_present() {
-    docker run --rm --entrypoint sh -v "$TEXLIVE_VOLUME:/opt/texlive:ro" "$DOCKER_IMAGE" \
+    docker run --rm --network none --entrypoint sh -v "$TEXLIVE_VOLUME:/opt/texlive:ro" "$DOCKER_IMAGE" \
         -c "test -f $1 && echo yes || echo no" 2>/dev/null
 }
 

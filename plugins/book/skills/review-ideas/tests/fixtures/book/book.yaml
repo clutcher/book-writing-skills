@@ -6,7 +6,7 @@ book:
 readers_review:
   sources_for_reviewer: review-input/sources-for-reviewer.md
   main_metaphor: "the river image in the title"
-  key_sources: ["[Abc20]", "[DE21]"]
+  key_sources: ["@Abc20", "@DE21"]
   similar_books: ["First Comparable Book", "Second Comparable Book"]
   skills_off: ["some-other-writing-skill"]
   lenses:

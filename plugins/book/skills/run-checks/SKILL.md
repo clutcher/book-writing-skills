@@ -23,7 +23,7 @@ check.
 |---|---|---|
 | `all` (default) | "run the checks", "run all the checks on the book" | every group below |
 | `text` | "run the text checks", "run the checks on this chapter" | sentence and paragraph length, connectors, inversions, ASCII, unclear "this", one word for two things, word senses, person introductions, definitions, coined-term density, the glossary, the code font, the open notes, Vale; for a paper also the paper check and the arXiv bundle check |
-| `facts` | "run the citation checks", "run the source checks" | citation keys, the bibliography, the sources list and the quotes bank, the library files; every `[Key]` in the manuscript and the thinking files |
+| `facts` | "run the citation checks", "run the source checks" | citation keys, the bibliography, the sources list and the quotes bank, the library files; every `@Key` in the manuscript and the thinking files |
 | `cover` | "run the cover checks" | colors and contrast, fonts, text placement, the KDP template overlay |
 | `sales-text` | "run the sales-text checks" | the surfaces agree, the store description, the keywords |
 | `setup` | "check the setup", "check my tools" | book.yaml is valid, the decisions index is current, the outside tools are installed |
@@ -40,6 +40,12 @@ Options:
 - `--slow` (facts): also the checks that read every library file (quote-in-file,
   statistic-integrity, scan-origin, scan-marker-sweep). Without it they say SKIPPED.
 - `--fix`: rebuild what is generated (the decisions index).
+
+**The first `facts` run.** `key-bibtex-check.py` (check-facts) runs real BibTeX in Docker. On the
+first run where the `.bib` has entries, a book pulls `tools.bibtex_image` (`blang/latex`, about
+2.65 GB to download, 4.3 GB on disk); a paper uses `tools.paper_tex_image` instead, the image its
+build already needs. Both images are amd64 only, so on Apple Silicon they run under emulation
+and are slower.
 - `--no-vale`, `--no-report`, `--quiet`, `--config FILE`, `--set KEY=VALUE`.
 
 ## Run

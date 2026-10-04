@@ -47,7 +47,8 @@ subagents exactly as it binds the main agent.**
 2. If it is not cached, run `fetch.py --key <Key> --url <URL> --fix`, then read the file it
    wrote. Without `--fix` it only shows what it would fetch.
 3. Return the `**Cached text:**` and `**Cached original:**` lines `fetch.py` printed and filed in
-   the list entry, with the rest of the list data.
+   the list entry, with the rest of the list data. A source that is not yet in the book gets its
+   .bib entry and its list entry first, through `add-source.py` (or staged, for a subagent).
 4. If `fetch.py` rejects the source (`paywalled`, `blocked`, `abstract-only`, `too-short`),
    report that as an attempt outcome, walk the free routes in `fetching.md`, and **never verify
    against the abstract instead**.
@@ -77,7 +78,7 @@ SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/collect-sources/scripts"
 python3 $SCRIPTS/fetch.py --all                                                # dry run: what has a URL, what is cached
 python3 $SCRIPTS/fetch.py --key Smi99 --url https://example.org/paper.pdf --fix  # one source
 python3 $SCRIPTS/fetch.py --key Smi99 --file ~/Downloads/paper.pdf --fix         # a file a person downloaded
-python3 $SCRIPTS/fetch.py --keys Smi99,Jon01 --fix                             # URLs from the list
+python3 $SCRIPTS/fetch.py --keys Smi99,Jon01 --fix                             # URLs from the list and the .bib
 ```
 
 Dry run by default: without `--fix` nothing is downloaded or written. With `--fix` it downloads,
@@ -116,8 +117,9 @@ never fetched: there is no text, and caching a landing page is worse than cachin
 
 ## Keeping the cache out of git: restore and backup
 
-The cache is not in git: it is large, and many files belong to publishers. The list keeps what
-is needed to get each file back, and two scripts do the rest:
+The cache is not in git: it is large, and many files belong to publishers. The list keeps the
+file names, their hashes and the URL each original came from, the .bib file keeps the DOI and
+the ISBN, and two scripts do the rest:
 
 - **`restore.py`** rebuilds missing files after a fresh checkout: first from the private backup
   (exact bytes), then from the network (the `from <URL>` of the Cached original, then the fetch
@@ -135,17 +137,19 @@ fresh checkout. `files-hash-check.py` then confirms the cache lines describe the
 
 - Both banks grow large. **Do not read either whole file into context**: grep them for the keys
   in hand. Read a full bank only for the cross-citation consistency pass and the summary.
-- **Subagents never write a bank.** Each returns three blocks per key it checked: list data
-  (identity, access, the cache lines), quotes data (quotes, findings, scope, guardrails), and the
-  run-report verdict, staged as files in `<run folder>/proposed-entries/list/` and
+- **Subagents never write a bank or the .bib file.** Each returns four blocks per key it
+  checked: the .bib entry (identity: authors, title, year, venue, DOI, ISBN), list data
+  (access and the cache lines, under `### [<Key>]` only), quotes data (quotes, findings, scope,
+  guardrails), and the run-report verdict, staged as files in
+  `<run folder>/proposed-entries/bib/` (`.bib` files), `<run folder>/proposed-entries/list/` and
   `<run folder>/proposed-entries/quotes/`. The run merges them at its end
   (`${CLAUDE_PLUGIN_ROOT}/lib/proposed_entries.py --run <run folder> --fix`), which also prevents write conflicts
   between parallel agents.
-- **After writing, every cited key must have a list entry.** A gap makes the next `--only-changed` run
-  verify the citation from scratch. Run
+- **After writing, every cited key must have a .bib entry and a list entry.** A gap makes the
+  next `--only-changed` run verify the citation from scratch. Run
   `python3 ${CLAUDE_PLUGIN_ROOT}/skills/check-facts/scripts/cited-source-check.py`: it reads the
-  manuscript files and the thinking files the book config names, splits multi-key brackets, accepts
-  a key that starts with a lower-case particle, and reports every cited key with no list entry
-  (`not-in-list`) or with no library copy and no `needed.txt` line (`no-library-copy`). It says
+  pandoc citations (`[@Key]`, `@Key`, `@{Key}`) in the manuscript files and the thinking files
+  the book config names, and reports every cited key with no entry or with no library copy and
+  no `needed.txt` line. It says
   SKIPPED when the book has no sources list, so a wrong folder name cannot pass by reading nothing.
   `list-bibliography-check.py` does the join by key and also finds near-miss pairs.

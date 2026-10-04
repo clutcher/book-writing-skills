@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Compare the bibliography's metadata with independent registries and catalogues.
+"""Compare the metadata of the book's .bib entries with independent registries and catalogues.
+
+Every entry of the bibliography (sources.bibliography, e.g. sources/references.bib) is read
+with its BibTeX fields: author or editor, title, year, journal or booktitle, pages,
+publisher, doi, isbn, url. The script never writes the .bib; a person edits it.
 
 A single registry can be confidently wrong. Crossref is the DOI registry, so it looks
 the most authoritative, but it republishes what the publisher deposited and does not
@@ -14,7 +18,7 @@ accept a DOI as a query); OpenAlex when DBLP has no record. OpenAlex ingests Cro
 so agreement backed only by OpenAlex is weak and is labelled so. A DBLP that answered
 HTTP 500 is reported as unreachable, never as "no record".
 
-Book entries (an italic title right after the year, no URL on the line): Open Library
+Book entries (@book with no doi and no url field): Open Library
 and Google Books, matched on title AND author. They share an upstream (library MARC via
 LoC and OCLC), so their agreement is corroboration, not proof. Google Books needs an
 API key in practice (--google-key or GOOGLE_BOOKS_API_KEY); without one every request
@@ -50,7 +54,7 @@ Set a contact address before running at scale: CROSSREF_CONTACT or --contact
 so a rerun is free; --refresh bypasses.
 
 Usage:
-  metadata-check.py                                   the book's bibliography and list
+  metadata-check.py                                   the book's .bib
   metadata-check.py --only-disagreements
   metadata-check.py --key Smi99
   metadata-check.py --kind book --discover-isbn --json candidates.json
@@ -59,6 +63,7 @@ Usage:
   metadata-check.py --self-test
 
 Exit 0 when it ran (disagreements are ADVISORY: open the source), 2 on a usage error.
+A book with no .bib file says SKIPPED.
 """
 import argparse
 import json
@@ -74,8 +79,8 @@ sys.dont_write_bytecode = True
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 from source_files import add_config_arguments, load_book, tool_cache_folder
-from citation_key import (BIB_ENTRY_ANY, ENTRY_HEADING, is_placeholder,
-                          surnames_from_author_text)
+from bibliography import BibliographyError, parse_bibliography, plain_text, read_bibliography
+from user_agent import USER_AGENT
 
 TOOL = "metadata-check"
 
@@ -86,46 +91,27 @@ CONTACT = os.environ.get("CROSSREF_CONTACT", "")
 def user_agent(contact=None):
     contact = contact or CONTACT
     tail = "; %s" % contact.strip() if contact and contact.strip() else "; no contact set"
-    return "book-plugin-metadata-check/%s (bibliography cross-verification%s)" % (VERSION, tail)
+    return "%s metadata-check/%s (bibliography cross-verification%s)" % (USER_AGENT, VERSION,
+                                                                          tail)
 
 
 UA = user_agent()
 TIMEOUT = 20
+MAX_RESPONSE_BYTES = 10 * 1024 * 1024
+MAX_ERROR_BODY_BYTES = 64 * 1024
 THROTTLE = 1.0
 CACHE_SCHEMA = 4
 
-ENTRY_RE = BIB_ENTRY_ANY
 DOI_RE = re.compile(r"\b(10\.\d{4,9}/[^\s,;\]]+)", re.IGNORECASE)
-URL_RE = re.compile(r"https?://\S+")
-YEAR_RE = re.compile(r"\((\d{4})[a-z]?\)")
-ISBN_RE = re.compile(r"\b(?:ISBN[- ]?(?:1[03])?:?\s*)?((?:97[89][- ]?)?[\d][\d\- ]{8,}[\dXx])\b")
 PAGES_PATTERNS = [
     re.compile(r"pp?\.\s*(\d+)\s*[-–—]\s*(\d+)"),
     re.compile(r"(?:,|\bpp?\.)\s*(\d+)\s*[-–—]\s*(\d+)\s*(?:\.|\)|$)"),
 ]
-COMPOUND_PAGES_RE = re.compile(r"\s*[-–—]\s*\d")
-TITLE_STOP_RE = re.compile(r"\.\s+(?=[A-Z*(]|In\b)")
-
-EDITION_RE = re.compile(
-    r"\b(\d+(?:st|nd|rd|th)\s+ed\.?|(?:revised|anniversary|annotated|"
-    r"expanded|updated|new)\s+ed\.?|ed\.|edition|vol\.?\s*\d+|volume\s+\d+)\b",
-    re.IGNORECASE,
-)
-SERIAL_WORDS_RE = re.compile(
-    r"\b(proceedings|journal|magazine|transactions|review|quarterly|bulletin|"
-    r"lecture notes|newsletter|communications of|conference|symposium|workshop|"
-    r"sigplan|sigmod|annual report)\b",
-    re.IGNORECASE,
-)
-JOURNAL_TAIL_RE = re.compile(r"\*\s*,\s*\d+\s*(?:\([^)]*\))?\s*,\s*(?:pp\.\s*)?\d+")
 
 GREEN, YELLOW, RED, DIM, RESET = "\033[0;32m", "\033[0;33m", "\033[0;31m", "\033[0;36m", "\033[0m"
 
 NETWORK_ERROR = "__network_error__"
 QUOTA_ERROR = "__quota_error__"
-
-NOT_PUBLISHER_RE = re.compile(
-    r"^(?:ISBN|First published|Originally published|Reprinted|Published|Printed)\b", re.I)
 
 ARTICLE_FIELDS = ("year", "pages", "venue", "title")
 BOOK_FIELDS = ("year", "publisher", "title")
@@ -153,13 +139,17 @@ class Fetcher:
         self.requests += 1
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as response:
-                return json.loads(response.read().decode("utf-8", "replace"))
+                body = response.read(MAX_RESPONSE_BYTES + 1)
+            if len(body) > MAX_RESPONSE_BYTES:
+                self.errors += 1
+                return NETWORK_ERROR
+            return json.loads(body.decode("utf-8", "replace"))
         except urllib.error.HTTPError as exc:
             if exc.code in (400, 404):
                 return None
             if exc.code == 429:
                 try:
-                    body = exc.read().decode("utf-8", "replace")
+                    body = exc.read(MAX_ERROR_BODY_BYTES).decode("utf-8", "replace")
                 except (OSError, ValueError):
                     body = ""
                 if "quota" in body.lower():
@@ -196,10 +186,6 @@ def extract_doi(text):
     return doi or None
 
 
-def strip_locators(text):
-    return DOI_RE.sub(" ", URL_RE.sub(" ", text))
-
-
 def normalize_pages(value):
     if value is None:
         return None
@@ -222,16 +208,6 @@ def normalize_pages(value):
     return match.group(1) if match else None
 
 
-def parse_pages_from_entry(text):
-    for pattern in PAGES_PATTERNS:
-        match = pattern.search(text)
-        if match:
-            if COMPOUND_PAGES_RE.match(text[match.end():]):
-                return None
-            return "%s-%s" % (match.group(1), match.group(2))
-    return None
-
-
 def page_bounds(value):
     if not value:
         return None, None
@@ -248,18 +224,6 @@ def compare_pages(values):
     starts = {start for start, _ in bounds if start}
     ends = {end for _, end in bounds if end}
     return len(starts) > 1 or len(ends) > 1
-
-
-def parse_title(text):
-    match = YEAR_RE.search(text)
-    tail = text[match.end():].lstrip(". ") if match else text
-    italic = re.match(r"\*([^*]+)\*", tail)
-    if italic:
-        return italic.group(1).strip().rstrip(".")
-    tail = tail.split("*", 1)[0]
-    stop = TITLE_STOP_RE.search(tail)
-    title = tail[: stop.start()] if stop else tail
-    return title.strip().strip("*").rstrip(".") or None
 
 
 def normalize_venue(value):
@@ -476,15 +440,6 @@ def publisher_matches(book_value, candidates):
     return False
 
 
-def parse_surnames(text):
-    names, _flags = surnames_from_author_text(text)
-    if names:
-        return names
-    corporate = re.sub(r"[^\w&\s\-]", " ", text).strip()
-    corporate = re.sub(r"\s+", " ", corporate)
-    return [corporate] if corporate else []
-
-
 def author_matches(surnames, candidates):
     wanted = {normalize_title(name) for name in surnames}
     wanted = {name for name in wanted if name}
@@ -530,136 +485,47 @@ def title_matches(book_title, candidate_title, candidate_subtitle=None):
     return False
 
 
-def parse_book_entry(key, raw):
-    year_match = YEAR_RE.search(raw)
-    if not year_match:
-        return None
-    if URL_RE.search(raw):
-        return None
-    authors = raw[: year_match.start()].strip().rstrip(",").strip()
-    tail = raw[year_match.end():].lstrip(". ")
-    if not tail.startswith("*"):
-        return None
-    italic = re.match(r"\*([^*]+)\*", tail)
-    if not italic:
-        return None
-    title = italic.group(1).strip().rstrip(".")
-    if SERIAL_WORDS_RE.search(title) or JOURNAL_TAIL_RE.search(tail[italic.start():]):
-        return None
-    rest = tail[italic.end():]
-    if re.search(r"\b\d+\s*\(\d+\)", rest) or re.search(r"\bpp\.\s*\d+", rest):
-        return None
-    publisher = None
-    for chunk in reversed([c.strip() for c in rest.split(".") if c.strip()]):
-        cleaned = EDITION_RE.sub("", chunk).strip(" ,()")
-        if not cleaned or re.match(r"^[\d\s,()-]+$", cleaned) or NOT_PUBLISHER_RE.match(cleaned):
-            continue
-        publisher = cleaned
-        break
-    isbn = ISBN_RE.search(rest)
-    return {
-        "key": key,
-        "raw": raw,
-        "kind": "book",
-        "doi": None,
-        "title": title,
-        "authors": parse_surnames(authors),
-        "year": year_match.group(1),
-        "publisher": publisher,
-        "isbn": re.sub(r"[^\dXx]", "", isbn.group(1)) if isbn else None,
+BOOK_TYPES = ("book",)
+
+
+def bibliography_entries(path):
+    return [entry_from_bib(entry) for entry in read_bibliography(path).entries.values()]
+
+
+def bibliography_from_text(text):
+    return [entry_from_bib(entry) for entry in parse_bibliography(text).entries.values()]
+
+
+def entry_from_bib(bib):
+    doi = extract_doi(bib.field("doi") or "")
+    common = {
+        "key": bib.key,
+        "title": bib.plain("title") or None,
+        "authors": entry_surnames(bib),
+        "year": four_digit_year(bib.field("year")),
         "from_bibliography": True,
     }
+    if doi:
+        return {**common, "kind": "doi", "doi": doi,
+                "pages": normalize_pages(re.sub(r"-+", "-", bib.plain("pages"))),
+                "venue": bib.plain("journal", "booktitle") or None}
+    if bib.entry_type in BOOK_TYPES and not bib.field("url"):
+        isbn = re.sub(r"[^\dXx]", "", bib.plain("isbn"))
+        return {**common, "kind": "book", "doi": None,
+                "publisher": bib.plain("publisher") or None,
+                "isbn": isbn if len(isbn) in (10, 13) else None}
+    return {**common, "kind": "other", "doi": None}
 
 
-def parse_references(path):
-    entries = []
-    with open(path, encoding="utf-8") as handle:
-        for line in handle:
-            match = ENTRY_RE.match(line.strip())
-            if not match:
-                continue
-            key, rest = match.group(1), match.group(2)
-            doi = extract_doi(rest)
-            if doi:
-                clean = strip_locators(rest)
-                year = YEAR_RE.search(clean)
-                entries.append({
-                    "key": key,
-                    "raw": rest,
-                    "kind": "doi",
-                    "doi": doi,
-                    "year": year.group(1) if year else None,
-                    "pages": parse_pages_from_entry(clean),
-                    "venue": None,
-                    "title": parse_title(clean),
-                    "from_bibliography": True,
-                })
-                continue
-            book = parse_book_entry(key, rest)
-            entries.append(book if book else {
-                "key": key, "raw": rest, "kind": "other", "doi": None,
-                "from_bibliography": True,
-            })
-    return entries
+def entry_surnames(bib):
+    names = bib.authors or bib.editors
+    return [plain_text(name.last) if name.corporate else name.surname
+            for name in names if not name.others and (name.last or name.von)]
 
 
-REGISTRY_HEADING_RE = ENTRY_HEADING
-REGISTRY_FIELD_RE = re.compile(r"^\*\*([^:*]+):\*\*\s*(.*)$")
-
-
-def parse_registry(path):
-    records, key = {}, None
-    with open(path, encoding="utf-8") as handle:
-        for line in handle:
-            heading = REGISTRY_HEADING_RE.match(line)
-            if heading:
-                key = heading.group(1)
-                records.setdefault(key, {"doi": None, "isbn": None, "title": None})
-                continue
-            if not key:
-                continue
-            field = REGISTRY_FIELD_RE.match(line.strip())
-            if not field:
-                continue
-            name, value = field.group(1).strip().lower(), field.group(2).strip()
-            record = records[key]
-            if name == "full title" and not record["title"]:
-                record["title"] = value
-            if not record["doi"]:
-                record["doi"] = extract_doi(value)
-            if not record["isbn"]:
-                found = ISBN_RE.search(value)
-                if found and ("isbn" in name or "isbn" in value.lower()):
-                    digits = re.sub(r"[^\dXx]", "", found.group(1))
-                    if len(digits) in (10, 13):
-                        record["isbn"] = digits
-    return records
-
-
-def merge_registry(entries, records):
-    for entry in entries:
-        record = records.get(entry["key"])
-        if not record:
-            continue
-        if entry["kind"] == "book":
-            if not entry.get("isbn") and record["isbn"]:
-                entry["isbn"] = record["isbn"]
-                entry["isbn_from"] = "registry"
-            continue
-        if entry["kind"] == "doi" or not record["doi"]:
-            continue
-        clean = strip_locators(entry["raw"])
-        year = YEAR_RE.search(clean)
-        entry.update({
-            "kind": "doi",
-            "doi": record["doi"],
-            "doi_from": "registry",
-            "year": year.group(1) if year else None,
-            "pages": parse_pages_from_entry(clean),
-            "venue": None,
-            "title": parse_title(clean),
-        })
-    return entries
+def four_digit_year(value):
+    found = re.search(r"\d{4}", plain_text(value or ""))
+    return found.group(0) if found else None
 
 
 def crossref_title(message):
@@ -1126,15 +992,9 @@ def build_parser():
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     add_config_arguments(parser)
-    parser.add_argument("--references",
-                        help="bibliography file with [Key] entries (default: "
-                             "manuscript.references when no other input is given)")
-    parser.add_argument(
-        "--list", dest="registry", metavar="FILE",
-        help="sources list to borrow identifiers from (default: sources.list with "
-             "the book's bibliography). DOIs and ISBNs recorded there are attached to "
-             "the matching bibliography entry.",
-    )
+    parser.add_argument("--bibliography", metavar="FILE",
+                        help="the .bib file to check (default: sources.bibliography when no "
+                             "other input is given)")
     parser.add_argument(
         "--doi", action="append", metavar="DOI",
         help="check ad-hoc DOIs; repeatable and/or comma-separated. Any string "
@@ -1154,7 +1014,7 @@ def build_parser():
         help="'-' reads DOIs from stdin, same free format as --doi-list. "
              "Piped input is picked up automatically when no other source is given.",
     )
-    parser.add_argument("--key", help="check a single citation key (needs --references)")
+    parser.add_argument("--key", help="check a single citation key (needs the bibliography)")
     parser.add_argument(
         "--kind", choices=("all", "doi", "book"), default="all",
         help="which bibliography entries to check (default: all)",
@@ -1218,18 +1078,17 @@ def collect_entries(args, parser):
             seen_book.add(ident)
         entries.append(entry)
 
-    if args.references:
-        if not Path(args.references).exists():
-            parser.error("no such file: %s" % args.references)
-        found = parse_references(args.references)
-        if args.registry:
-            if not Path(args.registry).exists():
-                parser.error("no such file: %s" % args.registry)
-            found = merge_registry(found, parse_registry(args.registry))
+    if args.bibliography:
+        if not Path(args.bibliography).exists():
+            parser.error("no such file: %s" % args.bibliography)
+        try:
+            found = bibliography_entries(args.bibliography)
+        except BibliographyError as error:
+            parser.error("cannot read %s: %s" % (args.bibliography, error))
         if args.key:
             found = [e for e in found if e["key"] == args.key]
             if not found:
-                parser.error("key %s not found in %s" % (args.key, args.references))
+                parser.error("key %s not found in %s" % (args.key, args.bibliography))
         for entry in found:
             if args.kind != "all" and entry["kind"] not in (args.kind, "other"):
                 continue
@@ -1265,7 +1124,7 @@ def collect_entries(args, parser):
         for doi in dois:
             add(adhoc_entry(doi))
 
-    explicit = bool(args.references or args.doi or args.doi_list
+    explicit = bool(args.bibliography or args.doi or args.doi_list
                     or args.isbn or args.stdin_flag)
     use_stdin = bool(args.stdin_flag) or (not explicit and not sys.stdin.isatty())
     if use_stdin:
@@ -1595,16 +1454,28 @@ def self_test():
           "the catalogue dropped the subtitle")
     check(title_matches("Working Soil", "Working Soil in 30 Minutes"), False,
           "a longer catalogue title is a different book")
-    book = parse_book_entry(
-        "Smi08", "Smith, J. (2008). *A Book About Things*. 2nd ed. Example Press. "
-                 "First published 2001. ISBN 9780000000002.")
-    check(book and book["publisher"], "Example Press",
-          "the ISBN statement and the first-published date are not the publisher")
-    check(book and book["isbn"], "9780000000002", "the ISBN is read")
-    check(parse_book_entry("Jon09", "Jones, R. (2009). An Article. *A Journal*, 3(2), 1-9."),
-          None, "a journal article is not a book")
-    check(parse_book_entry("Org17", "Acme. (2017). *A Report*. https://example.org/r.pdf"),
-          None, "a book-shaped line with a URL is a report")
+    sample = bibliography_from_text(
+        "@book{Smi08,\n  author = {Smith, Jan},\n  title = {A Book About {Things}},\n"
+        "  edition = {2},\n  publisher = {Example Press},\n  year = {2008},\n"
+        "  origdate = {2001},\n  isbn = {978-0-00-000000-2},\n}\n\n"
+        "@article{Jon09,\n  author = {Jones, Rae and Lee, Kim},\n  title = {An Article},\n"
+        "  journal = {A Journal},\n  volume = {3},\n  pages = {1--9},\n  year = {2009},\n"
+        "  doi = {10.1234/xyz.9},\n}\n\n"
+        "@book{Acm17,\n  author = {{Acme Example Group}},\n  title = {A Report},\n"
+        "  year = {2017},\n  url = {https://example.org/r.pdf},\n}\n")
+    book, article, report = sample
+    check(book["kind"], "book", "a @book with no doi and no url is a book")
+    check(book["publisher"], "Example Press", "the publisher comes from its own field")
+    check(book["isbn"], "9780000000002", "the ISBN is read without its hyphens")
+    check(book["title"], "A Book About Things", "braces are dropped from the title")
+    check(book["year"], "2008", "the year of the printing read, not origdate")
+    check(book["authors"], ["Smith"], "the surname of the author")
+    check(article["kind"], "doi", "an entry with a doi is checked by its DOI")
+    check(article["pages"], "1-9", "BibTeX page ranges are read")
+    check(article["venue"], "A Journal", "the journal is the venue")
+    check(article["authors"], ["Jones", "Lee"], "every author surname")
+    check(report["kind"], "other", "a book-shaped entry with a url is a report")
+    check(report["authors"], ["Acme Example Group"], "a corporate author keeps its words")
     for line in failures:
         print("FAIL %s" % line)
     print("self-test: %s" % ("PASS" if not failures else "%d failure(s)" % len(failures)))
@@ -1621,21 +1492,24 @@ def main():
     if args.self_test:
         return self_test()
     config = None
-    no_input = not (args.references or args.doi or args.doi_list or args.isbn
+    no_input = not (args.bibliography or args.doi or args.doi_list or args.isbn
                     or args.stdin_flag) and sys.stdin.isatty()
-    if no_input or args.references or not args.cache:
+    if no_input or args.bibliography or not args.cache:
         config = load_book(args, TOOL)
     if no_input:
-        args.references = str(config.manuscript.references)
-        args.registry = args.registry or (str(config.sources.list) if config.sources.list else None)
+        bibliography = config.sources.bibliography
+        if not bibliography or not Path(bibliography).is_file():
+            print("SKIPPED the book has no bibliography (%s)" % bibliography)
+            return 0
+        args.bibliography = str(bibliography)
     if not args.cache:
         args.cache = str(default_cache_folder(config))
 
     if args.stdin_flag not in (None, "-"):
         parser.error("unexpected argument %r (use '-' to read DOIs from stdin)"
                      % args.stdin_flag)
-    if args.key and not args.references:
-        parser.error("--key needs --references")
+    if args.key and not args.bibliography:
+        parser.error("--key needs the bibliography")
 
     valid_fields = set(ARTICLE_FIELDS) | set(BOOK_FIELDS)
     fields = [f.strip() for f in args.compare.split(",") if f.strip()]
@@ -1650,7 +1524,7 @@ def main():
 
     entries, skipped_lines, have_input = collect_entries(args, parser)
     if not have_input:
-        parser.error("need --references, --doi, --isbn, --doi-list, or DOIs piped on stdin")
+        parser.error("need --bibliography, --doi, --isbn, --doi-list, or DOIs piped on stdin")
 
     if not entries:
         print("No checkable entries found in the input.")

@@ -10,4 +10,6 @@ manuscript:
 rules:
   glossary: meta/terms.md
   decisions: meta/choices.md
+sources:
+  bibliography: meta/sources.bib
 work: state

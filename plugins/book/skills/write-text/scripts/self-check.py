@@ -11,6 +11,7 @@ SCRIPTS = Path(__file__).resolve().parent
 SKILL = SCRIPTS.parent
 PLUGIN = SKILL.parents[1]
 REPOSITORY = SKILL.parents[3]
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(PLUGIN / "lib"))
 
 from command_runs import python_command, run_command
@@ -19,7 +20,7 @@ from vale_settings import ValeSettings
 TIME_LIMIT = 600
 TEXT_SUFFIXES = {".md", ".py", ".sh", ".yaml"}
 RUNNERS_WITHOUT_SELF_TEST = {"vale-run.py", "vale-sync.py"}
-SCRIPTS_OF_OTHER_PLACES = {"reference-format-check.py", "reference-sort.py", "book_config.py",
+SCRIPTS_OF_OTHER_PLACES = {"book_config.py", "bibliography.py", "citations.py",
                            "decisions.py", "citation_key.py"}
 BOOK_FILE_NAMES = re.compile(r"^(decisions|CLAUDE|SKILL|voice|glossary|list|quotes|"
                              r"hard-words-summary|hard-words-ch\w+|check_contract|"

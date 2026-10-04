@@ -25,6 +25,7 @@ SHARED_CLASSES = {
     "txt-not-from-pdf": DEFECT,
     "moving-target": DEFECT,
     "org-or-unparsed": INFORMATIONAL,
+    "identity-in-list": DEFECT,
 }
 
 

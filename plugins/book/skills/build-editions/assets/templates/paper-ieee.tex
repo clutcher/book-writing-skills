@@ -1,6 +1,9 @@
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
 \documentclass[conference,$if(papersize)$$papersize$$else$a4$endif$paper]{IEEEtran}
+$if(anonymous)$
+\ifdefined\pdfsuppressptexinfo\pdfsuppressptexinfo=-1\fi
+$endif$
 
 \usepackage{iftex}
 \ifPDFTeX

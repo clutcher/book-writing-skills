@@ -21,7 +21,7 @@ A finding that cannot be reproduced is overturned, however confident the earlier
    verifier subagent per group; run the groups in parallel.
 3. Give each verifier only: the accusation in one or two sentences (in its own words, not
    Stage 2's argument), its chapter and section, the paths of the manuscript files, the
-   bibliography, and the read-only source paths (`sources.library`, `sources.list`,
+   bibliography (the book's `.bib` file, `sources.bibliography`), and the read-only source paths (`sources.library`, `sources.list`,
    `sources.quotes` from the book's config). Never give it `stage-1-map.md`,
    `stage-2-attack.md` or `stage-3-judge.md`, and never the book's notes or plans. The book is
    judged as it stands.
@@ -53,7 +53,7 @@ something. Reconciliation across chapters is common.
 Use the book's cached sources before any web search, read-only:
 
 - cached files: `sources.library` (`<Key>.txt`, `.pdf`, `.html`)
-- identity and access of each source: `sources.list`
+- identity of each source (authors, title, year, DOI): the `.bib` file `sources.bibliography`; where to read it: `sources.list`
 - what each source says, as verbatim quotes with scope and guardrails: `sources.quotes`. A
   guardrail there is evidence, never authority: where it and the source disagree, the source wins.
 

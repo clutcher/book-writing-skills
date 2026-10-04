@@ -21,7 +21,7 @@ You are not checking writing style or prose quality. You are evaluating the **tr
 
 ## What You Read
 
-1. The entire manuscript: every manuscript file in the order the run gives you, plus the bibliography
+1. The entire manuscript: every manuscript file in the order the run gives you, plus the bibliography (the book's `.bib` file)
 2. Stage 1 output: `stage-1-map.md` and all files in `artifacts/`, including `citation-report.md` and `glossary-report.md`
 
 Read the manuscript fresh, cover to cover. Use Stage 1's extraction as a reference map, but form your own judgments. If Stage 1 missed something, note it.

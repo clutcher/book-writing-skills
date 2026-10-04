@@ -24,7 +24,7 @@ This table is the only description of the folders; no folder holds a README or i
 | `rules/glossary.md` | The terms the book defines, with their canonical wording |
 | `rules/voice.md` | The author's voice, when wanted |
 | `rules/vale/` | `vale.ini`, the book's own Vale rules, and `config/vocabularies/Book/` (accepted and rejected spellings) |
-| `sources/` | `sources/list.md` (who wrote what, where to get it), `sources/quotes.md` (what each source says), `sources/library-index/` (one record per library file); `sources/library/` holds the copies and is kept out of git |
+| `sources/` | `sources/references.bib` (who wrote what, in BibTeX; cite a source as `[@Key]`), `sources/list.md` (where to get it), `sources/quotes.md` (what each source says), `sources/library-index/` (one record per library file); `sources/library/` holds the copies and is kept out of git |
 | `publishing/cover/` | `design.py` (the cover artwork), `font-widths/` and `final/` (the files that ship to the printer and the stores) |
 | `publishing/sales-text/` | Back-cover text, store descriptions, keywords and categories, intended impression |
 | `notes/` | Open notes only, one file per manuscript file, plus `whole-book.md` |

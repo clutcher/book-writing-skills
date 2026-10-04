@@ -5,7 +5,8 @@ from pathlib import Path
 PLUGIN = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PLUGIN / "lib"))
 
-from citation_key import BIB_ENTRY_ANY, ENTRY_HEADING
+from bibliography import BibliographyError, read_bibliography
+from citation_key import ENTRY_HEADING
 from manuscript_text import cited_keys, prose_lines
 from source_files import thinking_paths
 
@@ -59,11 +60,11 @@ def page_count(config):
 COVER_DESIGN = feature("cover.design", "cover design")
 RENDERED_WRAP = feature("cover.output", "rendered cover (design-cover make)", "png/wrap.png")
 GLOSSARY = feature("rules.glossary", "glossary")
-BIBLIOGRAPHY = feature("manuscript.references", "bibliography")
+BIBLIOGRAPHY = feature("sources.bibliography", "bibliography")
 SOURCES_LIST = feature("sources.list", "sources list")
 QUOTES = feature("sources.quotes", "quotes bank")
-NO_SOURCES_YET = ("no sources yet: the sources list and the bibliography have no entry, and no "
-                  "manuscript or thinking file cites a [Key]")
+NO_SOURCES_YET = ("no sources yet: the sources list and the .bib have no entry, and no "
+                  "manuscript or thinking file cites an @Key")
 
 
 def prose_of(path):
@@ -85,11 +86,19 @@ def thinking_files(config):
     return "the book has no thinking files"
 
 
+def bibliography_has_entries(path):
+    if not path or not Path(path).is_file():
+        return False
+    try:
+        return bool(read_bibliography(path).keys)
+    except (OSError, BibliographyError):
+        return True
+
+
 def sources_in_use(config):
     if any(ENTRY_HEADING.match(line) for line in prose_of(config.get("sources.list", None) or "")):
         return None
-    references = config.get("manuscript.references", None)
-    if references and any(BIB_ENTRY_ANY.match(line) for line in prose_of(references)):
+    if bibliography_has_entries(config.get("sources.bibliography", None)):
         return None
     folders = (config.get("manuscript.dir", None), config.get("thinking.dir", None),
                config.get("thinking.argument", None))
@@ -98,6 +107,7 @@ def sources_in_use(config):
             if any(cited_keys(line) for line in prose_of(path)):
                 return None
     return NO_SOURCES_YET
+
 
 def a_paper(config):
     return None if config.is_paper else "a book has no arXiv bundle; this check is for a paper"
@@ -173,18 +183,15 @@ CHECKS = (
     facts_check("entry-format-check.py", needs=(QUOTES,)),
     facts_check("entry-format-fix.py", graded=False, needs=(QUOTES,)),
     facts_check("list-quotes-join-check.py", needs=(QUOTES,)),
-    facts_check("key-authors-check.py"),
     facts_check("list-bibliography-check.py", "--no-verdicts", needs=(BIBLIOGRAPHY, QUOTES)),
     facts_check("citation-key-check.py", needs=(BIBLIOGRAPHY,)),
     facts_check("key-bibtex-check.py", needs=(BIBLIOGRAPHY,)),
     facts_check("reference-format-check.py", needs=(BIBLIOGRAPHY,)),
-    facts_check("reference-format-check.py", "--completeness", needs=(BIBLIOGRAPHY,)),
-    facts_check("reference-sort.py", needs=(BIBLIOGRAPHY,)),
+    facts_check("reference-format-check.py", "--titles", needs=(BIBLIOGRAPHY,)),
     facts_check("edition-duplicate-check.py", needs=(BIBLIOGRAPHY,)),
     facts_check("guardrail-prose-check.py", needs=(QUOTES,)),
     manuscript_facts_check("uncited-claim-check.py"),
     manuscript_facts_check("stale-argument-pointer-check.py", needs=(thinking_files,)),
-    facts_check("argument-key-check.py", needs=(BIBLIOGRAPHY, thinking_files)),
     facts_check("files-hash-check.py", skill="collect-sources"),
     facts_check("ocr-marker-check.py", skill="collect-sources", needs=(QUOTES,)),
     facts_check("duplicate-source-check.py", skill="collect-sources"),

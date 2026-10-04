@@ -6,6 +6,8 @@ Your book keeps one config file, `book.yaml`, next to its text. Every skill read
 
 **Status:** early 0.x. Names, modes and config keys may still change. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
+**How it is made:** Claude Code writes and maintains every skill, script and document in this repository. No person reviews the code before a release.
+
 ## Install
 
 ```
@@ -74,14 +76,16 @@ The reviews (review-text, review-ideas, check-facts, and the review modes of des
 - A **non-fiction** book, or a research paper (`kind: paper`).
 - **English** prose for the prose checks. A book in another language still builds, but the English-only checks say `SKIPPED`.
 - A **Markdown** manuscript, one file per chapter (or per paper section), named `NNN-name.md`.
-- Citation keys in the **alpha BibTeX style**, such as `[Abc99]`.
+- Sources in a **BibTeX** file (`sources/references.bib`), cited in the text the pandoc way: `[@Abc99]`, `[@Abc99; @Def01, p. 12]`. Keys follow the **alpha BibTeX style**, and the reference list is built from the `.bib`, in an APA-like alpha style (`[Abc99]`) or a numeric one (`[1]`).
 - **KDP and Amazon** as the print and store target (cover geometry, store description, keywords).
 - An opinionated **house style**: plain A2 English, ASCII punctuation (Latin letters with accents are allowed), no bold in running text, no phrase wrapped in a pair of dashes. The rules live in the write-text skill, and your own voice profile (`rules/voice.md`) can change many of them.
 
 ## Cost and the first run
 
 - **Tokens.** `review-ideas` (above all its `readers` mode), `check-facts`, the review of `design-cover` and the review of `prepare-sales-text` start many subagents, and many of them read the whole book. That costs many tokens. Each of these skills says how big a run is and asks before it starts a batch.
-- **The first build.** The first `/book:build-editions` downloads the `pandoc/extra` Docker image and fills a TeX Live volume. That is large and takes minutes, but it happens once. The first build of a paper also downloads full TeX Live 2025 (`tools.paper_tex_image`, 2.6 GB), the TeX that arXiv compiles with.
+- **The first build.** The first `/book:build-editions` downloads the `pandoc/extra` Docker image and fills a TeX Live volume. That is large and takes minutes, but it happens once. The first build of a paper also downloads full TeX Live 2025 (`tools.paper_tex_image`, about 2.6 GB to download and 5.5 GB on disk), the TeX that arXiv compiles with.
+- **The first citation check.** `key-bibtex-check.py` runs real BibTeX. On the first `/book:run-checks facts` (or `all`) with entries in the `.bib`, a book downloads `tools.bibtex_image` (`blang/latex`, about 2.65 GB to download and 4.3 GB on disk); a paper uses `tools.paper_tex_image` instead, so it pulls one image.
+- **Apple Silicon.** Both TeX images are amd64 only. On an Apple Silicon Mac, Docker runs them under emulation, which works but is slower.
 
 ## Permission prompts
 
@@ -134,7 +138,8 @@ rules/decisions.md       settled and open decisions
 rules/glossary.md        the terms the book defines
 rules/voice.md           your voice profile
 rules/vale/              the Vale config and the book's own style rules and word lists
-sources/list.md          who wrote what, and where to get it
+sources/references.bib   one BibTeX entry per source; its key is the citation key
+sources/list.md          how to reach each source and its library copy
 sources/quotes.md        what each source says
 sources/library-index/   how each library file was fetched and read
 sources/library/         the copies of the sources, kept out of git
@@ -168,7 +173,8 @@ A few files come from other projects and keep their own licences:
 
 - `build-editions/assets/epub3-template*.html`: pandoc templates, BSD 3-Clause (see `epub3-template-LICENSE.txt` next to them);
 - the JetBrains Mono fonts in `build-editions/assets/fonts/`: SIL Open Font License 1.1 (see `OFL.txt`; the same text is also inside `epub.css`);
-- a few standard lines from pandoc's LaTeX template in `book-template.tex`: BSD 3-Clause.
+- a few standard lines from pandoc's LaTeX template in `book-template.tex` and in the paper templates `paper-*.tex`: BSD 3-Clause;
+- `build-editions/assets/csl/numeric.csl`: the IEEE style of the Citation Style Language project (https://citationstyles.org/), changed, under Creative Commons Attribution-ShareAlike 3.0 (CC BY-SA 3.0). Share-alike: a changed copy of this file must keep the same licence.
 
 The full list: [plugins/book/THIRD-PARTY.md](plugins/book/THIRD-PARTY.md).
 

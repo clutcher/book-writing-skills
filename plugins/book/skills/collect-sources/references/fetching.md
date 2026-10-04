@@ -8,9 +8,11 @@ not confirmed. Every source found is fetched into the cache with `fetch.py`.
 
 1. **The cache.** Grep the list; if `Cached text` exists, read it. Where the extraction is
    ambiguous, open the cached original, not the network.
-2. **The list's URLs.** `fetch.py --keys <Key> --fix` fetches them. Skip entries marked `MANUAL FETCH
-   REQUIRED` or `NO OPEN-ACCESS COPY` and report them as not read.
-3. **The bibliography**, to decode the key into authors and title before searching.
+2. **The known URLs.** `fetch.py --keys <Key> --fix` fetches the list entry's `Access URLs` and
+   the `url` and `doi` of the key's .bib entry. Skip entries marked `MANUAL FETCH REQUIRED` or
+   `NO OPEN-ACCESS COPY` and report them as not read.
+3. **The .bib entry** (`sources.bibliography`), to decode the key into authors, title and DOI
+   before searching.
 4. **The book's own notes** (`thinking.argument`) and the quotes bank: faster than a web search, and they
    often hold exactly the verification needed. Treat them as pointers, not proof.
 5. **Web search with `filetype:pdf` first**, then a plain search. A plain search ranks landing
@@ -120,9 +122,10 @@ A subagent's job ends at reporting the wall with its evidence.
 
 ## No citation without a held source
 
-The book must not carry a `[Key]` for a work nobody can produce. `NO OPEN-ACCESS COPY` or `NOT
-CACHED` is not a permanent excuse: find an obtainable replacement (a later work by the same
-originator stating the same idea counts), or reword the sentence so it makes no attributed claim.
+The book must not carry a citation (`[@Key]`) of a work nobody can produce. `NO OPEN-ACCESS
+COPY` or `NOT CACHED` is not a permanent excuse: find an obtainable replacement (a later work by
+the same originator stating the same idea counts), or reword the sentence so it makes no
+attributed claim.
 An uncacheable citation reads as verified to every later check while nothing stands behind it.
 Split by kind:
 
@@ -135,11 +138,12 @@ Split by kind:
 
 ## Link checks
 
-`link-check.py` holds every URL in the bibliography and the list to what it resolves to today.
+`link-check.py` holds every URL in the .bib file (its `url` fields, and its `doi` fields as
+`https://doi.org/<doi>`) and in the list to what it resolves to today.
 It is the only check whose answer lives on the network, so run it before a build that readers
 will click through, not on every edit. Key rules: for a `doi.org` URL the authority is doi.org's
 own redirect, never the publisher's answer to an anonymous client (a registered DOI whose landing
 page 403s or 404s is not dead); a transport failure is never `dead` (an intercepting proxy can
-answer every blocked host with one identical page); `bank-drift` is a failing bibliography URL
+answer every blocked host with one identical page); `bank-drift` is a failing .bib URL
 while the list already holds a working one. `--fix` writes only what the run verified, and never
 touches a `Cached original` line, which records where bytes came from.

@@ -96,7 +96,7 @@ Why each of these matters: [epub.md](epub.md).
 | `front_matter_pages` | `[Dedication, Epigraph]` | names, in order, for the front-matter raw blocks that are not the copyright page |
 | `copyright_markers` | `[rights reserved, ISBN]` | text that marks a raw block as the copyright page |
 | `emblem_alt` | `Publisher emblem` | alt text of an image placed with a `tikzpicture` (the publisher emblem) |
-| `references_heading` | `References` | the level-1 heading of the bibliography, where citation links point |
+| `references_heading` | `References` | the level-1 heading of the reference list; a paper leaves it unnumbered |
 
 ## Paper keys (`paper:`)
 
@@ -131,17 +131,31 @@ paper:
 | `abstract_max_words` | none | not read by the build; the write-text paper check reads it | `250` |
 
 The four templates take the same title block: `title`, the authors with affiliation and
-email, the abstract, the body and the references section, which stays the hand-written
-references file. `paper.format` sets the paper size of `article`, `ieee` and `lncs`; `acm`
+email, the abstract, the body and the references section, which pandoc fills from the
+bibliography as text in the `.tex` (no BibTeX run, no `.bbl`). `paper.format` sets the paper size of `article`, `ieee` and `lncs`; `acm`
 keeps the page size of `acmart`. The `acm` template prints no ACM copyright block, reference
 format or CCS concepts (`\setcopyright{none}`, `printacmref=false`), so a preprint builds without
 ACM boilerplate; add those when the venue gives them. A venue not in the list is added to the
 plugin as a new built-in template (`assets/templates/paper-<name>.tex`), not kept as a file
 in one paper.
 
-**Citations.** Every template keeps the book's alpha labels (`[Abc99]`) and links each one to
-its entry in the references file. A venue that requires numeric citations (`[1]`) is not
-covered: the labels are not renumbered.
+**Citations.** Every template takes the citation style of the book (below): alpha labels
+(`[Abc99]`) by default, or `sources.citation_style: numeric` for a venue that wants `[1]`. Each
+citation links to its entry in the reference list.
+
+## Citation keys (`sources:`)
+
+| Key | Option | Use | Default |
+|-----|--------|-----|---------|
+| `sources.bibliography` | `--set sources.bibliography=...` | the BibTeX file every citation and the reference list come from | `sources/references.bib` |
+| `sources.citation_style` | `--set sources.citation_style=numeric` | `alpha`: cites `[Abc99]`, the list sorted by label, each entry `[Abc99]` and an APA-like reference (`assets/csl/alpha.csl`); `numeric`: cites `[1]`, IEEE-style list in order of first citation (`assets/csl/numeric.csl`) | `alpha` |
+| `sources.citation_style_file` | `--set sources.citation_style_file=...` | the book's own CSL file, used instead of the shipped style to fine-tune the reference list; with `alpha` every entry still gets its key as `citation-label` | none |
+
+The text cites `[@Abc99]`, `[@Abc99; @Def01]`, `[@Abc99, p. 12]` or `@Abc99 says`. The
+references file (`manuscript.references`) holds only its heading and an empty
+`::: {#refs}` div, where the list is written. A key the `.bib` does not hold stops the build.
+Without a `.bib` the build runs without citations and stops if the text cites a key. How each
+edition shows them: [editions.md](editions.md).
 
 ## Folder keys
 

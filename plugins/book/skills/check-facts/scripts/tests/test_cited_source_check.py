@@ -15,24 +15,43 @@ LIST_TEXT = """# Sources list
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 ```
 
-### [Smi99] Smith, "Kitchen Gardens" (1999)
+### [Smi99]
 
-**Full title:** Kitchen Gardens
-
----
-
-### [Lee05] Lee, "Pond Life" (2005)
-
-**Full title:** Pond Life
+**Access URLs:** https://example.org/kitchen-gardens
 
 ---
 
-### [Ngu12] Nguyen, "Names That Help" (2012)
+### [Lee05]
 
-**Full title:** Names That Help
+**Access URLs:** https://example.org/pond-life
+
+---
+
+### [Ngu12]
+
+**Access URLs:** https://example.org/names-that-help
+"""
+
+BIBLIOGRAPHY_TEXT = """@book{Smi99,
+  author = {Smith, Ann},
+  title = {Kitchen Gardens},
+  year = {1999},
+}
+
+@book{Lee05,
+  author = {Lee, Bo},
+  title = {Pond Life},
+  year = {2005},
+}
+
+@book{Ngu12,
+  author = {Nguyen, Cam},
+  title = {Names That Help},
+  year = {2012},
+}
 """
 
 
@@ -41,10 +60,11 @@ class CitedSourceCheckTest(unittest.TestCase):
         self.book = Path(tempfile.mkdtemp(prefix="cited-source-test-"))
         self.write("book.yaml", "version: 1\nbook:\n  title: A Test Book\n  author: Sam Example\n")
         self.write("manuscript/110-chapter-1.md",
-                   "# Chapter 1\n\nSmall beds give the most [Smi99, p. 4].\n")
+                   "# Chapter 1\n\nSmall beds give the most [@Smi99, p. 4].\n")
         self.write("sources/list.md", LIST_TEXT)
+        self.write("sources/references.bib", BIBLIOGRAPHY_TEXT)
         self.write("sources/library/Smi99.pdf", "copy")
-        self.write("thinking/argument/ponds.md", "Ponds dry out in August [Lee05].\n")
+        self.write("thinking/argument/ponds.md", "Ponds dry out in August [@Lee05].\n")
 
     def tearDown(self):
         shutil.rmtree(self.book, ignore_errors=True)
@@ -74,26 +94,50 @@ class CitedSourceCheckTest(unittest.TestCase):
         self.assertEqual(run.keys_of("waits-in-needed"), ["Lee05"])
         self.assertEqual(run.exit_code, 0)
 
-    def test_shouldReportAKeyWhenTheSourcesListHasNoEntryForIt(self):
+    def test_shouldReportAKeyWhenTheBibliographyHasNoEntryForIt(self):
         # given
-        self.write("thinking/doubts/open-questions.md", "Is it true? [Kim20]\n")
+        self.write("thinking/doubts/open-questions.md", "Is it true? [@Kim20]\n")
 
         # when
         run = run_script(SCRIPT, book=self.book)
 
         # then
-        self.assertEqual(run.keys_of("not-in-list"), ["Kim20"])
-        self.assertIn("thinking/doubts/open-questions.md:1", run.message_of("Kim20", "not-in-list"))
+        self.assertEqual(run.keys_of("not-in-bibliography"), ["Kim20"])
+        self.assertIn("thinking/doubts/open-questions.md:1",
+                      run.message_of("Kim20", "not-in-bibliography"))
+
+    def test_shouldReportAKeyWhenTheSourcesListHasNoEntryForIt(self):
+        # given
+        self.write("sources/list.md", LIST_TEXT.replace("### [Lee05]", "### [Lea05]"))
+
+        # when
+        run = run_script(SCRIPT, book=self.book)
+
+        # then
+        self.assertEqual(run.keys_of("not-in-list"), ["Lee05"])
+        self.assertEqual(run.keys_of("not-in-bibliography"), [])
+
+    def test_shouldFindAKeyWhenItIsCitedNarrativelyOrInBraces(self):
+        # given
+        self.write("manuscript/120-chapter-2.md",
+                   "# Chapter 2\n\nAs @Ngu12 says, and @{Wal--} too.\n")
+
+        # when
+        run = run_script(SCRIPT, book=self.book)
+
+        # then
+        self.assertEqual(run.keys_of("no-library-copy"), ["Lee05", "Ngu12"])
+        self.assertEqual(run.keys_of("not-in-bibliography"), ["Wal--"])
 
     def test_shouldIgnoreAKeyWhenItStandsInFencedCode(self):
         # given
-        self.write("manuscript/120-chapter-2.md", "# Chapter 2\n\n```\nx = [Abc01]\n```\n")
+        self.write("manuscript/120-chapter-2.md", "# Chapter 2\n\n```\nx = [@Abc01]\n```\n\nWrite to me at sam@example.org.\n")
 
         # when
         run = run_script(SCRIPT, book=self.book)
 
         # then
-        self.assertEqual(run.keys_of("not-in-list"), [])
+        self.assertEqual(run.keys_of("not-in-list") + run.keys_of("not-in-bibliography"), [])
 
     def test_shouldNotAskForAListedKeyWhenNothingCitesIt(self):
         # when
@@ -102,9 +146,10 @@ class CitedSourceCheckTest(unittest.TestCase):
         # then
         self.assertNotIn("Ngu12", run.keys_of("no-library-copy"))
 
-    def test_shouldSkipWhenTheBookHasNoSourcesList(self):
+    def test_shouldSkipWhenTheBookHasNoBibliographyAndNoSourcesList(self):
         # given
         (self.book / "sources" / "list.md").unlink()
+        (self.book / "sources" / "references.bib").unlink()
 
         # when
         run = run_script(SCRIPT, book=self.book)

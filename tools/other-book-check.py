@@ -16,7 +16,7 @@ out of the output before comparing, so a script that reads the same text twice g
 masked report twice. A difference means behaviour depends on what files are CALLED.
 
 Each script runs a third time from a decoy folder that looks like another book (its own
-book.yaml, glossary and bibliography). A script that reads config from the working
+book.yaml, glossary and .bib). A script that reads config from the working
 folder instead of the book it was pointed at picks up the decoy and reports on the wrong book.
 
 Every run gets no input on stdin and a time limit, so a script that waits for input or for
@@ -72,12 +72,12 @@ CHAPTER_1 = """# Chapter 1: What A Canal Carried
 Coal moved along the canal far more cheaply than it moved by road, which means the cost of
 running every mill in the valley fell once the water arrived. Records report that 70% of the
 tolls came from coal rather than from any other cargo. Rivera argued that a lock keeper
-decided more than any engineer did [Riv19]. This matters.
+decided more than any engineer did [@Riv19]. This matters.
 
 This suggests something important. The whole cargo of a long run lets a barge pass every
 wharf without stopping, while a split cargo forces the crew to tie up at each wharf and unload
 part of the hold before going on. In The Working Waterway the argument is made at length, and a
-related claim appears in [Zzz99] which no reference list contains.
+related claim appears in [@Zzz99] which no reference list contains.
 
 ## 1.2 What A Lock Means
 
@@ -98,13 +98,24 @@ dry summer that leaves the water level unchanged. Short inspections are better.
 > **A stop plank** is a board that closes a channel while it is drained.
 
 Okafor makes this point at length, and the same framework appears in other treatments
-of the subject, where the mechanism is described in similar terms [Riv19].
+of the subject, where the mechanism is described in similar terms [@Riv19].
 """
 
 REFERENCES = """# References
 
-[Riv19] Rivera, M.L. (2019). Lock Keepers and Their Ledgers. *Journal of
-Invented Examples*, 3(1), 1-20.
+::: {#refs}
+:::
+"""
+
+BIBLIOGRAPHY = """@article{Riv19,
+  author = {Rivera, Maria L.},
+  title = {Lock Keepers and Their Ledgers},
+  journal = {Journal of Invented Examples},
+  volume = {3},
+  number = {1},
+  pages = {1--20},
+  year = {2019},
+}
 """
 
 GLOSSARY = """# Glossary
@@ -178,6 +189,8 @@ def build_book(root, book):
     manuscript.mkdir(parents=True, exist_ok=True)
     (root / "rules").mkdir(exist_ok=True)
     (root / "rules" / "glossary.md").write_text(GLOSSARY, encoding="utf-8")
+    (root / "sources").mkdir(exist_ok=True)
+    (root / "sources" / "references.bib").write_text(BIBLIOGRAPHY, encoding="utf-8")
     (root / "book.yaml").write_text(BOOK_CONFIG.format(
         references=book["references"], chapter_pattern=book["chapter_pattern"]),
         encoding="utf-8")
@@ -198,8 +211,10 @@ def build_decoy(root):
     (decoy / "rules" / "glossary.md").write_text(glossary, encoding="utf-8")
     (decoy / "sources" / "list.md").write_text("# Sources\n", encoding="utf-8")
     (decoy / "manuscript" / "900-references.md").write_text(
-        "# References\n\n[Zz99] Decoy, D. (1999). A Decoy Reference. *Nowhere*.\n",
-        encoding="utf-8")
+        "# References\n\n::: {#refs}\n:::\n", encoding="utf-8")
+    (decoy / "sources" / "references.bib").write_text(
+        "@book{Dec99,\n  author = {Decoy, Dan},\n  title = {A Decoy Reference},\n"
+        "  publisher = {Nowhere},\n  year = {1999},\n}\n", encoding="utf-8")
     return decoy
 
 

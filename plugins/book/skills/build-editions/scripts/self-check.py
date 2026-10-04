@@ -5,6 +5,7 @@ import shutil
 import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
 SCRIPTS = Path(__file__).resolve().parent
 SKILL = SCRIPTS.parent
 FIXTURES = SCRIPTS / "fixtures"
@@ -17,10 +18,11 @@ TIME_LIMIT = 300
 SELF_TESTS = ("compute-leading.py", "diff-preprocess.py", "output_files.py",
               "flatten-code-lines.py", "filter-settings.py", "epub-check.py",
               "code-font-check.py", "paper-metadata.py", "paper_source.py",
-              "arxiv-bundle-check.py")
+              "arxiv-bundle-check.py", "bibliography-to-csl.py", "image_metadata.py")
 PAPER_AUTHOR_WORDS = ("Sam Example", "Lee Sample", "Garden School", "sam@example.org")
 PAPER_TEMPLATES = ("article", "acm", "ieee", "lncs")
 TEMPLATES = SKILL / "assets" / "templates"
+CSL = SKILL / "assets" / "csl"
 NAME_LOOPS = re.compile(r"\$for\((author|institutes)\)\$.*?\$endfor\$", re.S)
 NAME_FIELDS = re.compile(r"\$(author|institutes)\.")
 
@@ -124,8 +126,6 @@ def script_steps(steps):
     for name in SELF_TESTS:
         steps.run(f"{Path(name).stem} self-test",
                   command_passes(python_command(SCRIPTS / name, "--self-test")))
-    steps.run("key-pattern-check (filter keys match lib/citation_key.py)",
-              command_passes(python_command(SCRIPTS / "key-pattern-check.py")))
     steps.run("code-font-check says SKIPPED when the manuscript folder holds no file",
               code_font_check_skips_a_missing_manuscript)
 
@@ -186,9 +186,42 @@ def settings_steps(steps):
               build_refuses("new-book", "--set", "book.chapter_style=fancy"))
     steps.run("an output name with a space or a quote stops the build",
               build_refuses("new-book", "--output", "Jane's draft.pdf"))
+    citation_steps(steps)
+    steps.run("an author that still holds the placeholder text gives the plain name book",
+              output_contains("/new-book/.book/output/book.pdf", "new-book", "--final",
+                              "--set", "book.author=TO BE ASSIGNED"))
     steps.run("a plain output name is accepted",
               output_contains("/new-book/.book/output/reader-copy_v2.pdf", "new-book",
                               "--output", "reader-copy_v2.pdf"))
+
+
+def citation_steps(steps):
+    steps.run("the bibliography is sources/references.bib by default",
+              output_has_line(f"BIBLIOGRAPHY_FILE={FIXTURES / 'new-book' / 'sources' / 'references.bib'}",
+                              "new-book"))
+    steps.run("citation style alpha uses assets/csl/alpha.csl",
+              output_has_line(f"CITATION_STYLE_FILE={CSL / 'alpha.csl'}", "new-book"))
+    steps.run("citation style numeric uses assets/csl/numeric.csl",
+              output_has_line(f"CITATION_STYLE_FILE={CSL / 'numeric.csl'}", "new-book",
+                              "--set", "sources.citation_style=numeric"))
+    steps.run("a style file the book names replaces the shipped style",
+              output_has_line(f"CITATION_STYLE_FILE={FIXTURES / 'new-book' / 'book.yaml'}",
+                              "new-book", "--set", "sources.citation_style_file=book.yaml"))
+    steps.run("a style file that does not exist stops the build",
+              build_refuses("new-book", "--set", "sources.citation_style_file=missing.csl"))
+    steps.run("an unknown citation style stops the build",
+              build_refuses("new-book", "--set", "sources.citation_style=harvard"))
+    for style in ("alpha", "numeric"):
+        steps.run(f"assets/csl/{style}.csl is a CSL style with a citation and a bibliography",
+                  style_is_complete(CSL / f"{style}.csl"))
+
+
+def style_is_complete(style_file):
+    def step():
+        text = style_file.read_text(encoding="utf-8")
+        found = [part for part in ("<style ", "<citation>", "<bibliography") if part in text]
+        return len(found) == 3, f"{style_file.name} holds only {found}"
+    return step
 
 
 def anonymous_metadata_names_nobody():
@@ -214,6 +247,14 @@ def acm_turns_on_anonymous_review():
             "the acm template does not pass anonymous,review to acmart when anonymous")
 
 
+def anonymous_hides_included_pdf_properties(template):
+    def step():
+        text = (TEMPLATES / f"paper-{template}.tex").read_text(encoding="utf-8")
+        expected = "$if(anonymous)$\n\\ifdefined\\pdfsuppressptexinfo\\pdfsuppressptexinfo=-1\\fi\n$endif$"
+        return expected in text, "no \\pdfsuppressptexinfo=-1 for an anonymous paper"
+    return step
+
+
 def paper_template_steps(steps):
     for template in PAPER_TEMPLATES:
         steps.run(f"paper.template {template} uses assets/templates/paper-{template}.tex",
@@ -221,6 +262,8 @@ def paper_template_steps(steps):
                                   "new-paper", "--set", f"paper.template={template}"))
         steps.run(f"the {template} template prints names only from the author list, so an "
                   f"anonymous build has no author", names_come_only_from_the_author_list(template))
+        steps.run(f"the {template} template keeps pdflatex from copying the properties of an "
+                  f"included PDF when anonymous", anonymous_hides_included_pdf_properties(template))
     steps.run("the acm template turns on the class's anonymous review options",
               acm_turns_on_anonymous_review)
     steps.run("a paper refuses a template that is not built in",
@@ -257,6 +300,9 @@ def paper_steps(steps):
     steps.run("paper.anonymous: true puts anonymous in the file name",
               output_contains("watering-small-gardens-a-field-study-anonymous.pdf", "new-paper",
                               "--final", "--set", "paper.anonymous=true"))
+    steps.run("a title that still holds the placeholder text gives the plain name paper",
+              output_contains("/new-paper/.book/output/paper.pdf", "new-paper", "--final",
+                              "--set", "book.title=TO BE ASSIGNED"))
     steps.run("the abstract is listed apart from the body",
               output_has_line("PAPER_ABSTRACT=" + str(FIXTURES / "new-paper" / "manuscript"
                                                       / "010-abstract.md"), "new-paper"))

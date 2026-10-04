@@ -18,6 +18,7 @@ already has:
   rules/glossary.md           the entry format, no entries
   rules/voice.md              a copy of the write-text skill's default voice profile
   rules/vale/                 vale.ini and empty word lists
+  sources/references.bib      the bibliography: a comment, no entries
   sources/list.md, quotes.md  the entry formats, no entries, so the facts checks say SKIPPED
   sources/library-index/, sources/library/
   publishing/cover/           the smallest design.py, font-widths/, final/
@@ -323,8 +324,10 @@ def plan_book(root, title, author, subtitle, year, kind):
             plan.folder(manuscript / IMAGES_FOLDER)
 
     shown = {key: value for key, value in paths.items() if value}
+    plan.file(paths["sources.bibliography"], template("references.bib"))
     plan.file(paths["sources.list"], template("sources-list.md", files=shown["sources.library"],
-                                              quotes=shown["sources.quotes"]))
+                                              quotes=shown["sources.quotes"],
+                                              bibliography=shown["sources.bibliography"]))
     plan.file(paths["sources.quotes"], template("sources-quotes.md", list=shown["sources.list"]))
     plan.folder(paths["sources.library"])
     plan.folder(paths["sources.library_index"])
@@ -369,7 +372,7 @@ def someone_elses_claude_md(root):
 
 def run_vale_sync(root):
     print("\n== vale", flush=True)
-    exit_code = subprocess.run([sys.executable, str(VALE_SYNC), "--book", str(root),
+    exit_code = subprocess.run([sys.executable, "-B", str(VALE_SYNC), "--book", str(root),
                                 "--fix"]).returncode
     if exit_code != 0:
         print(f"note: vale-sync.py exited {exit_code}, so the Vale check stays SKIPPED; run "
@@ -378,7 +381,7 @@ def run_vale_sync(root):
 
 
 def run_tool_check(root, pull):
-    command = [sys.executable, str(SCRIPTS / "toolchain-check.py"), "--book", str(root)]
+    command = [sys.executable, "-B", str(SCRIPTS / "toolchain-check.py"), "--book", str(root)]
     if pull:
         command.append("--pull")
     print("\n== tools", flush=True)

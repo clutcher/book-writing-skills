@@ -6,6 +6,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+
 SCRIPTS = Path(__file__).resolve().parent
 SKILL = SCRIPTS.parent
 COLLECT_SCRIPTS = SKILL.parent / "collect-sources" / "scripts"
@@ -27,16 +29,14 @@ FIXTURE_CHECKS = (
     "files-hash-check.py",
     "ocr-marker-check.py",
     "duplicate-source-check.py",
-    "key-authors-check.py",
     "list-bibliography-check.py --no-verdicts",
+    "citation-check.py",
     "citation-key-check.py",
     "reference-format-check.py",
-    "reference-format-check.py --completeness",
-    "reference-sort.py",
+    "reference-format-check.py --titles",
     "edition-duplicate-check.py",
     "guardrail-prose-check.py",
     "stale-argument-pointer-check.py",
-    "argument-key-check.py",
     "uncited-claim-check.py",
     "quote-in-file-check.py",
     "statistic-integrity-check.py",
@@ -52,8 +52,7 @@ LIB_SELF_TESTS = ("check_output.py", "citation_key.py")
 MISSING_MANUSCRIPT_FOLDER = "manuscrpt"
 MANUSCRIPT_READING_CHECKS = (
     "cited-source-check.py",
-    "reference-format-check.py",
-    "reference-format-check.py --completeness",
+    "reference-format-check.py --titles",
     "edition-duplicate-check.py",
     "guardrail-prose-check.py",
     "stale-argument-pointer-check.py",

@@ -28,6 +28,7 @@ CLASSES = {
     'template-nearest': ADVISORY,
     'overlay-written': INFORMATIONAL,
     'overlay-image-skipped': INFORMATIONAL,
+    'overlay-not-written': INFORMATIONAL,
     'template-fetched': INFORMATIONAL,
     'template-fetch-skipped': INFORMATIONAL,
 }
@@ -35,16 +36,20 @@ CLASSES = {
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Check the wrap against the KDP cover template for this page count and '
-                    'write an overlay image (template at 55% over the art). The overlay is for '
-                    'looking only: never upload it. kdp-template.py --fix downloads the '
-                    'template into cover.templates; --fetch here does the same first.')
+        description='Check the wrap against the KDP cover template for this page count. With '
+                    '--fix (or --out) it also writes an overlay image (template at 55% over the '
+                    'art); without, it writes nothing. The overlay is for looking only: never '
+                    'upload it. kdp-template.py --fix downloads the template into '
+                    'cover.templates; --fetch here does the same first.')
     parser.add_argument('--art', help='the wrap PNG (default: <cover output>/png/wrap.png)')
     parser.add_argument('--template', help='one KDP template PNG (default: chosen by page '
                                            'count from cover.templates)')
     parser.add_argument('--templates', help='folder of KDP template PNGs '
                                             '(default: cover.templates)')
-    parser.add_argument('--out', help='overlay image (default: next to the art, -overlay.png)')
+    parser.add_argument('--fix', action='store_true',
+                        help='write the overlay image next to the art, as <art>-overlay.png '
+                             '(default: only check, write nothing)')
+    parser.add_argument('--out', help='write the overlay image here (implies --fix)')
     parser.add_argument('--opacity', type=float, default=OVERLAY_OPACITY,
                         help='template opacity (default 0.55)')
     parser.add_argument('--pages', type=int, help='interior page count')
@@ -138,6 +143,11 @@ def main():
                    f'derived {size.width_px} x {size.height_px} px (1 px allowed): check '
                    f'trim, paper and page count')
 
+    if not (args.fix or args.out):
+        report.add(art.name, 'overlay-not-written',
+                   'the size checks ran; add --fix to write the overlay image next to the art '
+                   '(or --out FILE)')
+        return report.emit(args.format)
     image_tool = find_image_tool()
     if image_tool is None:
         report.add(art.name, 'overlay-image-skipped',

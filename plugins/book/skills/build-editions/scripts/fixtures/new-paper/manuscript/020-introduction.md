@@ -1,6 +1,6 @@
 # Introduction
 
-Small gardens lose water fast [Smi99]. Section 3 shows how we measured it.
+Small gardens lose water fast [@Smi99]. Section 3 shows how we measured it.
 
 This paper makes the following contributions:
 

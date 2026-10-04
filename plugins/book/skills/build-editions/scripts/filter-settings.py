@@ -2,7 +2,7 @@
 """Write the book settings the Lua filters read, as a pandoc metadata file.
 
 build-book.sh passes the result to pandoc with --metadata-file, under the one key
-"build-settings". digital-mode.lua and citation-links.lua read it; a key that is not set
+"build-settings". digital-mode.lua and paper-mode.lua read it; a key that is not set
 in the book keeps the filter's own default. The keys are listed in references/settings.md.
 """
 

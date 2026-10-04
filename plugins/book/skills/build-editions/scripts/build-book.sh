@@ -9,7 +9,8 @@ ASSETS_DIR="$(cd "$SCRIPT_DIR/../assets" && pwd)"
 BUNDLED_TEMPLATE="$ASSETS_DIR/templates/book-template.tex"
 FILTER_DIR="$ASSETS_DIR/filters"
 
-for sourced_file in "$SCRIPT_DIR/page-settings.sh" "$SCRIPT_DIR/book-settings.sh" "$SCRIPT_DIR/paper-build.sh"; do
+for sourced_file in "$SCRIPT_DIR/page-settings.sh" "$SCRIPT_DIR/book-settings.sh" \
+                   "$SCRIPT_DIR/citations.sh" "$SCRIPT_DIR/paper-build.sh"; do
     if [[ ! -f "$sourced_file" ]]; then
         echo "Error: missing $sourced_file" >&2
         exit 1
@@ -277,6 +278,7 @@ apply_book_defaults
 validate_settings
 resolve_edition_for_kind
 apply_paper_defaults
+resolve_citation_settings
 [[ "$SHOW_SETTINGS" == true && "$EDITION" == "all" ]] && EDITION="print"
 
 CLEANUP_PATHS=()
@@ -303,7 +305,8 @@ show_settings() {
                 PAGES QUOTE_STYLE HIGHLIGHT_STYLE TOP_LEVEL TOC_DEPTH GENERATE_TOC NUMBERED PAGE_STYLE \
                 PAGE_ORNAMENT PAGE_ORNAMENT_SIZE PART_PAGES PART_OVERVIEW ALL_PAGE_FOLIOS COVER_FRONT \
                 COVER_BACK EBOOK_COVER EPUB_IDENTIFIER PUBLICATION_DATE BOOK_PUBLISHER BOOK_SUBJECTS \
-                BOOK_LANGUAGE ACCESSIBILITY_SUMMARY HYPHENATION_LANGUAGE PLACEHOLDER_TOKEN; do
+                BOOK_LANGUAGE ACCESSIBILITY_SUMMARY HYPHENATION_LANGUAGE PLACEHOLDER_TOKEN \
+                BIBLIOGRAPHY_FILE CITATION_STYLE CITATION_STYLE_FILE; do
         fallback="$(default_setting "$name")"
         if [[ -z "${!name}" && -n "$fallback" ]]; then
             printf '%s=%s (default)\n' "$name" "$fallback"
@@ -496,8 +499,8 @@ DRAFT_ID="DRAFT-${TIMESTAMP}-${RANDOM_SUFFIX}"
 
 TITLE_SLUG=""
 LASTNAME_SLUG=""
-[[ -n "$BOOK_TITLE" ]] && TITLE_SLUG=$(slugify "$BOOK_TITLE")
-[[ -n "$BOOK_AUTHOR" ]] && LASTNAME_SLUG=$(slugify "$(get_lastname "$BOOK_AUTHOR")")
+is_set_for_name "$BOOK_TITLE" && TITLE_SLUG=$(slugify "$BOOK_TITLE")
+is_set_for_name "$BOOK_AUTHOR" && LASTNAME_SLUG=$(slugify "$(get_lastname "$BOOK_AUTHOR")")
 
 is_paper && LASTNAME_SLUG="$(paper_name_slug)"
 
@@ -670,8 +673,11 @@ python3 "$SCRIPT_DIR/filter-settings.py" ${CONFIG_ARGS[@]+"${CONFIG_ARGS[@]}"} \
     --output "$SETTINGS_DIR/filter-settings.json" \
     || { echo "Error: could not write the filter settings"; exit 1; }
 
+prepare_citations
+
 run_in_pandoc_container() {
     docker run --rm \
+        --network none \
         ${DOCKER_USER_ARGS[@]+"${DOCKER_USER_ARGS[@]}"} \
         -e HOME=/tmp \
         -e TEXMFVAR=/tmp/texmf-var \
@@ -750,7 +756,7 @@ check_epub_template_drift() {
         echo "    docker run --rm --entrypoint pandoc $DOCKER_IMAGE --print-default-template=epub3 > '$pristine'"
         return 0
     fi
-    current="$(docker run --rm ${DOCKER_USER_ARGS[@]+"${DOCKER_USER_ARGS[@]}"} --entrypoint pandoc "$DOCKER_IMAGE" --print-default-template=epub3 2>/dev/null || true)"
+    current="$(docker run --rm --network none ${DOCKER_USER_ARGS[@]+"${DOCKER_USER_ARGS[@]}"} --entrypoint pandoc "$DOCKER_IMAGE" --print-default-template=epub3 2>/dev/null || true)"
     if [[ -z "$current" ]]; then
         echo ""
         echo "Template drift check SKIPPED: $DOCKER_IMAGE would not print its default epub3 template."
@@ -768,7 +774,7 @@ check_epub_template_drift() {
 build_epub() {
     local required
     for required in "$FILTER_DIR/digital-mode.lua" "$FILTER_DIR/citation-links.lua" \
-                    "$ASSETS_DIR/epub.css" "$ASSETS_DIR/epub3-template.html"; do
+                    "$ASSETS_DIR/epub.css" "$ASSETS_DIR/epub3-template.html" "$CITATION_STYLE_FILE"; do
         [[ -f "$required" ]] || { echo "Error: missing $required"; exit 1; }
     done
 
@@ -793,7 +799,7 @@ build_epub() {
         --to=epub3
         --metadata-file=/settings/filter-settings.json
         --lua-filter=/filters/digital-mode.lua
-        --lua-filter=/filters/citation-links.lua
+        "${CITATION_PANDOC_ARGS[@]}"
         --css=/assets/epub.css
         --template=/assets/epub3-template.html
         --epub-embed-font=/assets/fonts/JetBrainsMono-Regular.subset.ttf
@@ -955,7 +961,7 @@ PANDOC_ARGS+=(--metadata="quote-style-${QUOTE_STYLE}:true")
 if [[ -n "$DIFF_FROM" ]]; then
     PANDOC_ARGS+=(--metadata="diff-mode:true" --lua-filter=/filters/diff-mode.lua)
 fi
-PANDOC_ARGS+=(--lua-filter=/filters/citation-links.lua)
+PANDOC_ARGS+=("${CITATION_PANDOC_ARGS[@]}")
 PANDOC_ARGS+=("${MANUSCRIPT_PATHS_IN_CONTAINER[@]}")
 
 APPLY_PROTECTION=false

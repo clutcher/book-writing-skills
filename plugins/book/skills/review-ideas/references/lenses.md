@@ -136,8 +136,8 @@ Before claiming something is absent ("the book never shows X"), search the whole
 At print stage this matters more, because every slip is permanent and visible. Terms and their
 capitals, code style, citation format, and every "as Chapter N showed": was it really shown there?
 
-**Citations both ways:** every citation key in the text has an entry in the references, and every
-entry is cited. This part is mechanical: the author ran these checks before the room was made,
+**Citations both ways:** every citation key in the text (`[@Key]`, `@Key`) has an entry in
+`sources/references.bib`. This part is mechanical: the author ran these checks before the room was made,
 and the result is in `review/mechanical-checks.txt` (or the plan says they were not run). This
 lens keeps only the parts that need judgment: terms that drift, cross-references that point at the wrong content, and any keys
 the scripts could not decide.
@@ -223,7 +223,7 @@ In `book.yaml`:
 ```yaml
 readers_review:
   main_metaphor: "the word X in the title, used as a metaphor"
-  key_sources: ["[Abc20]", "[DE21]"]
+  key_sources: ["@Abc20", "@DE21"]
   research_field: "the psychology of habit"
   similar_books: ["Book One", "Book Two"]
   author_background: "twenty years in the field; named employers"

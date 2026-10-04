@@ -135,7 +135,7 @@ manuscript:
   part_pattern: '^(\d+-)?part-[\w-]+\.md$'
   front_matter: ["0[0-9][0-9]-*.md"]
   back_matter: ["9[0-9][0-9]-*.md"]
-  references: manuscript/900-references.md
+  references: manuscript/900-references.md # heading and ::: {#refs} only; the build fills it
   summary_heading: Summary
 
 terms:                                 # coined terms
@@ -199,13 +199,15 @@ rules:                                 # what the book has settled
   vale_ini: rules/vale/vale.ini
 
 sources:
-  list: sources/list.md
+  list: sources/list.md                # how to reach each source; headings are ### [Key]
   quotes: sources/quotes.md
+  bibliography: sources/references.bib # BibTeX: one entry per source; the key is the citation key
+  citation_style: alpha                # alpha ([Smi99], keys as labels) or numeric ([1])
+  citation_style_file: null            # a .csl of the book's own; null = the style the build ships
   library: sources/library             # the copies; keep out of git
   library_index: sources/library-index # one record per library file; in git
   backup: null                         # private folder for files that cannot be downloaded again
   to_add: null                         # null = <work.dir>/sources-to-add
-  citation_style: alpha                # alpha only; for information
 
 notes: notes                           # open notes only
 

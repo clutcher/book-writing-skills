@@ -76,7 +76,7 @@ def docker_prefix(image, folder):
         expanded = Path(place).expanduser()
         if expanded.is_dir():
             mounts += folder_mount(expanded, f'/usr/share/fonts/host-{index}', read_only=True)
-    return (['docker', 'run', '--rm'] + calling_user_arguments() + mounts
+    return (['docker', 'run', '--rm', '--network', 'none'] + calling_user_arguments() + mounts
             + ['-w', CONTAINER_WORK_FOLDER, '--entrypoint', 'rsvg-convert', image])
 
 

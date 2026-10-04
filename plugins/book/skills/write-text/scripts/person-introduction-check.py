@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check that every person the book names is introduced properly on first mention (rule 2.7).
 
-Persons are read from the bibliography (`manuscript.references` in the book config) and the
+Persons are read from the authors of the .bib file (`sources.bibliography` in the book config) and the
 chapters are scanned in book order. Front matter, back matter and the bibliography are skipped:
 a reader can skip a preface, so an introduction there cannot carry the introduction duty.
 
@@ -14,7 +14,7 @@ Findings:
 
 The default (full name at first mention, the surname alone after it) needs only the main
 check. --bare-mentions is a worklist for a book whose voice profile asks for the full name on
-later mentions or after long gaps: it lists every bare-surname mention, first and later. Full names are taken from the prose itself and checked against the bibliography initials.
+later mentions or after long gaps: it lists every bare-surname mention, first and later. Full names are taken from the prose itself and checked against the initials in the .bib file.
 Each row shows the distance since the last mention and a suggestion: PRONOUN (a tight repeat,
 a pronoun reads better) or EXPAND (farther away, use the full name). Eponyms (a named law, a
 named test) are skipped when the book lists them; with no eponyms in the book config, that
@@ -22,7 +22,7 @@ filter prints SKIPPED and every bare surname is listed.
 
 Book-specific names live in `terms.watch_words.people` in the book config:
     people:
-      aliases: {"Rivera, M.L.": [Maria Rivera, M. L. Rivera]}   # other names for a bib author
+      aliases: {"Rivera, M.L.": [Maria Rivera, M. L. Rivera]}   # "Surname, Initials" of a .bib author
       eponyms: {Rivera: ["Rivera'?s?\\s+rule"]}               # eponym patterns to skip
 
 Exit codes: 0 no findings, 1 findings, 2 the check could not run.
@@ -43,7 +43,8 @@ from book_files import (ConfigError, SAMPLE_BOOK, add_config_arguments, config_f
                         is_english_book, natural_sort_key, skipped_for_language, tool_failed,
                         watch_words)
 from check_output import run_main
-from citation_key import bib_blocks
+from bibliography import plain_text, read_identities
+from citations import CITATION
 from terminal_colors import BOLD, CYAN, GREEN, NC, RED, YELLOW
 
 SKIPPED_KINDS = {'front-matter', 'references', 'back-matter'}
@@ -157,31 +158,26 @@ NAME_STOPWORDS = {
 }
 
 
-def parse_references(references_path: str) -> Dict[str, Person]:
-    if not Path(references_path).exists():
-        print(f"{RED}Error: References file not found: {references_path}{NC}")
-        return {}
+def initials_of(first: str) -> str:
+    words = [word for word in re.split(r"[\s.\-]+", first) if word]
+    return "".join(f"{word[0].upper()}." for word in words)
 
-    with open(references_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+
+def read_persons(bibliography_path: str) -> Dict[str, Person]:
+    if not Path(bibliography_path).is_file():
+        print(f"{RED}Error: bibliography not found: {bibliography_path}{NC}")
+        return {}
 
     persons: Dict[str, Person] = {}
 
-    for _lineno, key, block in bib_blocks(content):
-        entry_text = block.strip().replace('\n', ' ')
-
-        author_match = re.match(r'^(.+?)\s*\(\d{4}\)', entry_text)
-        if not author_match:
-            continue
-
-        authors_str = author_match.group(1).strip()
-
-        author_name_pattern = r'([A-Z][A-Za-z\'-]+(?:\s+[A-Z][a-z\'-]+)?),\s*([A-Z]\.(?:[A-Z]\.)*)'
-        for name_match in re.finditer(author_name_pattern, authors_str):
-            surname = name_match.group(1).strip()
-            first_init = name_match.group(2).strip()
-
-            ref_key_for_alias = f"{surname}, {first_init}"
+    for key, entry in read_identities(bibliography_path).items():
+        for name in entry.authors or entry.editors:
+            if name.corporate or name.others:
+                continue
+            surname = name.surname
+            first_init = initials_of(plain_text(name.first))
+            if not surname or not first_init:
+                continue
 
             if surname not in persons:
                 persons[surname] = Person(
@@ -197,8 +193,8 @@ def parse_references(references_path: str) -> Dict[str, Person]:
                 if first_init not in persons[surname].first_names:
                     persons[surname].first_names.append(first_init)
 
-            if ref_key_for_alias in KNOWN_ALIASES:
-                for alias in KNOWN_ALIASES[ref_key_for_alias]:
+            for alias_key in (f"{surname}, {first_init}", f"{surname}, {plain_text(name.first)}"):
+                for alias in KNOWN_ALIASES.get(alias_key, []):
                     if alias not in persons[surname].aliases:
                         persons[surname].aliases.append(alias)
 
@@ -219,11 +215,8 @@ def is_inside_comment(line: str, match_start: int) -> bool:
 
 
 def is_citation_only(line: str, match_start: int, match_end: int) -> bool:
-    before = line[:match_start]
-    after = line[match_end:]
-    if re.search(r'\[[A-Za-z\+\d,\s]*$', before) and re.search(r'^[A-Za-z\+]*\d{2,4}[a-z]?[\],]', after):
-        return True
-    return False
+    return any(found.start() <= match_start and match_end <= found.end()
+               for found in CITATION.finditer(line))
 
 
 def is_possessive_citation(line: str, surname: str) -> bool:
@@ -329,10 +322,10 @@ def chapter_sort_key(chapter_name: str) -> int:
     return 999
 
 
-def analyze(manuscript_dir: str, references_path: str, verbose: bool = False) -> List[Issue]:
-    persons = parse_references(references_path)
+def analyze(manuscript_dir: str, bibliography_path: str, verbose: bool = False) -> List[Issue]:
+    persons = read_persons(bibliography_path)
     if not persons:
-        print(f"{RED}No persons extracted from references.{NC}")
+        print(f"{RED}No persons found among the authors in the .bib file.{NC}")
         return []
 
     chapter_files = []
@@ -564,19 +557,6 @@ def analyze(manuscript_dir: str, references_path: str, verbose: bool = False) ->
     return issues
 
 
-def find_references_file(manuscript_dir: str) -> Optional[str]:
-    for directory in (manuscript_dir,
-                      Path(manuscript_dir).parent / 'manuscript'):
-        if not Path(directory).is_dir():
-            continue
-        candidates = sorted((path.name for path in Path(directory).glob('*references.md')),
-                            key=natural_sort_key)
-        if candidates:
-            return str(Path(directory, candidates[0]))
-
-    return None
-
-
 def derive_full_names(manuscript_dir: str, persons: Dict[str, Person]) -> Dict[str, dict]:
     initials: Dict[str, set] = {}
     for surname, person in persons.items():
@@ -783,8 +763,8 @@ def parse_arguments(argv):
     parser.add_argument('manuscript_dir', nargs='?',
                         help='manuscript folder (default: manuscript.dir in the book config)')
     parser.add_argument('--verbose', '-v', action='store_true', help='show context')
-    parser.add_argument('--references', metavar='FILE',
-                        help='bibliography (default: manuscript.references in the book config)')
+    parser.add_argument('--bibliography', metavar='FILE',
+                        help='the .bib file (default: sources.bibliography in the book config)')
     parser.add_argument('--bare-mentions', action='store_true',
                         help='list every bare-surname mention, for a voice that wants full names on later mentions')
     parser.add_argument('--self-test', action='store_true',
@@ -793,15 +773,11 @@ def parse_arguments(argv):
     return parser.parse_args(argv)
 
 
-def resolve_references(options, config, manuscript_dir) -> Optional[str]:
-    if options.references:
-        return options.references
-    configured = config.manuscript.references
-    if configured and configured.is_file() and (
-            not options.manuscript_dir
-            or configured.parent.resolve() == Path(manuscript_dir).resolve()):
-        return str(configured)
-    return find_references_file(manuscript_dir)
+def resolve_bibliography(options, config) -> Optional[str]:
+    if options.bibliography:
+        return options.bibliography
+    configured = config.sources.bibliography
+    return str(configured) if configured and configured.is_file() else None
 
 
 def run(argv) -> int:
@@ -823,17 +799,18 @@ def run(argv) -> int:
     if not CHAPTER_ORDER:
         return tool_failed(f'no prose .md files found in {manuscript_dir}',
                            'person-introduction-check')
-    references_path = resolve_references(options, config, manuscript_dir)
-    if not references_path:
-        return tool_failed('cannot find the bibliography; pass --references FILE or set '
-                           'manuscript.references in book.yaml', 'person-introduction-check')
+    bibliography_path = resolve_bibliography(options, config)
+    if not bibliography_path:
+        print(f"SKIPPED   the book has no .bib file ({config.sources.bibliography}); "
+              f"pass --bibliography FILE or set sources.bibliography in book.yaml")
+        return 0
     if options.bare_mentions:
-        persons = parse_references(references_path)
+        persons = read_persons(bibliography_path)
         if not persons:
-            return tool_failed('no persons found in the bibliography',
+            return tool_failed('no persons found among the authors in the .bib file',
                                'person-introduction-check')
         return 1 if report_bare_mentions(manuscript_dir, persons) else 0
-    issues = analyze(manuscript_dir, references_path, options.verbose)
+    issues = analyze(manuscript_dir, bibliography_path, options.verbose)
     return 1 if issues else 0
 
 

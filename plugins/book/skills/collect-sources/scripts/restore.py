@@ -2,9 +2,9 @@
 """Rebuild the cache of source files after a fresh checkout, and say what could not be rebuilt.
 
 The cache (`sources.library`) is kept out of git: the files are large and many belong to
-publishers. The sources list keeps what is needed to get each one back: the file names,
-their sha256, the URL each original came from, the DOI and the ISBN. This script reads
-those lines and restores every missing file, in this order:
+publishers. The sources list keeps the file names, their sha256 and the URL each original
+came from; the book's .bib file (`sources.bibliography`) keeps the DOI and the ISBN. This
+script reads both and restores every missing file, in this order:
 
   1. the private backup (`sources.backup` in book.yaml): exact bytes, no network. This
      is the only route for files that cannot be downloaded again (a manual download
@@ -54,6 +54,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
+from bibliography import read_identities
 from source_files import (FETCH, SourceFolders, add_config_arguments, cache_references,
                           folders_from_config, load_book, tool_failed)
 from check_output import (ADVISORY, DEFECT, INFORMATIONAL, CheckReport, add_output_arguments,
@@ -78,7 +79,7 @@ def sha256_of(path):
     return digest.hexdigest()
 
 
-def cache_plan(entry, folders):
+def cache_plan(entry, folders, identity=None):
     plan = {"key": entry.key, "text": None, "original": None, "urls": [], "isbn": ""}
     for label, slot in (("Cached text", "text"), ("Cached original", "original")):
         value = entry.field(label) or ""
@@ -96,11 +97,11 @@ def cache_plan(entry, folders):
     record = folders.read_origin_record(entry.key, FETCH) or {}
     if record.get("status") == "cached" and str(record.get("url", "")).startswith("http"):
         plan["urls"].append(record["url"])
-    doi = (entry.field("DOI") or "").strip()
+    doi = ((identity.field("doi") if identity is not None else None) or "").strip()
     if DOI.match(doi):
         plan["urls"].append("https://doi.org/" + doi)
     plan["urls"] = list(dict.fromkeys(plan["urls"]))
-    plan["isbn"] = (entry.field("ISBN") or "").strip()
+    plan["isbn"] = ((identity.field("isbn") if identity is not None else None) or "").strip()
     return plan
 
 
@@ -168,9 +169,9 @@ def restore_from_network(plan, folders, timeout):
     return [], [], "; ".join(reasons)[:300]
 
 
-def run(entries, folders, backup, write, network, timeout, report):
+def run(entries, folders, backup, write, network, timeout, report, identities=None):
     for entry in entries:
-        plan = cache_plan(entry, folders)
+        plan = cache_plan(entry, folders, (identities or {}).get(entry.key))
         missing = missing_names(plan, folders)
         if not missing:
             continue
@@ -206,31 +207,35 @@ FIXTURE_LIST = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 ```
 
-### [Aaa01] Adams, "Backed up" (2001)
+### [Aaa01]
 
-**Full title:** Backed up
 **Cached text:** `sources/library/Aaa01.txt` (fetched 2025-01-01, sha256 {aaa_txt})
 **Cached original:** `sources/library/Aaa01.pdf` (fetched 2025-01-01, sha256 {aaa_pdf}, from https://example.org/a.pdf)
 
 ---
 
-### [Bbb02] Baker, "A book" (2002)
+### [Bbb02]
 
-**Full title:** A book
-**ISBN:** 9780000000002
 **Cached text:** `sources/library/Bbb02.txt` (fetched 2025-01-01, sha256 {missing})
 
 ---
 
-### [Ccc03] Clark, "Present" (2003)
+### [Ccc03]
 
-**Full title:** Present
 **Cached text:** `sources/library/Ccc03.txt` (fetched 2025-01-01, sha256 {ccc_txt})
 
 ---
+"""
+
+FIXTURE_BIBLIOGRAPHY = """@book{Bbb02,
+  author = {Baker, Bob},
+  title = {A book},
+  year = {2002},
+  isbn = {9780000000002},
+}
 """
 
 
@@ -249,10 +254,14 @@ def self_test():
                                    aaa_pdf=sha256_of(backup / "Aaa01.pdf"),
                                    missing="0" * 64, ccc_txt=sha256_of(files / "Ccc03.txt"))
         (root / "list.md").write_text(text, encoding="utf-8")
+        (root / "references.bib").write_text(FIXTURE_BIBLIOGRAPHY, encoding="utf-8")
+        identities = read_identities(root / "references.bib")
         folders = SourceFolders(root=root, files=files, origin=root / "sources" / "library-index")
         entries = read_bank(root / "list.md").entries
         dry = CheckReport(TOOL, CLASSES)
-        run(entries, folders, backup, False, False, 30, dry)
+        run(entries, folders, backup, False, True, 30, dry, identities)
+        if not any(key == "Bbb02" and "ISBN only" in message for key, _name, message in dry.items):
+            failures.append("the ISBN of the .bib entry was not read: %s" % dry.items)
         if (files / "Aaa01.txt").exists():
             failures.append("a dry run wrote a file")
         wet = CheckReport(TOOL, CLASSES)
@@ -303,8 +312,8 @@ def network_self_test():
         text_sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
         server = local_web_server(root)
         page_address = "http://127.0.0.1:%d/%s" % (server.server_address[1], page.name)
-        entry_text = ("# Sources List\n\n## Entry format\n\n```\n### [<Key>] A, \"T\" (Y)\n```\n\n"
-                      "### [Web05] Web, \"A page\" (2005)\n\n**Full title:** A page\n"
+        entry_text = ("# Sources List\n\n## Entry format\n\n```\n### [<Key>]\n```\n\n"
+                      "### [Web05]\n\n"
                       "**Cached text:** `sources/library/Web05.txt` (fetched 2025-01-01, sha256 %s)\n"
                       "**Cached original:** `sources/library/Web05.html` (fetched 2025-01-01, "
                       "sha256 %s, from %s)\n\n---\n" % (text_sha, sha256_of(page), page_address))
@@ -349,7 +358,8 @@ def main():
     report = CheckReport(TOOL, CLASSES)
     network = not args.backup_only
     missing_tools = fetch.missing_external_tools() if network else []
-    run(entries, folders, backup, args.fix, network and not missing_tools, args.timeout, report)
+    run(entries, folders, backup, args.fix, network and not missing_tools, args.timeout, report,
+        read_identities(config.sources.bibliography))
     if args.format == "text":
         print("backup: %s" % (backup or "not set (sources.backup) or not reachable"))
         if missing_tools:

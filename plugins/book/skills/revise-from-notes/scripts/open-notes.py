@@ -13,6 +13,7 @@ from book_config import ConfigError, add_config_arguments, config_from_args
 from check_output import (ADVISORY, DEFECT, INFORMATIONAL, CheckReport,
                           add_output_arguments, tool_failed)
 from citation_key import KEY_BODY, entry_keys
+from citations import cited_keys
 from decisions import match_finding, read_decisions
 
 TOOL = "open-notes"
@@ -379,6 +380,9 @@ def find_note(config, note_id):
 def citation_keys_in(texts):
     keys = []
     for text in texts:
+        for key in cited_keys(text):
+            if key not in keys:
+                keys.append(key)
         for bracket in BRACKETED.findall(text):
             for part in re.split(r"[,;]", bracket):
                 candidate = part.strip()

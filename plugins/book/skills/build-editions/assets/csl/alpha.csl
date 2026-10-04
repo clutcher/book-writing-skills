@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="never" default-locale="en-US">
+  <info>
+    <title>Alpha labels with an APA-like reference list</title>
+    <id>book-build-editions-alpha</id>
+    <summary>Cites [Label]; lists each source as [Label] and an APA-like reference, sorted by label. The label is the BibTeX key, set as citation-label.</summary>
+    <updated>2025-06-01T00:00:00+00:00</updated>
+    <rights license="https://opensource.org/licenses/MIT">MIT</rights>
+  </info>
+  <locale xml:lang="en">
+    <terms>
+      <term name="editor" form="short">
+        <single>Ed.</single>
+        <multiple>Eds.</multiple>
+      </term>
+      <term name="edition" form="short">ed.</term>
+      <term name="chapter" form="short">
+        <single>ch.</single>
+        <multiple>chs.</multiple>
+      </term>
+      <term name="no date" form="short">n.d.</term>
+      <term name="page-range-delimiter">-</term>
+    </terms>
+    <style-options punctuation-in-quote="false"/>
+  </locale>
+  <macro name="name-list">
+    <names variable="author">
+      <name name-as-sort-order="all" sort-separator=", " initialize-with="." delimiter=", " and="symbol" delimiter-precedes-last="always" et-al-min="21" et-al-use-first="19"/>
+      <substitute>
+        <names variable="editor">
+          <name name-as-sort-order="all" sort-separator=", " initialize-with="." delimiter=", " and="symbol" delimiter-precedes-last="always" et-al-min="21" et-al-use-first="19"/>
+          <label form="short" prefix=" (" suffix=")"/>
+        </names>
+        <names variable="director"/>
+        <text variable="title" font-style="italic"/>
+      </substitute>
+    </names>
+  </macro>
+  <macro name="contributors">
+    <text macro="name-list" suffix="."/>
+  </macro>
+  <macro name="date">
+    <choose>
+      <if is-uncertain-date="issued">
+        <date variable="issued" prefix="(c. " suffix=").">
+          <date-part name="year"/>
+        </date>
+      </if>
+      <else-if variable="issued">
+        <date variable="issued" prefix="(" suffix=").">
+          <date-part name="year"/>
+        </date>
+      </else-if>
+      <else>
+        <text term="no date" form="short" prefix="(" suffix=")."/>
+      </else>
+    </choose>
+  </macro>
+  <macro name="edition">
+    <choose>
+      <if is-numeric="edition">
+        <group delimiter=" ">
+          <number variable="edition" form="ordinal"/>
+          <text term="edition" form="short"/>
+        </group>
+      </if>
+      <else>
+        <group delimiter=" ">
+          <text variable="edition"/>
+          <text term="edition" form="short"/>
+        </group>
+      </else>
+    </choose>
+  </macro>
+  <macro name="standalone-title">
+    <group delimiter=" " suffix=".">
+      <text variable="title" font-style="italic"/>
+      <text macro="edition" prefix="(" suffix=")"/>
+      <text variable="genre" prefix="[" suffix="]"/>
+    </group>
+  </macro>
+  <macro name="book-editors">
+    <names variable="editor">
+      <name initialize-with="." delimiter=", " and="symbol" delimiter-precedes-last="contextual"/>
+      <label form="short" prefix=" (" suffix=")"/>
+    </names>
+  </macro>
+  <macro name="volume-and-pages">
+    <group delimiter=", " prefix="(" suffix=")">
+      <group delimiter=" ">
+        <text term="volume" form="short" text-case="capitalize-first"/>
+        <text variable="volume"/>
+      </group>
+      <text variable="number" prefix="Paper "/>
+      <group delimiter=" ">
+        <label variable="page" form="short"/>
+        <text variable="page"/>
+      </group>
+    </group>
+  </macro>
+  <macro name="part-of-book">
+    <group delimiter=" ">
+      <group delimiter=" " suffix=".">
+        <text variable="title"/>
+      </group>
+      <group delimiter=" " suffix=".">
+        <text term="in" text-case="capitalize-first"/>
+        <group delimiter=", ">
+          <text macro="book-editors"/>
+          <text variable="container-title" font-style="italic"/>
+        </group>
+        <text variable="collection-title" prefix="(" suffix=")"/>
+        <text macro="volume-and-pages"/>
+      </group>
+    </group>
+  </macro>
+  <macro name="part-of-journal">
+    <group delimiter=" ">
+      <group delimiter=" " suffix=".">
+        <text variable="title"/>
+      </group>
+      <group delimiter=", " suffix=".">
+        <text variable="container-title" font-style="italic"/>
+        <group>
+          <text variable="volume"/>
+          <text variable="issue" prefix="(" suffix=")"/>
+        </group>
+        <text variable="number" prefix="Article "/>
+        <choose>
+          <if variable="page">
+            <text variable="page"/>
+          </if>
+          <else>
+            <text variable="number-of-pages" suffix=" pages"/>
+          </else>
+        </choose>
+      </group>
+    </group>
+  </macro>
+  <macro name="title-and-source">
+    <choose>
+      <if type="article-journal article-magazine article-newspaper" match="any">
+        <text macro="part-of-journal"/>
+      </if>
+      <else-if type="chapter paper-conference entry-encyclopedia entry-dictionary" match="any">
+        <text macro="part-of-book"/>
+      </else-if>
+      <else-if type="book report thesis manuscript dataset software standard" match="any">
+        <text macro="standalone-title"/>
+      </else-if>
+      <else-if variable="container-title">
+        <group delimiter=" ">
+          <text variable="title" suffix="."/>
+          <text variable="container-title" font-style="italic" suffix="."/>
+        </group>
+      </else-if>
+      <else>
+        <text variable="title" suffix="."/>
+      </else>
+    </choose>
+  </macro>
+  <macro name="publisher">
+    <choose>
+      <if type="article-journal article-magazine article-newspaper" match="none">
+        <text variable="publisher" suffix="."/>
+      </if>
+    </choose>
+  </macro>
+  <macro name="first-published">
+    <date variable="original-date" prefix="First published " suffix=".">
+      <date-part name="year"/>
+    </date>
+  </macro>
+  <macro name="link">
+    <group delimiter=" ">
+      <text variable="URL"/>
+      <text variable="DOI" prefix="https://doi.org/"/>
+    </group>
+  </macro>
+  <citation>
+    <layout prefix="[" suffix="]" delimiter=", ">
+      <group delimiter=", ">
+        <text variable="citation-label"/>
+        <group delimiter=" ">
+          <label variable="locator" form="short"/>
+          <text variable="locator"/>
+        </group>
+      </group>
+    </layout>
+  </citation>
+  <bibliography entry-spacing="0">
+    <sort>
+      <key variable="citation-label"/>
+    </sort>
+    <layout>
+      <group delimiter=" ">
+        <text variable="citation-label" prefix="[" suffix="]"/>
+        <text macro="contributors"/>
+        <text macro="date"/>
+        <text macro="title-and-source"/>
+        <text macro="publisher"/>
+        <text macro="first-published"/>
+        <text variable="note" suffix="."/>
+        <text variable="ISBN" prefix="ISBN " suffix="."/>
+        <text macro="link"/>
+      </group>
+    </layout>
+  </bibliography>
+</style>

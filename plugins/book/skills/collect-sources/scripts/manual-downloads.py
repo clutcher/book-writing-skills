@@ -18,6 +18,9 @@ Four groups:
     preprint only           a file is cached, but it is the preprint; the reviewed
                             paper of record was never opened
 
+The title, authors, year, DOI and ISBN shown for each source come from its entry in the
+book's .bib file (`sources.bibliography`); the URLs and the status from the sources list.
+
 Anything already cached drops off, so the list empties itself as files arrive. With
 --fix the first three groups are written to `needed.txt` in the sources-to-add folder,
 where the author saves the files under any name (see match-added-files.py). This is a
@@ -155,56 +158,73 @@ FIXTURE = """# Sources List
 ## Entry format
 
 ```
-### [<Key>] Author(s), "Short Title" (Year)
+### [<Key>]
 ```
 
-### [Aaa70] Adams, "Gated" (1970)
+### [Aaa70]
 
-**Full title:** A gated paper
-**Authors:** Ann Adams
-**Year:** 1970
 **Access URLs:** https://dl.example.org/doi/pdf/10.0000/aaa70
 **Access status:** MANUAL FETCH REQUIRED (gate)
 
 ---
 
-### [Bbb71] Baker, "Gated but cached" (1971)
+### [Bbb71]
 
-**Full title:** A gated paper that is already cached
-**Authors:** Bob Baker
-**Year:** 1971
 **Access status:** MANUAL FETCH REQUIRED (gate)
 
 ---
 
-### [Ccc72] Clark, "Closed" (1972)
+### [Ccc72]
 
-**Full title:** A closed book
-**Authors:** Cat Clark
-**Year:** 1972
-**ISBN:** 9780000000002
 **Access status:** NO OPEN-ACCESS COPY
 
 ---
 
-### [Ddd26] Davis, "Preprint" (2026)
+### [Ddd26]
 
-**Full title:** A paper read only as a preprint
-**Authors:** Dan Davis
-**Year:** 2026
 **Access status:** READABLE
 **Note:** verified against the preprint only
 
 ---
 
-### [Eee73] Evans, "Refused" (1973)
+### [Eee73]
 
-**Full title:** A paper the fetch could not get
-**Authors:** Eve Evans
-**Year:** 1973
-**DOI:** 10.0000/eee73
+**Note:** the fetch was refused
 
 ---
+"""
+
+FIXTURE_BIBLIOGRAPHY = """@article{Aaa70,
+  author = {Adams, Ann},
+  title = {A gated paper},
+  year = {1970},
+}
+
+@article{Bbb71,
+  author = {Baker, Bob},
+  title = {A gated paper that is already cached},
+  year = {1971},
+}
+
+@book{Ccc72,
+  author = {Clark, Cat},
+  title = {A closed book},
+  year = {1972},
+  isbn = {9780000000002},
+}
+
+@article{Ddd26,
+  author = {Davis, Dan},
+  title = {A paper read only as a preprint},
+  year = {2026},
+}
+
+@article{Eee73,
+  author = {Evans, Eve},
+  title = {A paper the fetch could not get},
+  year = {1973},
+  doi = {10.0000/eee73},
+}
 """
 
 
@@ -216,14 +236,17 @@ def self_test():
         (files / "Bbb71.txt").write_text("cached\n", encoding="utf-8")
         list_path = Path(root) / "list.md"
         list_path.write_text(FIXTURE, encoding="utf-8")
+        bibliography_path = Path(root) / "references.bib"
+        bibliography_path.write_text(FIXTURE_BIBLIOGRAPHY, encoding="utf-8")
         folders = folders_for_directory(files)
         folders.write_origin_record("Eee73", FETCH, {"status": "paywalled"})
-        manual, no_oa, fetch_failed, preprint_only = collect(list_path, folders)
+        manual, no_oa, fetch_failed, preprint_only = collect(list_path, folders, bibliography_path)
         groups = (manual, no_oa, fetch_failed, preprint_only)
         text = render(groups, "text", "list.md", "sources-to-add")
         tsv = render(groups, "tsv", "list.md", "sources-to-add")
         to_add = Path(root) / "sources-to-add"
-        written = write_needed(to_add, needed_items(list_path, folders)).read_text(encoding="utf-8")
+        written = write_needed(to_add, needed_items(list_path, folders, bibliography_path)
+                               ).read_text(encoding="utf-8")
         keys = needed_keys(to_add)
     checks = [
         ([i["key"] for i in manual] == ["Aaa70"], "only the uncached gated entry is listed"),
@@ -233,8 +256,8 @@ def self_test():
         ("ISBN: 9780000000002" in text, "the ISBN is shown for a library request"),
         ([i["key"] for i in fetch_failed] == ["Eee73"], "the refused fetch is listed"),
         (keys == ["Aaa70", "Ccc72", "Eee73"], "needed.txt holds what is still missing"),
-        ("Aaa70 | A gated paper | Ann Adams | 1970 | https://dl.example.org/doi/pdf/10.0000/aaa70"
-         in written, "a needed.txt line holds title, authors, year and link"),
+        ("Aaa70 | A gated paper | Adams, Ann | 1970 | https://dl.example.org/doi/pdf/10.0000/aaa70"
+         in written, "a needed.txt line holds title, authors, year and link from the .bib"),
     ]
     for passed, label in checks:
         if not passed:
@@ -268,11 +291,12 @@ def main():
 
     folders = folders_from_config(config)
     to_add = to_add_folder(config)
-    groups = collect(list_path, folders)
+    bibliography_path = config.sources.bibliography
+    groups = collect(list_path, folders, bibliography_path)
     print(render(groups, args.format, shown_path(config.root, list_path),
                  shown_path(config.root, to_add)))
     if args.fix:
-        written = write_needed(to_add, needed_items(list_path, folders))
+        written = write_needed(to_add, needed_items(list_path, folders, bibliography_path))
         print("wrote %s (%d sources)" % (shown_path(config.root, written), len(needed_keys(to_add))))
     return 0
 
