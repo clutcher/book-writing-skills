@@ -1,8 +1,6 @@
 # Intended impression
 
-What a stranger should believe after the thumbnail, the store description and the back cover,
-and by what means. The prepare-sales-text skill's impression review compares what is received with this
-file; a gap in either direction is a finding.
+What a stranger should believe after the thumbnail, the store description and the back cover, and by what means. The prepare-sales-text skill's impression review compares what is received with this file; a gap in either direction is a finding.
 
 ## What the surfaces must produce
 
@@ -20,8 +18,7 @@ file; a gap in either direction is a finding.
 
 ## Positioning points
 
-<shelf, comparable books and the difference from each, buyer segments, hooks to use and the
-order to use them in, objections to answer (for example "why not a free blog post")>
+<shelf, comparable books and the difference from each, buyer segments, hooks to use and the order to use them in, objections to answer (for example "why not a free blog post")>
 
 ## The one sentence
 

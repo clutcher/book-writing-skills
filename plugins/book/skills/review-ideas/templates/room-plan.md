@@ -4,20 +4,13 @@
 **Goal:** find what a real reviewer or paying reader will hit, while it can still be fixed.
 **Not the goal:** helping to shape or rebuild the book.
 
-This folder is a clean room. It holds a frozen copy of the manuscript and nothing about how or
-why the book was written. The book skills are switched off here on purpose: reviewers
-must meet the book cold, the way a stranger does.
+This folder is a clean room. It holds a frozen copy of the manuscript and nothing about how or why the book was written. The book skills are switched off here on purpose: reviewers must meet the book cold, the way a stranger does.
 
 ## Before you start
 
-1. Check that no skill of the book plugin is listed in this session (for example with `/skills`). If
-   one is, stop and tell the author: the room's settings did not switch the skills off, and the
-   review would not be cold.
-2. The settings switch off plugin skills only. The author's own user-level instructions, skills
-   and memory still load here. If you see instructions about this book in them, tell the author
-   before any agent starts, and name them in the report's coverage section.
-3. The commands below point into the installed plugin. If the plugin is updated during the
-   review and a command stops working, ask the author for the new path; do not remake the room.
+1. Check that no skill of the book plugin is listed in this session (for example with `/skills`). If one is, stop and tell the author: the room's settings did not switch the skills off, and the review would not be cold.
+2. The settings switch off plugin skills only. The author's own user-level instructions, skills and memory still load here. If you see instructions about this book in them, tell the author before any agent starts, and name them in the report's coverage section.
+3. The commands below point into the installed plugin. If the plugin is updated during the review and a command stops working, ask the author for the new path; do not remake the room.
 
 ## Read these, in this order
 
@@ -26,8 +19,7 @@ must meet the book cold, the way a stranger does.
 3. `plan/lenses.md`: the pre-read contract and every lens.
 4. `plan/skeptic-rules.md`: the fixed process, tiers, severity, verdicts.
 5. `plan/merge-and-verify.md`: Stage B.
-6. `decisions.md`, its `## Index` first, then the entries you need: settled items are not
-   findings.
+6. `decisions.md`, its `## Index` first, then the entries you need: settled items are not findings.
 
 Templates for every file the review writes are in `plan/templates/`.
 
@@ -56,8 +48,7 @@ Lens batches: at most {{lens_batch}} agents at once. Skeptics: at most {{skeptic
 
 ## Priority
 
-priority = how likely a real reader or critic is to hit it × how much damage it does × how
-fixable it still is now.
+priority = how likely a real reader or critic is to hit it × how much damage it does × how fixable it still is now.
 
 ## Tools
 

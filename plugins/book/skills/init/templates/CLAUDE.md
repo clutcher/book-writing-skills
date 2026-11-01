@@ -1,13 +1,10 @@
 # CLAUDE.md
 
-This folder holds the book *{{title}}* by {{author}}: its text, the evidence behind it, and the
-settings the book plugin's skills read. Nothing here is code to compile; the build turns the
-manuscript into a print PDF, a screen PDF and an EPUB.
+This folder holds the book *{{title}}* by {{author}}: its text, the evidence behind it, and the settings the book plugin's skills read. Nothing here is code to compile; the build turns the manuscript into a print PDF, a screen PDF and an EPUB.
 
 ## What the book is
 
-Write two or three sentences here: what the book is about, who it is for, and what the reader
-can do after the last page. Every skill reads this section to learn the book's aim.
+Write two or three sentences here: what the book is about, who it is for, and what the reader can do after the last page. Every skill reads this section to learn the book's aim.
 
 ## Where things live
 
@@ -51,14 +48,11 @@ Start a skill of the book plugin with `/book:<skill>`.
 
 ## Working rules
 
-- **Do not commit or push unless the author asks.** When a change cannot be undone, say so and
-  copy the file before editing.
-- **Draft, show, then apply.** Show the full proposed text first; edit files only after the
-  author approves, and apply the approved words exactly.
+- **Do not commit or push unless the author asks.** When a change cannot be undone, say so and copy the file before editing.
+- **Draft, show, then apply.** Show the full proposed text first; edit files only after the author approves, and apply the approved words exactly.
 - **A minimal change stays minimal**, and a passage patched twice is rewritten from its idea.
 - **Truth over punch.** Every claim must survive a fact-check.
 - **Keep copies in sync.** When the same text lives in two places, change both.
-- **Read only the decisions index first** (`## Index` in `rules/decisions.md`), then open the
-  one entry you need under `## Details`. Never raise or re-propose an item marked DECIDED.
-  `/book:run-checks setup` says when the index is out of date, and `setup --fix` rebuilds it.
+- **One paragraph per line in Markdown.** Write each paragraph, list item and blockquote paragraph as one line, never broken at a column. Headings, tables, code blocks, fenced divs (`:::`) and field lines such as `**From:**` stay one item per line.
+- **Read only the decisions index first** (`## Index` in `rules/decisions.md`), then open the one entry you need under `## Details`. Never raise or re-propose an item marked DECIDED. `/book:run-checks setup` says when the index is out of date, and `setup --fix` rebuilds it.
 - **`book.yaml` is data.** Check it after every edit with `/book:run-checks setup`.

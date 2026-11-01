@@ -19,8 +19,7 @@ terms, glossary, watch lists) and its own decisions. Nothing here is about one b
 ## Before any work
 
 1. **Find the book.** Every script finds `book.yaml` by walking up from the file it checks
-   (`--config FILE` names it). Show the setup with
-   `python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py show`.
+   (`--config FILE` names it). Show the setup: `python3 ${CLAUDE_PLUGIN_ROOT}/lib/book_config.py show`.
 2. **Read the voice profile.** The book's `rules.voice` file, or
    `${CLAUDE_PLUGIN_ROOT}/skills/write-text/profiles/default.md` when the book has none
    (`profiles/paper-voice.md` for a paper). Rules marked "per the voice profile" take their
@@ -185,6 +184,7 @@ a person's name (2.7), naming before evidence (1.3).
 9.7. *Italic* for the concept, `monospace` for the code artifact.
 9.8. No bold in running text.
 9.9. Quotation marks around a term only for ironic or unusual use, never to define it.
+9.10. One paragraph per line in every Markdown file: never break a paragraph, list item or blockquote at a column.
 
 ### 10. Priority
 

@@ -1,9 +1,6 @@
 # Sources List
 
-Where to read each source the book tracks: access only. Who wrote it, its title, year, DOI and
-ISBN live in its entry in `{{bibliography}}`, under the same key. What a source says goes to
-`{{quotes}}`; a verdict about the book goes to a dated run folder, never here. The check-facts and
-collect-sources skills read and write this file; its rules are in list-format.md of the check-facts skill.
+Where to read each source the book tracks: access only. Who wrote it, its title, year, DOI and ISBN live in its entry in `{{bibliography}}`, under the same key. What a source says goes to `{{quotes}}`; a verdict about the book goes to a dated run folder, never here. The check-facts and collect-sources skills read and write this file; its rules are in list-format.md of the check-facts skill.
 
 ## Entry format
 
@@ -21,6 +18,4 @@ collect-sources skills read and write this file; its rules are in list-format.md
 **Findings:** see `{{quotes}}`
 ```
 
-The heading is only the key, which is also the key of the .bib entry. No field is required;
-each appears when it applies. One `---` line, with a blank line on each side, comes before
-every entry.
+The heading is only the key, which is also the key of the .bib entry. No field is required; each appears when it applies. One `---` line, with a blank line on each side, comes before every entry.

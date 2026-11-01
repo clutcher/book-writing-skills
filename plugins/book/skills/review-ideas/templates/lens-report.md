@@ -31,8 +31,7 @@
 
 ## Agreed fixes from earlier rounds
 
-<for each `OPEN / fix owed` entry in decisions.md that falls in this lens's question: entry id,
-landed | partly landed | not landed, `file:line`; or "none in this lens's area">
+<for each `OPEN / fix owed` entry in decisions.md that falls in this lens's question: entry id, landed | partly landed | not landed, `file:line`; or "none in this lens's area">
 
 ## Small slips, batched
 

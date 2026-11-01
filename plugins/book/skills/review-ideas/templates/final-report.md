@@ -12,8 +12,7 @@ Records: `review/verification/<id>.md`.
 
 ### Did the last round's agreed fixes land?
 
-Copied from each lens's `## Agreed fixes from earlier rounds`. An entry no lens answered is
-"not checked".
+Copied from each lens's `## Agreed fixes from earlier rounds`. An entry no lens answered is "not checked".
 
 | Agreed fix (decisions.md entry) | Status in this draft | Checked by | Found again as |
 |---|---|---|---|
@@ -24,12 +23,9 @@ Ranked by priority = likelihood × damage × still fixable.
 
 ### Blockers: fix before print
 
-**#1 · <ID>: <statement>**
-`<severity> · <tier> · <verification outcome>`
-*Location:* <where>
+**#1 · <ID>: <statement>** `<severity> · <tier> · <verification outcome>` *Location:* <where>
 <why it matters>
-*Fix:* <smallest change>
-*Verification note:* <corrections from the skeptic>
+*Fix:* <smallest change> *Verification note:* <corrections from the skeptic>
 
 ### Majors, grouped by what they break
 
@@ -54,8 +50,7 @@ Kept apart from the findings above so it does not crowd them.
 ## 6. Coverage and confidence (no hidden gaps)
 
 - Lenses that read the whole book: <all, or which did not>
-- Code: desk-checked by reading only; compile errors may survive (known risk). Or: the book has
-  no code.
+- Code: desk-checked by reading only; compile errors may survive (known risk). Or: the book has no code.
 - Sources fetched and read: <list>
 - Sources not reachable: <list, and which findings depend on them>
 - Not verified by design: strengths, minors, nits.

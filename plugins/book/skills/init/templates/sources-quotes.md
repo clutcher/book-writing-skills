@@ -1,8 +1,6 @@
 # Quotes Bank
 
-What each source says: verified quotes, findings, scope and guardrails. Keyed exactly like
-`{{list}}`. The check-facts skill reads and writes this file; its rules are in
-quotes-format.md of the check-facts skill.
+What each source says: verified quotes, findings, scope and guardrails. Keyed exactly like `{{list}}`. The check-facts skill reads and writes this file; its rules are in quotes-format.md of the check-facts skill.
 
 ## Entry format
 

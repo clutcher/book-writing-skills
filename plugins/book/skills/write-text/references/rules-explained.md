@@ -857,6 +857,12 @@ Do not use quotation marks to introduce or define new terms. Use italic instead 
 
 If you write "so-called X," neither italic nor quotation marks are needed, because the phrase itself signals the special sense.
 
+**9.10. One paragraph per line.**
+
+Write each paragraph, list item and blockquote paragraph of a Markdown file as one line, however long. Never break it at a column: the line breaks show up in every diff when a sentence changes, and the author reads them as noise. A blank line separates two paragraphs; a line with only `>` separates two paragraphs of one blockquote.
+
+**Exception:** Headings, table rows, code blocks, pandoc fenced divs (`::: {#refs}` and `:::`) and field lines that start with a bold label (`**From:**`, `**Note:**`) stay one item per line, because the build and the scripts read them line by line.
+
 ---
 
 ### Term Formatting Summary

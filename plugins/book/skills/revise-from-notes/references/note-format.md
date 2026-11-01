@@ -24,6 +24,8 @@ Open notes only. How to work them: the revise-from-notes skill.
 Free text is allowed under the `#` title, before the first note. Every `##` heading after it must
 be a note heading. The script's `check` (`scripts/open-notes.py`) reports any other `##` heading.
 
+Each field is one line, however long, and so is each paragraph of free text and of a quoted paragraph: never break a line at a column (write-text rule 9.10).
+
 **What a notes file does not hold:** a status legend, a summary table of counts, a "Resolution"
 field, or finished notes. A count is one
 `list` of the script away, and a table that has to be kept up to date by hand goes wrong

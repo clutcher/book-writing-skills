@@ -1,7 +1,6 @@
 # Notes: FILE-NAME
 
-Open notes only. How to work them: the revise-from-notes skill. A resolved note is removed after its
-change is in the text and its decision is in decisions.md.
+Open notes only. How to work them: the revise-from-notes skill. A resolved note is removed after its change is in the text and its decision is in decisions.md.
 
 ## FILE-NAME #1 Short title of the problem
 

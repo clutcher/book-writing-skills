@@ -2,8 +2,7 @@
 
 **Date:** <date>
 **Input:** <number> lens reports, <number> findings (per lens: L1 <n>, L2 <n>, ...)
-**Rule:** near-duplicates merged before verification; a merged unit keeps the strictest severity
-and lists every contributing id.
+**Rule:** near-duplicates merged before verification; a merged unit keeps the strictest severity and lists every contributing id.
 
 ## Mechanical checks
 

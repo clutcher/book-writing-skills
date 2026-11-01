@@ -10,8 +10,7 @@
 
 <The scene or problem the reader recognises. Concrete subjects. One qualifier per sentence.>
 
-**<The claim span, a full sentence that reads alone.>** <Its proof, in specifics a stranger
-can check.>
+**<The claim span, a full sentence that reads alone.>** <Its proof, in specifics a stranger can check.>
 
 ## After reading, you will
 
