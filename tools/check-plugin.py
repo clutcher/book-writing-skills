@@ -29,6 +29,8 @@ repository:
   5. every file a SKILL.md, a reference or a script names exists (tools/named-files-check.py)
   6. every skill has the same shape: frontmatter, modes, calls through ${CLAUDE_PLUGIN_ROOT}
   7. no __pycache__ folder and no .pyc file inside plugins/
+  8. every Markdown file the plugin copies into a book keeps each paragraph on one line
+     (tools/paragraph-lines-check.py)
 
 --with-other-book also runs tools/other-book-check.py over every skill (slow).
 A shell script is run with bash; without bash its --help step is SKIPPED.
@@ -148,8 +150,10 @@ def main(argv=None):
     print("== 6. skill shape ==")
     steps.run("skill shape", python_command(TOOLS / "skill-shape-check.py"))
     no_bytecode(steps)
+    print("== 8. one paragraph per line ==")
+    steps.run("paragraph lines", python_command(TOOLS / "paragraph-lines-check.py"))
     if arguments.with_other_book:
-        print("== 8. other-book check ==")
+        print("== 9. other-book check ==")
         steps.run("other-book check", python_command(TOOLS / "other-book-check.py"))
     print()
     if not steps.failed:

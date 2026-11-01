@@ -186,7 +186,7 @@ python3 tools/check-plugin.py [--with-other-book]
 
 `tools/check-plugin.sh` does the same for those used to it.
 
-It runs the lib tests, every skill's self-check, `--help` of every script, the leak scan, the named-files check, the skill-shape check, and the bytecode check. `--with-other-book` also runs every skill against a second, unrelated book (slow).
+It runs the lib tests, every skill's self-check, `--help` of every script, the leak scan, the named-files check, the skill-shape check, the bytecode check, and the paragraph-lines check (every Markdown file a skill copies into a book keeps each paragraph on one line; `tools/paragraph-lines-check.py --fix` joins broken ones). `--with-other-book` also runs every skill against a second, unrelated book (slow).
 
 The leak scan reads a private word list from the folder named in the environment variable `BOOK_LEAK_LIST`, which holds `leak-words.txt` and `leak-allow.txt`. Without it, the scan looks in `.workspace/leak/`; when neither exists, it says `SKIPPED`.
 
