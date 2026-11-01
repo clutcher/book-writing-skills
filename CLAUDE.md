@@ -2,10 +2,6 @@
 
 This repository is public. Everything git tracks is on the internet the moment it is pushed.
 
-## Never run a git command
-
-This rule is for Claude sessions in this repository: the maintainer handles git. Do not run any git command and do not raise committing or pushing. Copying, moving and deleting files with shell commands is fine.
-
 ## What it is
 
 A Claude Code plugin marketplace with one plugin, `book` (install id `book@book-writing-skills`): skills that help anyone write, check, review and publish a non-fiction book, or a research paper for arXiv (`kind: paper` in `book.yaml`). Nothing in a skill may assume one particular book, author, folder layout or machine.
