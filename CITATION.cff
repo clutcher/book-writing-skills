@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use Book Writing Skills, please cite it as below."
+type: software
+title: "Book Writing Skills"
+abstract: "A Claude Code plugin that helps you write, check, review and publish a non-fiction book, or a research paper for arXiv."
+authors:
+  - family-names: Zarvanskyi
+    given-names: Igor
+    website: "https://clutcher.dev"
+repository-code: "https://github.com/clutcher/book-writing-skills"
+url: "https://clutcher.dev/book/laminar-software-design/"
+license: MIT
+keywords:
+  - book writing
+  - non-fiction
+  - research paper
+  - fact-checking
+  - publishing
+  - Claude Code
+references:
+  - type: book
+    title: "Laminar Software Design: Foundations of High-Quality Code"
+    authors:
+      - family-names: Zarvanskyi
+        given-names: Igor
+    year: 2026
+    isbn: "978-84-09-85928-3"
+    url: "https://clutcher.dev/book/laminar-software-design/"
