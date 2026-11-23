@@ -4,6 +4,8 @@ A Claude Code plugin that helps you write, check, review and publish a non-ficti
 
 Your book keeps one config file, `book.yaml`, next to its text. Every skill reads its paths and settings from that file, so the skills work with any folder layout and any book. The skills are not written for any one book or author.
 
+I wrote my book [Laminar Software Design](https://clutcher.dev/book/laminar-software-design/) with these skills.
+
 **Status:** early 0.x. Names, modes and config keys may still change. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 **How it is made:** Claude Code writes and maintains every skill, script and document in this repository. No person reviews the code before a release.
