@@ -167,6 +167,12 @@ Do chapter openings pull the reader in, and do chapter endings land? Where does 
 the density jump? Where is a term used before it is explained? This is about readers staying,
 not about polishing sentences.
 
+**Words only the author knows:** flag every word, abbreviation or label in the text, a table
+header, a row name or a figure label that a reader of {{audience}} could not understand without
+this work's private context: its files, its glossary, a section they skipped. A term the glossary
+lists is no exception, and neither is a label a script wrote. List them all, one line each, with
+where each first appears; this list is a finding of its own, not many small slips.
+
 **Skimming:** do the headings alone tell each chapter's story? Can a reader who reads only first
 paragraphs still follow the argument? Many buyers judge a book this way in the store preview.
 
