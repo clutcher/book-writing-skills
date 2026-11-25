@@ -6,8 +6,9 @@ manuscript first uses it, whether a use comes before the definition, and how oft
 appears in each file. It reads the glossary and never writes it.
 
 Findings (exit codes and output shape: lib/check_contract.md):
-  used-before-defined  advisory       the first use sits in a file before the one the glossary
-                                      names; most are a plain everyday use of
+  used-before-defined  advisory       the first use sits in a file before the first one the
+                                      glossary names (a location may name several places,
+                                      separated by ";"); most are a plain everyday use of
                                       the word, the rest break rule 6.3
   never-found          advisory       no search form of the term appears in the whole book;
                                       most are a heading that does not match the form the

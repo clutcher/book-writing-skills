@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "lib" / "tests"))
 
-from script_books import OTHER_BOOK, PLAIN_BOOK, CopyOfBook, run_script
+from script_books import NEW_BOOK, OTHER_BOOK, PLAIN_BOOK, CopyOfBook, run_script
 
 SCRIPT = Path(__file__).resolve().parents[1] / "glossary-check.py"
 
@@ -119,6 +119,20 @@ class GlossaryCheckTest(unittest.TestCase):
         # then
         self.assertEqual(run.keys_of("used-before-defined"), ["sour rye"])
         self.assertIn("01-starter.md:3", run.message_of("sour rye", "used-before-defined"))
+
+    def test_shouldAcceptAnEarlyUseWhenTheGlossaryNamesItsPlaceToo(self):
+        with CopyOfBook(NEW_BOOK) as book:
+            # given
+            glossary = book / "rules" / "glossary.md"
+            glossary.write_text(glossary.read_text(encoding="utf-8").replace(
+                "### rest window -- \u00a72", "### rest window -- \u00a72; \u00a71"), encoding="utf-8")
+
+            # when
+            run = run_script(SCRIPT, book=book)
+
+        # then
+        self.assertEqual(run.keys_of("used-before-defined"), [])
+        self.assertNotIn("rest window", run.keys_of("location-not-found"))
 
     def test_shouldReportLocationNotFoundWhenTheLocationWordIsOnlyPartOfAFileNameWord(self):
         # when

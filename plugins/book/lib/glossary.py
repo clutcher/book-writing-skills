@@ -10,6 +10,7 @@ DEFAULT_LOCATION_PATTERN = GLOSSARY_LOCATION_PATTERN
 FIELD_CANONICAL_DEFINITION = "Canonical definition"
 FIELD_INVARIANTS = "Invariants"
 TO_CURATE = "[TO CURATE]"
+LOCATION_SEPARATOR = ";"
 
 ENTRY_HEADING = re.compile(r"^###\s+(.+?)\s*$")
 NAME_TOKEN_SEPARATOR = re.compile(r"[-_\s]+")
@@ -141,7 +142,13 @@ def names_the_file(word, manuscript_file):
 
 
 def locate_definition(location, notation, manuscript_files):
-    found = notation.location_pattern.match(location or "")
+    positions = [position for place in (location or "").split(LOCATION_SEPARATOR)
+                 if (position := locate_place(place.strip(), notation, manuscript_files)) is not None]
+    return min(positions, default=None)
+
+
+def locate_place(place, notation, manuscript_files):
+    found = notation.location_pattern.match(place)
     if not found:
         return None
     groups = found.groupdict()

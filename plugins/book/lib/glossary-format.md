@@ -51,6 +51,8 @@ glossary_format:
   location_pattern: '^(?:§(?P<chapter>\d+)|(?P<file>[A-Za-z][\w-]*))'
 ```
 
+**More than one place.** A term defined in full in one place and glossed in a short phrase where a reader first meets it earlier names both, separated by `;`: `### root zone -- Ch1; Ch4`. The earliest place counts as the definition, so the used-before-defined check accepts a first use there. Name a place only where the text really explains the term; a bare use is not a gloss.
+
 A location that names no manuscript file (for example `book usage` on a word-discipline entry) is
 allowed: the term is still counted, only the used-before-defined check is skipped for it. The
 review-ideas skill (editor mode, map stage) writes `Introduced` in the definitions index in this
