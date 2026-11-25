@@ -148,6 +148,7 @@ a person's name (2.7), naming before evidence (1.3).
 5.7. Replace opaque phrasal verbs; keep the ones your reader reads without effort.
 5.8. Rephrase a possessive on a word that ends in s.
 5.9. Every term in the text, a table or a figure makes sense to a newcomer to the work: a working label becomes a phrase that explains itself.
+5.10. No internal key (a decision id, a review finding id, a note number) in the text or in a draft the author reads: name the idea in words.
 
 ### 6. Book architecture
 
@@ -242,6 +243,7 @@ columns. For a book in another language, the English-only checks (`ascii-normali
 | `unclear-this-check.py` | 2.2, 12.2 | A paragraph opening "This/That/These/Those/The + noun" whose noun is not in the sentence before. |
 | `word-for-two-things-check.py` | 2.4 | One noun ("framework", "system") used both for named outside things and the book's own ideas; SKIPPED with no `outside_names`. |
 | `word-sense-check.py` | 2.4 | Words used in a sense the book avoids (`terms.watch_words.word_sense`). |
+| `internal-key-check.py` | 5.10 | Tokens shaped like an internal key (`D-12`, `L3-2`, the shapes in `writing.internal_key_patterns`) outside code, quotes and citations; give it a draft's path to check the draft. |
 | `person-introduction-check.py` | 2.7 | First mentions without the full name or an introduction; `--bare-mentions` lists bare surnames for a voice that wants full names later too. |
 | `definition-check.py` | 2.4, 9.5 | Bold definition blockquotes whose term is not in the glossary; `--propose` suggests the bold span. |
 | `term-density-check.py` | 3.9-3.14 | Coined-term density, phases (`--phases`), gaps, antonym pairs, compound drift; `--first-use`. SKIPPED on a paper, but for `--first-use`. |
@@ -265,7 +267,7 @@ content of claims belongs to the **review-ideas** skill.
 | Setting | Used for |
 |---|---|
 | `rules.voice` | Voice profile: prose habits and the numbers under `## Settings` |
-| `writing.<setting>` | Overrides one voice number, e.g. `writing.sentence_min_words`; also `writing.term_phases`, `writing.words_per_page`, `writing.paragraph_length_exempt` |
+| `writing.<setting>` | Overrides one voice number, e.g. `writing.sentence_min_words`; also `writing.term_phases`, `writing.words_per_page`, `writing.paragraph_length_exempt`, `writing.internal_key_patterns`, `writing.internal_key_allow` |
 | `terms.families`, `terms.compounds` | Coined terms and accepted compounds |
 | `terms.watch_words.container_terms` | `book_terms` (the book's own words), `outside_names` (named outside things), `watchlist` (container nouns) |
 | `terms.watch_words.people` | `aliases` (other names of a cited author), `eponyms` (laws or tests named after a person, to skip) |

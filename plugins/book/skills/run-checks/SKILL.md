@@ -22,7 +22,7 @@ check.
 | Mode | Say | What it checks |
 |---|---|---|
 | `all` (default) | "run the checks", "run all the checks on the book" | every group below |
-| `text` | "run the text checks", "run the checks on this chapter" | sentence and paragraph length, connectors, inversions, ASCII, unclear "this", one word for two things, word senses, person introductions, definitions, coined-term density, the glossary, the code font, the open notes, Vale; for a paper also the paper check and the arXiv bundle check |
+| `text` | "run the text checks", "run the checks on this chapter" | sentence and paragraph length, connectors, inversions, ASCII, unclear "this", one word for two things, word senses, internal keys, person introductions, definitions, coined-term density, the glossary, the code font, the open notes, Vale; for a paper also the paper check and the arXiv bundle check |
 | `facts` | "run the citation checks", "run the source checks" | citation keys, the bibliography, the sources list and the quotes bank, the library files; every `@Key` in the manuscript and the thinking files |
 | `cover` | "run the cover checks" | colors and contrast, fonts, text placement, the KDP template overlay |
 | `sales-text` | "run the sales-text checks" | the surfaces agree, the store description, the keywords |

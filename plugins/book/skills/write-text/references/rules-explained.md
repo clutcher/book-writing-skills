@@ -602,6 +602,14 @@ The rule holds for every text the reader sees, also text a script writes: the he
 
 **Test:** read every term, header and label as a reader who knows the field and has read nothing of this work but the page in front of them. Could they say what it means? If they would need the glossary, a method section or the author's files, write the phrase instead. A book's deliberately coined terms (rules 3.9-3.14) pass this test when the text teaches them before use (rule 2.4); a label that was never meant for the reader does not.
 
+**5.10. No internal key in the text or in a draft the author reads: name the idea in words.**
+
+Work on a book makes ids: decision ids in `decisions.md` (D-12), review finding ids (L3-2), and often the author's own numbered lists of cases, examples or claims (C4). They are useful in the files, where a script or a person looks them up. In the text they are noise: a key means something only to whoever made it, so the reader must translate every one and cannot. The same holds for a draft shown to the author, who reads it to judge the text, not to open files.
+
+So the text names the idea each time: "the decision to water at dawn", "the second mistake, watering at noon", "the bed by the north wall". Keys stay in the decisions file, in anchors and labels the build reads, and in code. A draft for the author may add the key in brackets after the words when the author needs it to find a file. Generated tables and figures follow the same rule: a row name or an axis label a script writes is reader text.
+
+**Detection:** `scripts/internal-key-check.py` lists tokens shaped like a key outside code, quotes, citations and links. Its default shapes cover the ids the plugin itself makes; `writing.internal_key_patterns` adds the book's own shapes, and `writing.internal_key_allow` lists the names in the field that only look like keys.
+
 ---
 
 ### 6. Book Architecture (Fractal Structure)

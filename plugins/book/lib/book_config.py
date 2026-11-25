@@ -142,6 +142,8 @@ SHARED_DEFAULTS = {
         "paragraph_length_exempt": [],
         "term_phases": None,
         "words_per_page": None,
+        "internal_key_patterns": [],
+        "internal_key_allow": [],
     },
     "paper": {
         "authors": [],

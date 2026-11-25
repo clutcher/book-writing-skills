@@ -27,6 +27,10 @@ agent's choice instead of a judgment of the author's own text.
    stall.
 4. **Counts near the limits:** words in the sentence when it approaches the voice profile's
    range or ceiling, and sentences in the paragraph against the profile's range.
+5. **The idea in words, never its key.** Name a decision, a note, a finding or a numbered claim
+   by what it says, each time: "the decision to water at dawn", not "D-12" (rule 5.10). The
+   author reads the draft to judge the text, not to look up ids. A key may follow the words in
+   brackets when the author needs it to find the file.
 
 ## Batches
 

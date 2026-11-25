@@ -167,6 +167,7 @@ CHECKS = (
     text_check("unclear-this-check.py"),
     text_check("word-for-two-things-check.py"),
     text_check("word-sense-check.py"),
+    text_check("internal-key-check.py", graded=True),
     text_check("person-introduction-check.py", reach=WHOLE_BOOK),
     Check(TEXT, "write-text", "definition-check.py", reach=ON_PATHS, graded=False,
           needs=(GLOSSARY,)),

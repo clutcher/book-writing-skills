@@ -26,6 +26,7 @@ other groups read the paper's sections as they read chapters.
 | `unclear-this-check.py` | write-text | paths | exit | |
 | `word-for-two-things-check.py` | write-text | paths | exit | |
 | `word-sense-check.py` | write-text | paths | exit | |
+| `internal-key-check.py` | write-text | paths | classes | |
 | `person-introduction-check.py` | write-text | book | exit | |
 | `definition-check.py` | write-text | paths | exit | glossary |
 | `term-density-check.py` | write-text | book | exit | coined terms; a book (it says SKIPPED itself on a paper) |
