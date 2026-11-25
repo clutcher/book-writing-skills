@@ -108,6 +108,7 @@ DEFAULT_DELAY = 2.0
 DEFAULT_TIMEOUT = 60
 DEFAULT_MAX_BYTES = 200 * 1024 * 1024
 PDFTOTEXT_TIMEOUT = 300
+PLAIN_TEXT_ENDINGS = (".txt", ".md")
 
 URL_FIELDS = ("Access URLs",)
 
@@ -749,13 +750,18 @@ def accept(key, url, meta, downloaded, folders, options):
     return store(key, url, meta, downloaded, kind, text, extension, stripped, folders)
 
 
+def content_type_of_file(path):
+    return "text/plain" if Path(path).suffix.lower() in PLAIN_TEXT_ENDINGS else ""
+
+
 def ingest_file(key, path, url, folders, options):
     if not options.write:
         result = empty_result(key)
         result.update(status="would-fetch", url=url or "",
                       reason="would cache %s (pass --fix)" % Path(path).name)
         return result
-    meta = {"http_code": 200, "content_type": "", "final_url": url or "manual download",
+    meta = {"http_code": 200, "content_type": content_type_of_file(path),
+            "final_url": url or "manual download",
             "bytes": Path(path).stat().st_size}
     try:
         return accept(key, url or "manual download", meta, path, folders, options)
@@ -897,6 +903,13 @@ def self_test():
                           "**Access URLs:** https://example.org/c\n", encoding="utf-8")
         require([key for key, _ in work_from_list(listed, None)] == ["Smi99"],
                 "--all skips the format example and the <Key> placeholder")
+        for ending in (".txt", ".md"):
+            plain_file = Path(folder) / ("joined-manuscript" + ending)
+            plain_file.write_text("A plain text a person saved by hand.\n" * 100, encoding="utf-8")
+            plain_run = ingest_file("Own26", plain_file, "", dry_folders, options)
+            require(plain_run["status"] == "cached",
+                    "a %s file given with --file is cached as text: %s"
+                    % (ending, plain_run["reason"]))
 
     for merged in (False, True):
         layout = "merged origin" if merged else "records beside files"
