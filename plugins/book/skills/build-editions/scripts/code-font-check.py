@@ -34,15 +34,17 @@ def in_subset(character):
 
 def code_lines(text):
     open_fence = None
+    in_raw_block = False
     for number, line in enumerate(text.splitlines(), 1):
         fence = FENCE.match(line)
         if open_fence:
             if fence and fence.group(1)[0] == open_fence[0] and len(fence.group(1)) >= len(open_fence):
                 open_fence = None
-            else:
+            elif not in_raw_block:
                 yield number, line
-        elif fence and "{=" not in line:
+        elif fence:
             open_fence = fence.group(1)
+            in_raw_block = "{=" in line
         else:
             for match in INLINE_CODE.finditer(line):
                 yield number, match.group(2)
@@ -64,12 +66,13 @@ def check_file(path, root, report):
 
 
 def self_test():
-    sample = "Text with `a -> b` and `a → b`.\n\n```\n┌─┐ ok\nplain\n```\n\n```{=latex}\n\\vfill é\n```\n"
+    sample = ("Text with `a -> b` and `a → b`.\n\n```\n┌─┐ ok\nplain\n```\n\n```{=latex}\n\\vfill é\n```\n"
+              "\nProse after the raw block → stays prose.\n")
     found = list(missing_characters(sample))
     checks = [
         ("inline code outside the subset is found", found[0], (1, ["→"])),
         ("box-drawing in a code block is found", found[1], (4, ["─", "┌", "┐"])),
-        ("raw LaTeX blocks are not code", len(found), 2),
+        ("raw LaTeX blocks are not code, nor the prose after them", len(found), 2),
         ("typographic quotes are in the subset", in_subset("“"), True),
     ]
     failures = [(name, got, expected) for name, got, expected in checks if got != expected]
