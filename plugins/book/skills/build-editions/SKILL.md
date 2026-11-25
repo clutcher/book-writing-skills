@@ -132,7 +132,7 @@ ID) and the copyright notice.
 
 Text such as `TO BE ASSIGNED` (for example an ISBN on the copyright page) never stops a build. The build always writes its file, then lists every place the placeholder still appears, as `file:line` with the line itself, **after** the last `Done!` line. A warning in the middle of hundreds of build lines is a warning nobody reads. A final build is told plainly that the file is not fit to publish; a draft gets the same list. An all-editions run prints one list at the end for all three files. The text searched for is `book.placeholder_text` (default `TO BE ASSIGNED`).
 
-Before a release, `placeholder-check.py` (run by run-checks `text`) lists every line that still holds the placeholder text or one of `book.other_placeholders`, such as a `TODO:` the author left for later, as a finding. A release waits until it is clean.
+Before a release, `placeholder-check.py` (run by run-checks `text`) lists every line that still holds the placeholder text or one of `book.other_placeholders`, such as a `TODO:` the author left for later, as a finding. Give it files or folders to check a draft kept outside the manuscript folder. A release waits until it is clean.
 
 ## The paper edition
 

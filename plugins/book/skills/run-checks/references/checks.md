@@ -33,7 +33,7 @@ other groups read the paper's sections as they read chapters.
 | `glossary-check.py` | write-text | book | classes | |
 | `paper-check.py` | write-text | book | classes | a paper (it says SKIPPED itself on a book) |
 | `code-font-check.py` | build-editions | book | classes | |
-| `placeholder-check.py` | build-editions | book | classes | |
+| `placeholder-check.py` | build-editions | paths | classes | |
 | `arxiv-bundle-check.py` | build-editions | book | classes | a paper; Docker (it says SKIPPED itself); an anonymous bundle also gets `image-metadata` |
 | `open-notes.py check` | revise-from-notes | book | classes | |
 | `vale-run.py` | write-text | paths | exit | Docker; off with `--no-vale` |

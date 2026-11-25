@@ -3,6 +3,10 @@
 The plugin is in early 0.x versions: names, modes and config keys may still change between
 versions. A change that needs work in an existing book is named here.
 
+## Unreleased
+
+- `placeholder-check.py` takes files or folders, like `internal-key-check.py`, so it can check a draft kept outside the manuscript folder; `run-checks text PATH` passes the path on.
+
 ## 0.7.0
 
 Text a newcomer can read: no private labels or internal keys, citations only for what is held, no placeholder left at release.
