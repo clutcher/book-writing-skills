@@ -139,7 +139,7 @@ run-checks still reports them until they are settled in the file.
 | Script | Checks |
 |---|---|
 | `citation-check.py` | citations in every manuscript file against the .bib; `--report` writes the report review-ideas reads |
-| `cited-source-check.py` | every `@Key` in the manuscript and the thinking files: in the .bib and the sources list, with a library copy or a `needed.txt` line |
+| `cited-source-check.py` | every `@Key` in the manuscript and the thinking files: in the .bib and the sources list, with a library copy; a `needed.txt` line is enough only for a key the manuscript does not cite |
 | `citation-key-check.py`, `key-bibtex-check.py` | every .bib key against the alpha key rule, and the label real bibtex prints for it; `citation-key-check.py --fix` renames a key everywhere |
 | `reference-format-check.py`, `list-bibliography-check.py`, `edition-duplicate-check.py` | the .bib: entry format (`--titles`: titles in the prose), the join with the list, editions |
 | `entry-format-check.py`, `entry-format-fix.py`, `list-quotes-join-check.py` | the two banks: format and the join |

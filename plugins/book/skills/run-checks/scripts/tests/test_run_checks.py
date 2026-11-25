@@ -213,6 +213,7 @@ class RunChecksTest(unittest.TestCase):
 
     def test_shouldPassAndShowTheCountWhenACheckReportsOnlyAnExpectedState(self):
         # given
+        self.write("manuscript/110-chapter-1.md", "# Chapter 1: Sun\n\nBeans need sun.\n")
         self.write("thinking/argument/sun.md", "Shade slows the crop [@Smi99].\n")
         (self.book / "sources" / "library" / "Smi99.txt").unlink()
         self.write(".book/sources-to-add/needed.txt", "Smi99\n")

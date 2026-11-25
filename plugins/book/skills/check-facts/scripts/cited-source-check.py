@@ -16,7 +16,10 @@ Findings (exit codes and output shape: lib/check_contract.md):
   not-in-bibliography  defect         a key is cited, and the .bib has no entry for it
   not-in-list          defect         a cited key has no sources list entry
   no-library-copy      defect         a cited key has no library copy and no needed.txt line
-  waits-in-needed      informational  no library copy yet; needed.txt asks for it
+  cited-without-copy   advisory       the manuscript cites it with no library copy yet; needed.txt
+                                      asks for it (a book cites only what it holds a copy of)
+  waits-in-needed      informational  only the thinking files cite it; no library copy yet, and
+                                      needed.txt asks for it
 
 A book with neither a .bib nor a sources list says SKIPPED: it does not use citations.
 """
@@ -32,7 +35,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 import script_tests
 from book_config import ConfigError, add_config_arguments, config_from_args
 from bibliography import BibliographyError, read_bibliography
-from check_output import DEFECT, INFORMATIONAL, CheckReport, add_output_arguments, tool_failed
+from check_output import (ADVISORY, DEFECT, INFORMATIONAL, CheckReport, add_output_arguments,
+                          tool_failed)
 from citation_key import entry_keys, is_placeholder
 from manuscript_text import cited_keys, prose_lines
 from source_files import thinking_paths
@@ -43,6 +47,7 @@ CLASSES = {
     "not-in-bibliography": DEFECT,
     "not-in-list": DEFECT,
     "no-library-copy": DEFECT,
+    "cited-without-copy": ADVISORY,
     "waits-in-needed": INFORMATIONAL,
 }
 INDEX_RECORD_ENDINGS = (".json",)
@@ -58,6 +63,11 @@ def places_by_key(paths, root):
             for key in cited_keys(line):
                 places.setdefault(key, []).append(f"{shown}:{number}")
     return places
+
+
+def join_places(text_places, thinking_places):
+    return {key: text_places.get(key, []) + thinking_places.get(key, [])
+            for key in text_places.keys() | thinking_places.keys()}
 
 
 def shown_name(path, root):
@@ -95,8 +105,9 @@ def list_keys(path):
     return entry_keys(path.read_text(encoding="utf-8"), skip_fenced=True)
 
 
-def add_findings(report, places, known, copied, needed):
+def add_findings(report, places, known, held, text_keys):
     in_bibliography, listed = known
+    copied, needed = held
     for key in sorted(places, key=str.lower):
         if is_placeholder(key):
             continue
@@ -106,7 +117,10 @@ def add_findings(report, places, known, copied, needed):
             report.add(key, "not-in-list", f"cited at {where(places[key])}")
         if key not in in_bibliography or key not in listed or key in copied:
             continue
-        if key in needed:
+        if key in needed and key in text_keys:
+            report.add(key, "cited-without-copy", f"cited at {where(places[key])} with no library "
+                       f"copy yet; needed.txt asks for it")
+        elif key in needed:
             report.add(key, "waits-in-needed", "no library copy yet; needed.txt asks for it")
         else:
             report.add(key, "no-library-copy",
@@ -140,11 +154,12 @@ def main(argv=None):
         if not manuscript:
             report.skip(f"no manuscript files at {config.manuscript.dir}")
             return report.emit(arguments.format)
-        places = places_by_key(manuscript + thinking_paths(config), config.root)
+        text_places = places_by_key(manuscript, config.root)
+        places = join_places(text_places, places_by_key(thinking_paths(config), config.root))
     except (ConfigError, OSError, BibliographyError) as error:
         return tool_failed(str(error), TOOL)
-    add_findings(report, places, known, library_keys(config.sources.library),
-                 set(needed_keys(config.sources.to_add)))
+    held = (library_keys(config.sources.library), set(needed_keys(config.sources.to_add)))
+    add_findings(report, places, known, held, set(text_places))
     return report.emit(arguments.format)
 
 

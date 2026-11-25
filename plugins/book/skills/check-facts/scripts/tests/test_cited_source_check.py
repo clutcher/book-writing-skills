@@ -94,6 +94,18 @@ class CitedSourceCheckTest(unittest.TestCase):
         self.assertEqual(run.keys_of("waits-in-needed"), ["Lee05"])
         self.assertEqual(run.exit_code, 0)
 
+    def test_shouldReportAManuscriptKeyWhenOnlyNeededTxtAsksForItsCopy(self):
+        # given
+        (self.book / "sources/library/Smi99.pdf").unlink()
+        self.write(".book/sources-to-add/needed.txt", "Smi99 | Kitchen Gardens | Smith, A. | 1999\n")
+
+        # when
+        run = run_script(SCRIPT, book=self.book)
+
+        # then
+        self.assertEqual(run.keys_of("cited-without-copy"), ["Smi99"])
+        self.assertEqual(run.exit_code, 1)
+
     def test_shouldReportAKeyWhenTheBibliographyHasNoEntryForIt(self):
         # given
         self.write("thinking/doubts/open-questions.md", "Is it true? [@Kim20]\n")
