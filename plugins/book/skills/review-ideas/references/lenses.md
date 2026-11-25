@@ -91,6 +91,13 @@ Also:
   its citation, for Stage C to compare against the fetched source.
 - **Suspicions you dropped:** write down what you checked and cleared, so a skeptic does not redo
   it.
+- **For a paper (`kind: paper`) that reports a study planned in advance; skip this for a book:**
+  does the text say plainly what was fixed before the data (the plan, the materials, the data kept
+  apart for the final test), where it was recorded (a public registry or the authors' own files),
+  and what changed after seeing data? Was the data kept apart really unused until the end? Is a
+  planned confirmatory round whose plan changed or that came out too small called a pilot, with
+  its results called exploratory, in the abstract and the results as well as the threats?
+  Write-text rule 13.8 is the standard.
 
 Claims you can only judge from memory are tagged `recall-based` and sent to Stage C.
 

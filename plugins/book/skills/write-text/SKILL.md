@@ -215,6 +215,7 @@ a person's name (2.7), naming before evidence (1.3).
 13.5. Name the threats to validity openly, in their own section, with what was done about each.
 13.6. Give every measured number with its uncertainty and its unit.
 13.7. Point to every figure and table from the text, by its number or its label.
+13.8. For a study planned in advance, say what was fixed before the data (plan, materials, held-out data), where it was recorded, and what changed after.
 
 ## A book or a paper
 

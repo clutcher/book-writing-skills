@@ -1030,6 +1030,26 @@ The text names each figure and table by its number ("Figure 2 shows ...") or by 
 (`@fig:beds`), before or near where it appears, and says what the reader should see in it. A
 figure no sentence points to is either not needed or not explained.
 
+**13.8. For a study planned in advance, say what was fixed before the data, where it was recorded, and what changed after seeing data.**
+
+Three things fixed before the data make a confirmatory result worth more than an exploratory one:
+
+- **the plan**: the hypotheses, the measures, the analysis and the rule for which data count;
+- **the materials**: the tasks, the code, the prompts and the versions of the tools and models, each fixed in an exact version before the round that uses it (the field says "frozen");
+- **the data kept apart for the final test** (the field says "held-out"): data that nobody looked at while the method was built, used once, at the end.
+
+The reader can only give the result that weight when the paper says plainly, for each of the three:
+
+- **what was fixed, and when**: each part with its date, and before which round of data;
+- **where it was recorded**: a public registry with its entry, or the authors' own dated files (a commit, an archive); a record in the authors' own files is weaker, and the paper says which one it is;
+- **what changed after seeing data**: every change to the plan or the materials, the data it came after and its reason, in the method section, not only in a supplement.
+
+Data kept apart stays apart only while nobody uses it to make a choice. When it was looked at during the work, used twice, or used to change the method, the paper says so and stops calling it kept apart: a later result on it is a second development round, not a final test.
+
+When the plan did not hold, the paper names the study for what it became. A planned confirmatory round whose plan or materials changed after its data, or that came out too small, is a pilot, and its results are exploratory: they suggest, they do not confirm. The paper says this in the abstract and in the results, not only in the threats to validity.
+
+Test: could a reader tell, for each result, whether the analysis, the materials and the data behind it were fixed before that data was seen? If not, the paper does not yet say enough.
+
 ---
 
 ## Word-Level Lookup Tables
