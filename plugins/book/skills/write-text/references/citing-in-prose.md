@@ -80,6 +80,9 @@ An authority phrase is only worth keeping when the authority carries the claim. 
 removing the name and the phrase ("X showed that"): if the sentence still stands on its data,
 quote or logic, the name is decoration and may go; if it now reads as a bare claim, the name is
 load-bearing and needs a proper introduction (Rule 2.7, `${CLAUDE_PLUGIN_ROOT}/skills/review-text/references/hard-words.md`, Step 5).
+The same test holds for the citation mark itself: a key stays only where the sentence takes an
+idea, a finding or words from that work (Rule 2.9). A key added to show that someone important
+agrees is a credential, not a source.
 
 ## Signal verbs by stance
 

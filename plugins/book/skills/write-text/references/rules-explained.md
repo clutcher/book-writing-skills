@@ -201,6 +201,8 @@ Examples must include explanation of WHY they demonstrate the point. The reader 
 
 Support all significant claims with references, written as pandoc citations (`[@Abc99]`, `[@Abc99; @Def01, p. 12]`, narrative `@Abc99`; `citing-in-prose.md`). Every key is an entry in the book's `.bib` file (`sources.bibliography`); the build prints it in the book's citation style (`sources.citation_style`, BibTeX alpha by default). The check-facts skill owns the key and the `.bib` entry format.
 
+**Cite a work for what the text takes from it.** A citation marks the idea, the finding or the words this sentence takes from that work, so a reader can check them there. A work cited only to show that an important person agrees, or that the field exists, is a credential, not a source: either name what the sentence takes from it or remove the citation. And cite only a work the book holds a copy of (the library of the check-facts skill), because a claim checked against no copy is a claim checked against memory.
+
 **2.10. Grounding varies by section type.**
 
 - **In introductions:** Ground abstract ideas in narrative and human experience.
