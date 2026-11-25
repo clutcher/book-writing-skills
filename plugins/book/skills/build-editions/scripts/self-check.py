@@ -18,7 +18,8 @@ TIME_LIMIT = 300
 SELF_TESTS = ("compute-leading.py", "diff-preprocess.py", "output_files.py",
               "flatten-code-lines.py", "filter-settings.py", "epub-check.py",
               "code-font-check.py", "paper-metadata.py", "paper_source.py",
-              "arxiv-bundle-check.py", "bibliography-to-csl.py", "image_metadata.py")
+              "arxiv-bundle-check.py", "bibliography-to-csl.py", "image_metadata.py",
+              "placeholder-check.py")
 PAPER_AUTHOR_WORDS = ("Sam Example", "Lee Sample", "Garden School", "sam@example.org")
 PAPER_TEMPLATES = ("article", "acm", "ieee", "lncs")
 TEMPLATES = SKILL / "assets" / "templates"

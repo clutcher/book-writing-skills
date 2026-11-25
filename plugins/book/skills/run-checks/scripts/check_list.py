@@ -175,6 +175,7 @@ CHECKS = (
     text_check("glossary-check.py", reach=WHOLE_BOOK, graded=True),
     text_check("paper-check.py", reach=WHOLE_BOOK, graded=True),
     text_check("code-font-check.py", reach=WHOLE_BOOK, graded=True, skill="build-editions"),
+    text_check("placeholder-check.py", reach=WHOLE_BOOK, graded=True, skill="build-editions"),
     Check(TEXT, "build-editions", "arxiv-bundle-check.py", needs=(a_paper,)),
     Check(TEXT, "revise-from-notes", "open-notes.py", ("check",)),
     Check(TEXT, "write-text", "vale-run.py", reach=ON_PATHS, graded=False, uses_vale=True),

@@ -118,6 +118,7 @@ book:                                  # metadata and build settings (Title-Case
   ebook_cover: null                    # EPUB cover, >= 2560 px long side; null = <cover.final>/ebook.png when it exists
   hyphenation_language: english        # babel name
   placeholder_text: TO BE ASSIGNED
+  other_placeholders: []               # more texts that mark something not done yet, e.g. ["TODO:"]
   latex_commands_to_drop: []           # ebook filter
   language_codes: {}                   # added to latin french german spanish italian
   heading_types: {}                    # added to Preface Acknowledgments References

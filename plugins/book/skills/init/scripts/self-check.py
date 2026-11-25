@@ -5,7 +5,7 @@ new:      a dry run writes nothing; --fix writes the standard layout with no REA
           file, a CLAUDE.md that names every folder and all eleven skills, and a book that
           book_config.py check accepts with no unknown key; every skill's main checks run on
           it, and run-checks.py all runs with no FAIL and finds only the starter's open work
-          (the one-line description is not written), with every facts check SKIPPED while
+          (the one-line description is not written, the copyright page holds placeholders), with every facts check SKIPPED while
           the source banks are empty except the two that read only the book's own text; build-book.sh --show-settings lists the starter files in order; a
           second --fix changes nothing; the author's name is safe in LaTeX; .gitignore
           follows the book's own paths.
@@ -94,7 +94,7 @@ NEW_BOOK_FILES = ("book.yaml", "CLAUDE.md", ".gitignore", ".claude/settings.json
                   "publishing/sales-text/back-cover.md", "publishing/sales-text/amazon.html",
                   "publishing/sales-text/keywords-and-categories.md",
                   "publishing/sales-text/intended-impression.md")
-STARTER_OPEN_WORK = {"sync-check.py"}
+STARTER_OPEN_WORK = {"sync-check.py", "placeholder-check.py"}
 STARTER_FONT_FAMILIES = ("DejaVu Serif", "DejaVu Sans")
 PAPER_STARTER_FILES = ("010-abstract.md", "020-introduction.md", "030-related-work.md",
                        "040-method.md", "050-results.md", "060-threats-to-validity.md",

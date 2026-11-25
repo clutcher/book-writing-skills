@@ -58,7 +58,7 @@ BOOK_KEYS = frozenset((
     "all_page_folios", "highlight", "top_level", "toc_depth", "toc", "numbered",
     "pattern", "exclude", "part_pages", "part_overview",
     "cover_front", "cover_back", "ebook_cover",
-    "hyphenation_language", "placeholder_text", "latex_commands_to_drop", "language_codes",
+    "hyphenation_language", "placeholder_text", "other_placeholders", "latex_commands_to_drop", "language_codes",
     "heading_types", "chapter_heading_word", "front_matter_pages", "copyright_markers",
     "emblem_alt", "references_heading",
 ))

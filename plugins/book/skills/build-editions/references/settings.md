@@ -65,6 +65,7 @@ tools:
 | `ebook_cover` | `ebook.png` in `cover.final`, when shipped | EPUB cover image; KDP wants at least 2560 px on the long side | none |
 | `hyphenation_language` | none | babel language name for the print hyphenation, e.g. `ngerman` | `english` |
 | `placeholder_text` | none | the text reported as still open after a build | `TO BE ASSIGNED` |
+| `other_placeholders` | none | more texts that mark something not done yet; `placeholder-check.py` lists them before a build | `[]` |
 
 All values given in `book.yaml` are checked the same way as options: an unknown font or style
 stops the build before anything runs.
