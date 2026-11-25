@@ -5,6 +5,7 @@ versions. A change that needs work in an existing book is named here.
 
 ## Unreleased
 
+- A paper's appendix: `paper.appendix` names the first appendix file. The paper build starts the LaTeX appendix there and numbers its figures and tables A1, A2, ..., and `paper-check.py` numbers them the same way and reads "Figure A1" in the text. Before, an appendix figure numbered by the paper's own preamble was reported as never pointed to.
 - run-checks says how to check a whole draft kept outside the manuscript folder (`--set manuscript.dir=<folder>`): a path given after `text` reaches only the path checks, while the whole-book checks read `manuscript.dir`.
 
 ## 0.8.0

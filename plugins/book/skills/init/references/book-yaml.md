@@ -277,6 +277,7 @@ paper:                                 # read only when kind is paper
   authors: []                          # - {name: ..., affiliation: ..., email: ...}; a plain name also works;
                                        # [] = book.author
   abstract: manuscript/010-abstract.md # the abstract file; front matter
+  appendix: null                       # the first appendix file; from it on, figures and tables are A1, A2, ...
   template: article                    # article, acm, ieee or lncs (built-in templates only)
   engine: xelatex                      # xelatex | pdflatex (arXiv takes both)
   anonymous: false                     # true = build without authors, for double-blind review

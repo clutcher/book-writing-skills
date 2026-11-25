@@ -149,6 +149,7 @@ SHARED_DEFAULTS = {
     "paper": {
         "authors": [],
         "abstract": "manuscript/010-abstract.md",
+        "appendix": None,
         "template": PAPER_BUILT_IN_TEMPLATE,
         "engine": "xelatex",
         "anonymous": False,
@@ -950,6 +951,7 @@ class PaperAuthor:
 class PaperSettings:
     authors: list
     abstract: Path
+    appendix: Path
     template: str
     engine: str
     anonymous: bool
@@ -1192,6 +1194,7 @@ def _paper_settings(paper, root, book_author):
     return PaperSettings(
         authors=_paper_authors(paper.get("authors"), book_author),
         abstract=_resolve(root, paper.get("abstract")),
+        appendix=_resolve(root, paper.get("appendix")),
         template=template,
         engine=str(paper.get("engine") or defaults["engine"]).strip().lower(),
         anonymous=paper.get("anonymous") is True,
@@ -1507,6 +1510,7 @@ def shell_paper_values(config):
         "PAPER_ANONYMOUS": _plain(paper.anonymous),
         "PAPER_FORMAT": paper.format,
         "PAPER_ABSTRACT": _plain(paper.abstract),
+        "PAPER_APPENDIX": _plain(paper.appendix),
         "PAPER_AUTHORS": _plain(paper_authors_data(paper)),
         "PAPER_ARXIV_CATEGORY": _plain(paper.arxiv_category),
         "PAPER_ABSTRACT_MAX_WORDS": _plain(paper.abstract_max_words),
@@ -1620,6 +1624,8 @@ def _paths_to_check(config):
     kept = {key: value for key, value in paths.items()
             if not key.startswith(PUBLISHING_KEY_PREFIXES)}
     kept["paper.abstract"] = config.paper.abstract
+    if config.paper.appendix is not None:
+        kept["paper.appendix"] = config.paper.appendix
     return kept
 
 

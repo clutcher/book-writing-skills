@@ -139,6 +139,49 @@ class PaperCheckTest(unittest.TestCase):
         self.assertIn("a book has no abstract", json.loads(run.stdout)["skipped"])
 
 
+APPENDIX_FILE = "050-appendix.md"
+APPENDIX_SETTING = "  appendix: manuscript/050-appendix.md\n"
+
+
+def add_appendix(paper, text_line, with_setting):
+    (paper / "manuscript" / APPENDIX_FILE).write_text(
+        "# Appendix: The Rain Gauge\n\n" + text_line + "\n\n"
+        "![The rain gauge by the north bed](images/gauge.png)\n", encoding="utf-8")
+    if with_setting:
+        append_to(paper / "book.yaml", APPENDIX_SETTING)
+
+
+class PaperAppendixTest(unittest.TestCase):
+    def run_with_appendix(self, text_line, with_setting):
+        with CopyOfBook(SAMPLE_PAPER) as paper:
+            add_appendix(paper, text_line, with_setting)
+            return run_script(SCRIPT, book=paper)
+
+    def test_shouldAcceptAnAppendixFigureWhenTheTextPointsToItsAppendixNumber(self):
+        # when
+        run = self.run_with_appendix("Figure A1 shows the gauge.", with_setting=True)
+
+        # then
+        self.assertEqual(run.keys_of("figure-not-referenced"), [], run.stdout + run.stderr)
+
+    def test_shouldNameTheAppendixNumberWhenNoSentencePointsToTheAppendixFigure(self):
+        # when
+        run = self.run_with_appendix("The gauge stood by the north bed.", with_setting=True)
+
+        # then
+        place = f"{APPENDIX_FILE}:5"
+        self.assertEqual(run.keys_of("figure-not-referenced"), [place])
+        self.assertIn("Figure A1 is never", run.message_of(place, "figure-not-referenced"))
+
+    def test_shouldNumberTheFigureOnWhenThePaperNamesNoAppendix(self):
+        # when
+        run = self.run_with_appendix("Figure A1 shows the gauge.", with_setting=False)
+
+        # then
+        place = f"{APPENDIX_FILE}:5"
+        self.assertIn("Figure 3 is never", run.message_of(place, "figure-not-referenced"))
+
+
 def replace_in(path, old, new):
     text = path.read_text(encoding="utf-8")
     if old not in text:

@@ -1028,7 +1028,7 @@ Round to the precision the measurement supports, and use the same unit across th
 
 The text names each figure and table by its number ("Figure 2 shows ...") or by its label
 (`@fig:beds`), before or near where it appears, and says what the reader should see in it. A
-figure no sentence points to is either not needed or not explained.
+figure no sentence points to is either not needed or not explained. A figure in the appendix (from the file `paper.appendix` names) is "Figure A1", and the text points to it by that number.
 
 **13.8. For a study planned in advance, say what was fixed before the data, where it was recorded, and what changed after seeing data.**
 

@@ -15,7 +15,8 @@ Runs only on a paper (`kind: paper` in book.yaml); a book says SKIPPED. Four che
                      "Validity Threats" or "Limitations")
 
 Figures and tables are numbered in the order they appear across the paper, as the LaTeX
-article class numbers them. The words this check looks for are English, so a paper whose
+article class numbers them. From the file `paper.appendix` names on, they are numbered A1,
+A2, ... as the paper build prints them, and the text points to them as "Figure A1". The words this check looks for are English, so a paper whose
 book.language is not English says SKIPPED.
 
 Findings (exit codes and output shape: lib/check_contract.md):
@@ -67,10 +68,12 @@ FIGURE_LINE = re.compile(r"^\s*!\[(?P<caption>[^\]]+)\]\([^)]*\)(?P<attributes>\
 TABLE_ROW = re.compile(r"^\s*(?:\||\+[-=+])")
 TABLE_CAPTION = re.compile(r"^\s*(?:Table)?:\s+\S")
 LABEL = re.compile(r"#([\w:.-]+)")
-NUMBER_LIST = r"(\d+(?:\s*(?:,|and|or|to|-{1,2})\s*\d+)*)"
+NUMBER_LIST = r"(A?\d+(?:\s*(?:,|and|or|to|-{1,2})\s*A?\d+)*)"
 FIGURE_MENTION = re.compile(r"\b(?:Figures?|Figs?\.)\s+" + NUMBER_LIST, re.IGNORECASE)
 TABLE_MENTION = re.compile(r"\b(?:Tables?|Tabs?\.)\s+" + NUMBER_LIST, re.IGNORECASE)
-RANGE = re.compile(r"(\d+)\s*(?:to|-{1,2})\s*(\d+)")
+RANGE = re.compile(r"(A?)(\d+)\s*(?:to|-{1,2})\s*A?(\d+)")
+PRINTED_NUMBER = re.compile(r"(A?)(\d+)")
+APPENDIX_PREFIX = "A"
 MIN_CONTRIBUTIONS = 2
 
 
@@ -91,7 +94,7 @@ class Section:
 @dataclass
 class Display:
     kind: str
-    number: int
+    number: str
     label: str
     place: str
     line_index: int
@@ -161,12 +164,12 @@ def label_of(attributes):
     return found.group(1) if found else None
 
 
-def figures_in(section, first_number):
+def figures_in(section, prefix, first_number):
     found = []
     for index, line in enumerate(section.lines):
         match = FIGURE_LINE.match(line)
         if match and stands_alone(section.lines, index):
-            found.append(Display("figure", first_number + len(found),
+            found.append(Display("figure", f"{prefix}{first_number + len(found)}",
                                  label_of(match.group("attributes")),
                                  f"{section.name}:{index + 1}", index, section))
     return found
@@ -204,33 +207,45 @@ def caption_line_of(lines, first, last):
     return None
 
 
-def tables_in(section, first_number):
+def tables_in(section, prefix, first_number):
     found = []
     for first, last in table_blocks(section.lines):
         caption = caption_line_of(section.lines, first, last)
         if caption is None:
             continue
-        found.append(Display("table", first_number + len(found),
+        found.append(Display("table", f"{prefix}{first_number + len(found)}",
                              label_of(section.lines[caption]),
                              f"{section.name}:{first + 1}", caption, section))
     return found
 
 
-def displays_of(sections):
+def displays_of(sections, appendix):
     figures, tables = [], []
+    in_appendix = False
     for section in sections:
-        figures += figures_in(section, len(figures) + 1)
-        tables += tables_in(section, len(tables) + 1)
+        in_appendix = in_appendix or is_same_file(section.path, appendix)
+        prefix = APPENDIX_PREFIX if in_appendix else ""
+        figures += figures_in(section, prefix, count_with_prefix(figures, prefix) + 1)
+        tables += tables_in(section, prefix, count_with_prefix(tables, prefix) + 1)
     return figures, tables
+
+
+def is_same_file(path, other):
+    return other is not None and Path(path).resolve() == Path(other).resolve()
+
+
+def count_with_prefix(displays, prefix):
+    return sum(1 for display in displays if display.number.startswith(prefix)
+               and display.number[len(prefix):].isdigit())
 
 
 def mentioned_numbers(text, pattern):
     numbers = set()
     for found in pattern.finditer(text):
         listed = found.group(1)
-        for start, end in RANGE.findall(listed):
-            numbers.update(range(int(start), int(end) + 1))
-        numbers.update(int(number) for number in re.findall(r"\d+", listed))
+        for prefix, start, end in RANGE.findall(listed):
+            numbers.update(f"{prefix}{number}" for number in range(int(start), int(end) + 1))
+        numbers.update(prefix + number for prefix, number in PRINTED_NUMBER.findall(listed))
     return numbers
 
 
@@ -248,8 +263,8 @@ def label_is_used(label, text):
     return pointer.search(text) is not None
 
 
-def check_displays(report, sections):
-    figures, tables = displays_of(sections)
+def check_displays(report, sections, appendix):
+    figures, tables = displays_of(sections, appendix)
     text = running_text(sections, figures + tables)
     for displays, pattern in ((figures, FIGURE_MENTION), (tables, TABLE_MENTION)):
         numbers = mentioned_numbers(text, pattern)
@@ -288,7 +303,7 @@ def main(argv=None):
             if config.classify(section.path)[0] == KIND_CHAPTER]
     check_abstract(report, config)
     check_contributions(report, body)
-    check_displays(report, sections)
+    check_displays(report, sections, config.paper.appendix)
     check_threats(report, body)
     return report.emit(arguments.format)
 

@@ -317,7 +317,7 @@ show_settings() {
     printf 'MANUSCRIPT_FILES=%s\n' "$(tr '\n' ' ' <<< "$MANUSCRIPT_FILES" | sed 's/ $//')"
     if is_paper; then
         for name in BOOK_KIND PAPER_TEMPLATE TEMPLATE_FILE PAPER_ENGINE PAPER_FORMAT PAPER_ANONYMOUS \
-                    PAPER_ABSTRACT PAPER_ARXIV_CATEGORY PAPER_TEX_IMAGE BUILD_ARXIV; do
+                    PAPER_ABSTRACT PAPER_APPENDIX PAPER_ARXIV_CATEGORY PAPER_TEX_IMAGE BUILD_ARXIV; do
             printf '%s=%s\n' "$name" "${!name}"
         done
     fi

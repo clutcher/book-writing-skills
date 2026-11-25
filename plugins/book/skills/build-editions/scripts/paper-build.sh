@@ -130,12 +130,35 @@ run_latex_in_container() {
         "$(paper_latexmk_option)" -interaction=nonstopmode -halt-on-error -file-line-error "$tex_name"
 }
 
+write_appendix_start() {
+    cat > "$SETTINGS_DIR/appendix-start.md" <<'APPENDIX'
+```{=latex}
+\appendix
+\setcounter{figure}{0}
+\setcounter{table}{0}
+\renewcommand{\thefigure}{A\arabic{figure}}
+\renewcommand{\thetable}{A\arabic{table}}
+```
+APPENDIX
+}
+
 write_paper_tex() {
-    local tex_in_container="$1" body_paths=() path
+    local tex_in_container="$1" body_paths=() path appendix_path="" appendix_found=false
+    [[ -n "${PAPER_APPENDIX:-}" ]] && appendix_path="/data/$(relative_to_root "$PAPER_APPENDIX")"
     while IFS= read -r path; do
-        [[ -n "$path" ]] && body_paths+=("$path")
+        [[ -n "$path" ]] || continue
+        if [[ -n "$appendix_path" && "$path" == "$appendix_path" ]]; then
+            write_appendix_start
+            body_paths+=("/settings/appendix-start.md")
+            appendix_found=true
+        fi
+        body_paths+=("$path")
     done < <(paper_body_paths)
     [[ ${#body_paths[@]} -gt 0 ]] || { echo "Error: the paper has no section files besides the abstract"; exit 1; }
+    if [[ -n "$appendix_path" && "$appendix_found" != true ]]; then
+        echo "Error: paper.appendix names no section file of the paper: $(relative_to_root "$PAPER_APPENDIX")"
+        exit 1
+    fi
 
     PANDOC_ARGS=(
         --from=markdown+autolink_bare_uris+raw_tex
@@ -203,6 +226,7 @@ build_paper() {
     echo "  Paper size: $PAPER_FORMAT"
     echo "  Authors: $authors_line"
     echo "  Abstract: $(relative_to_root "$PAPER_ABSTRACT")"
+    [[ -n "${PAPER_APPENDIX:-}" ]] && echo "  Appendix from: $(relative_to_root "$PAPER_APPENDIX") (figures and tables A1, A2, ...)"
     [[ -n "$PAPER_ARXIV_CATEGORY" ]] && echo "  arXiv category: $PAPER_ARXIV_CATEGORY"
     echo "  Template: $TEMPLATE_FILE"
     echo "  TeX Live image: $PAPER_TEX_IMAGE"

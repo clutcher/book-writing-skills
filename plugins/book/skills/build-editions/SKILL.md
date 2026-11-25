@@ -137,7 +137,7 @@ Before a release, `placeholder-check.py` (run by run-checks `text`) lists every 
 ## The paper edition
 
 When `book.yaml` says `kind: paper`, the default edition and `all` build `paper`; `print`,
-`digital` and `epub` are refused with a message, because a paper has none of them.
+`digital` and `epub` are refused with a message, because a paper has none of them. `paper.appendix` names the first appendix file: the build starts the LaTeX appendix there, and figures and tables from it on are numbered A1, A2, ..., as `paper-check.py` expects.
 
 | Flag | Output |
 |------|--------|
