@@ -3,6 +3,10 @@
 The plugin is in early 0.x versions: names, modes and config keys may still change between
 versions. A change that needs work in an existing book is named here.
 
+## Unreleased
+
+- run-checks says how to check a whole draft kept outside the manuscript folder (`--set manuscript.dir=<folder>`): a path given after `text` reaches only the path checks, while the whole-book checks read `manuscript.dir`.
+
 ## 0.8.0
 
 Checks that follow the book's own choices: names per the voice profile, terms defined in more than one place, drafts outside the manuscript.

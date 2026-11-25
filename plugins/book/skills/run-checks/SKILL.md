@@ -33,7 +33,7 @@ SKIPPED with that reason; the other groups read its sections as chapters.
 
 Options:
 
-- `PATH...` (text): the path checks read only these files or folders.
+- `PATH...` (text): the path checks read only these files or folders. The whole-book checks (`book` in `references/checks.md`: the glossary, person introductions, coined terms, the paper check) still read `manuscript.dir`. To check a whole draft kept in another folder, point every check at it: `--set manuscript.dir=<folder>`.
 - `--only-changed` (text): the path checks read only the files changed since the last run of
   the same mode. There is no `--resume`: a run takes seconds to minutes, so a stopped run is
   simply run again.
