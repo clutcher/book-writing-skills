@@ -99,6 +99,7 @@ The rules in `references/rules-explained.md` say *what* good prose does, and Sec
 
 ## Settings
 
+person_first_mention: surname_with_citation
 sentence_min_words: 10
 sentence_max_words: 25
 sentence_review_below: 6

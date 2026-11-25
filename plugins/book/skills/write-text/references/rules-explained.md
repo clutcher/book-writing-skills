@@ -191,7 +191,7 @@ When citing an expert, establish who they are and why their opinion matters befo
 
 **Do not re-state credentials.** The name may come back, but the introduction (who they are, why their opinion matters) does not. Once a person is introduced in their home chapter, later mentions name them without restating their bio. For example, an early chapter introduces an expert (say, Alex Doe) with the contribution that earns their authority on the topic at hand; a later chapter simply writes "Doe argued that ..." (or "Alex Doe argued that ..." when the voice asks for full names) with no repeated bio.
 
-**Detection:** `scripts/person-introduction-check.py` flags a first mention without the full name or without an introduction, and credential re-introductions. The `--bare-mentions` worklist lists every bare surname with the distance since the last mention, for a book whose voice profile asks for full names on later mentions or after long gaps (full names derived from the prose, eponyms skipped).
+**Detection:** `scripts/person-introduction-check.py` flags a first mention without the full name or without an introduction, and credential re-introductions. The voice profile's `person_first_mention` setting says what a first mention needs: `full_name` (the default profile) or `surname_with_citation` (the paper profile, where the surname with a citation of the person's work on the same line names and introduces them). The `--bare-mentions` worklist lists every bare surname with the distance since the last mention, for a book whose voice profile asks for full names on later mentions or after long gaps (full names derived from the prose, eponyms skipped).
 
 **2.8. Develop with reasoning that explains examples.**
 

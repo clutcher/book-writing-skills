@@ -142,6 +142,7 @@ SHARED_DEFAULTS = {
         "paragraph_length_exempt": [],
         "term_phases": None,
         "words_per_page": None,
+        "person_first_mention": None,
         "internal_key_patterns": [],
         "internal_key_allow": [],
     },

@@ -12,6 +12,12 @@ Findings:
     RE_INTRODUCTION   credentials repeated after the first mention, as a bio or as an
                       appositive ("X, whose *Book* argues ...", "X, known for ...")
 
+How a first mention must name the person comes from the voice profile, setting
+`person_first_mention` (or `writing.person_first_mention` in the book config):
+    full_name              the full name at first mention (the default profile)
+    surname_with_citation  the surname is enough when the same line cites the person's work,
+                           and the citation stands for the introduction (the paper profile)
+
 The default (full name at first mention, the surname alone after it) needs only the main
 check. --bare-mentions is a worklist for a book whose voice profile asks for the full name on
 later mentions or after long gaps: it lists every bare-surname mention, first and later. Full names are taken from the prose itself and checked against the initials in the .bib file.
@@ -46,6 +52,11 @@ from check_output import run_main
 from bibliography import plain_text, read_identities
 from citations import CITATION
 from terminal_colors import BOLD, CYAN, GREEN, NC, RED, YELLOW
+from voice_profile import load_voice_profile
+
+FIRST_MENTION_FULL_NAME = "full_name"
+FIRST_MENTION_SURNAME_WITH_CITATION = "surname_with_citation"
+FIRST_MENTION_CHOICES = (FIRST_MENTION_FULL_NAME, FIRST_MENTION_SURNAME_WITH_CITATION)
 
 SKIPPED_KINDS = {'front-matter', 'references', 'back-matter'}
 
@@ -119,6 +130,7 @@ class Mention:
     has_introduction: bool
     has_credentials_bio: bool
     has_appositive_credential: bool = False
+    cites_person: bool = False
     context_before: str = ""
     context_after: str = ""
 
@@ -219,6 +231,21 @@ def is_citation_only(line: str, match_start: int, match_end: int) -> bool:
                for found in CITATION.finditer(line))
 
 
+def cites_any(line: str, citation_keys: List[str]) -> bool:
+    return any((found.group("braced") or found.group("bare")) in citation_keys
+               for found in CITATION.finditer(line))
+
+
+def is_named_enough(first: Mention, first_mention: str) -> bool:
+    return first.uses_full_name or (first_mention == FIRST_MENTION_SURNAME_WITH_CITATION
+                                    and first.cites_person)
+
+
+def is_introduced(first: Mention, first_mention: str) -> bool:
+    return first.has_introduction or (first_mention == FIRST_MENTION_SURNAME_WITH_CITATION
+                                      and first.cites_person)
+
+
 def is_possessive_citation(line: str, surname: str) -> bool:
     return bool(re.search(rf"{re.escape(surname)}'s\s+\[", line))
 
@@ -307,6 +334,7 @@ def find_mentions(chapter_path: str, persons: Dict[str, Person]) -> List[Tuple[s
                         has_introduction=has_intro,
                         has_credentials_bio=has_cred,
                         has_appositive_credential=has_appositive,
+                        cites_person=cites_any(line, person.citation_keys),
                         context_before='\n'.join(context_before),
                         context_after='\n'.join(context_after),
                     )
@@ -322,7 +350,8 @@ def chapter_sort_key(chapter_name: str) -> int:
     return 999
 
 
-def analyze(manuscript_dir: str, bibliography_path: str, verbose: bool = False) -> List[Issue]:
+def analyze(manuscript_dir: str, bibliography_path: str, first_mention: str,
+            verbose: bool = False) -> List[Issue]:
     persons = read_persons(bibliography_path)
     if not persons:
         print(f"{RED}No persons found among the authors in the .bib file.{NC}")
@@ -394,7 +423,8 @@ def analyze(manuscript_dir: str, bibliography_path: str, verbose: bool = False) 
     properly_introduced = []
     for surname, mentions in sorted_persons:
         first = mentions[0]
-        if first.uses_full_name and first.has_introduction and not first.has_credentials_bio:
+        if (is_named_enough(first, first_mention) and is_introduced(first, first_mention)
+                and not first.has_credentials_bio):
             display_name = surname
             for alias in persons[surname].aliases:
                 if ' ' in alias:
@@ -423,17 +453,19 @@ def analyze(manuscript_dir: str, bibliography_path: str, verbose: bool = False) 
                 display_name = alias
                 break
 
-        if not first.uses_full_name:
+        if not is_named_enough(first, first_mention):
             issues.append(Issue(
                 person=display_name,
                 issue_type='BARE_SURNAME',
                 chapter=first.chapter,
                 line_num=first.line_num,
-                detail=f'First mention uses bare surname "{first.match_text}" without full name',
+                detail=(f'First mention uses bare surname "{first.match_text}" without full name'
+                        + (' or a citation of their work'
+                           if first_mention == FIRST_MENTION_SURNAME_WITH_CITATION else '')),
                 context=first.line_content,
             ))
 
-        if not first.has_introduction:
+        if not is_introduced(first, first_mention):
             issues.append(Issue(
                 person=display_name,
                 issue_type='NO_CONTEXT',
@@ -810,7 +842,12 @@ def run(argv) -> int:
             return tool_failed('no persons found among the authors in the .bib file',
                                'person-introduction-check')
         return 1 if report_bare_mentions(manuscript_dir, persons) else 0
-    issues = analyze(manuscript_dir, bibliography_path, options.verbose)
+    first_mention = load_voice_profile(config).settings.get("person_first_mention",
+                                                             FIRST_MENTION_FULL_NAME)
+    if first_mention not in FIRST_MENTION_CHOICES:
+        return tool_failed(f"person_first_mention must be one of {', '.join(FIRST_MENTION_CHOICES)}, "
+                           f"got {first_mention!r}", 'person-introduction-check')
+    issues = analyze(manuscript_dir, bibliography_path, first_mention, options.verbose)
     return 1 if issues else 0
 
 

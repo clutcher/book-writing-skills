@@ -55,6 +55,7 @@ The rules in `references/rules-explained.md` say *what* good prose does. This fi
 
 ## Settings
 
+person_first_mention: full_name
 sentence_min_words: 10
 sentence_max_words: 25
 sentence_review_below: 6

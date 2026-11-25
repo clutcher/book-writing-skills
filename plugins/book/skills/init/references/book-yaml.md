@@ -236,6 +236,7 @@ writing:                               # null = the value in the voice profile
   paragraph_length_exempt: []          # [] = the built-in exemptions
   term_phases: null                    # e.g. "1-4:basics,5-10:practice,11-12:depth"
   words_per_page: null                 # 390 when null
+  person_first_mention: null           # full_name (book) or surname_with_citation (paper profile)
   internal_key_patterns: []            # more shapes of the book's own keys (regex), e.g. ['\bC\d+\b']
   internal_key_allow: []               # names in the field that look like keys, e.g. [K-12]
 
