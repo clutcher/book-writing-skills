@@ -147,6 +147,7 @@ a person's name (2.7), naming before evidence (1.3).
 5.6. Write for the whole audience the book names.
 5.7. Replace opaque phrasal verbs; keep the ones your reader reads without effort.
 5.8. Rephrase a possessive on a word that ends in s.
+5.9. Every term in the text, a table or a figure makes sense to a newcomer to the work: a working label becomes a phrase that explains itself.
 
 ### 6. Book architecture
 
@@ -216,14 +217,7 @@ a person's name (2.7), naming before evidence (1.3).
 
 ## A book or a paper
 
-`kind` in `book.yaml` says which. A book uses Sections 1-12; a paper (`kind: paper`) also uses
-Section 13, and its sections are what the rules call chapters. For a paper these are **off**:
-1.2 at the book and Part levels; 3.9 and 3.12-3.14, the learning path of coined terms (a paper
-defines each term once, before use: 2.4); 6.1, 6.5, 6.6, 6.8 (Parts, kinds of chapter); 7.1 (a
-paper says "we"); 8.2. These **change**: 2.15 and 11.4 hold within the whole paper; for 2.14
-the abstract and the conclusion open and sum up; 6.3 allows a pointer to a later section by
-number; for 5.1 and 5.6 the reader is a researcher new to this paper, and 5.2-5.5 still hold;
-8.3 allows the usual titles (Introduction, Method). `paper-check.py` runs only on a paper.
+`kind` in `book.yaml` says which. A book uses Sections 1-12; a paper (`kind: paper`) also uses Section 13, and its sections are what the rules call chapters. For a paper these are **off**: 1.2 at the book and Part levels; 3.9 and 3.12-3.14, the learning path of coined terms (a paper defines each term once, before use: 2.4); 6.1, 6.5, 6.6, 6.8 (Parts, kinds of chapter); 7.1 (a paper says "we"); 8.2. These **change**: 2.15 and 11.4 hold within the whole paper; for 2.14 the abstract and the conclusion open and sum up; 6.3 allows a pointer to a later section by number; for 5.1, 5.6 and 5.9 the reader is a researcher new to this paper, and 5.2-5.5 still hold; 8.3 allows the usual titles (Introduction, Method). `paper-check.py` runs only on a paper.
 
 ## The text checks
 

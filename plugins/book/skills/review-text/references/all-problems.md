@@ -231,6 +231,9 @@ Self-contained review covering all 15 issue categories that recur across close r
 - Missing *italic* on first use of a concept term (rule 9.5)
 - Abbreviation without expansion ("BMI" before spelling out "body mass index")
 - A short form of a defined term that the reader can confuse with a common technical sense
+- A working label of the author's (a nickname for a person, a recurring example, a measure or a test setup) that a newcomer to the work cannot read without the glossary or the author's files, even when the glossary lists it (rule 5.9); judge it as a reader of the field who has read only that page
+- The same in a table header, a row name, a value, a figure label or a legend, also when a script wrote it (rule 5.9)
+- Two things the text contrasts named by unrelated words ("M-beds" and "control") where paired phrases would show the one difference ("beds with mulch", "beds without mulch")
 
 **Examples:**
 - "BMI" used without ever connecting it to the full term

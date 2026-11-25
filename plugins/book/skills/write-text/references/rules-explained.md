@@ -592,6 +592,16 @@ Replacement is decided per site, never per word. Most of these verbs are polysem
 
 "Jones's design" and "the boss's name" read as "s's" and cost readers of English as a second language an extra parsing step. Rephrase with "of": "the design of Jones", "the name of the boss". Other possessives ("the reader's attention") are fine unless the voice profile says to avoid them too. The base Vale package flags only the s-ending form (`PlainBook.PossessiveSEnding`).
 
+**5.9. Every term in the text, a table or a figure makes sense to a newcomer to the work.**
+
+While a book is written, or a study is run, the author names things for speed: a nickname for a person whose case runs through three chapters ("the Tuesday client"), a short word for a recurring example ("the north bed"), an abbreviation for a measure or a test setup. Those names mean something only to the people who were there. A reader meets them cold, in the body, in a table header or on a figure axis, and must guess. The glossary does not save them: a nickname listed in the glossary is still a nickname, and a reader who skips the section that defines it cannot follow the rest.
+
+So each term a reader meets is a phrase that explains itself, defined once, where it is first needed. A working label becomes that phrase everywhere, not only at first use. Two things the text contrasts get paired phrases that differ only where the two differ: "beds with mulch" and "beds without mulch", not "M-beds" and "control". An abbreviation stays only when the field writes it that way and the reader of the named audience knows it without looking it up.
+
+The rule holds for every text the reader sees, also text a script writes: the headers, row names and values of a generated table, the labels and the legend of a figure. A table is often read before the paragraph that explains it.
+
+**Test:** read every term, header and label as a reader who knows the field and has read nothing of this work but the page in front of them. Could they say what it means? If they would need the glossary, a method section or the author's files, write the phrase instead. A book's deliberately coined terms (rules 3.9-3.14) pass this test when the text teaches them before use (rule 2.4); a label that was never meant for the reader does not.
+
 ---
 
 ### 6. Book Architecture (Fractal Structure)
