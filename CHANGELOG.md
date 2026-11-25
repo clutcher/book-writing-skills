@@ -3,7 +3,16 @@
 The plugin is in early 0.x versions: names, modes and config keys may still change between
 versions. A change that needs work in an existing book is named here.
 
-## Unreleased
+## 0.8.0
+
+Checks that follow the book's own choices: names per the voice profile, terms defined in more than one place, drafts outside the manuscript.
+
+### Changes that may need work in your book
+
+- A paper's person-introduction check now accepts a surname with a citation at first mention (the paper profile's `person_first_mention: surname_with_citation`); a book whose own voice wants the same sets that line under `## Settings` in its voice file.
+- A glossary heading may list several places separated by `;`; a heading that already holds a `;` in its location is now read as several places.
+
+### Changes
 
 - `person-introduction-check.py` reads the voice profile's new `person_first_mention` setting. The paper profile sets `surname_with_citation`, so in a paper a surname with a citation of the person's work is a full first mention, as the paper profile's "Names" section always said. The default profile keeps `full_name`. A paper whose own `rules/voice.md` lacks the setting takes it from the plugin's paper profile.
 - `glossary-check.py`: a glossary location may name several places, separated by `;` (`### root zone -- Ch4; Ch1`); the earliest one counts, so a short gloss at first use and the full definition later can both be recorded.
