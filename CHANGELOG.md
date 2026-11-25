@@ -6,6 +6,8 @@ versions. A change that needs work in an existing book is named here.
 ## Unreleased
 
 - `person-introduction-check.py` reads the voice profile's new `person_first_mention` setting. The paper profile sets `surname_with_citation`, so in a paper a surname with a citation of the person's work is a full first mention, as the paper profile's "Names" section always said. The default profile keeps `full_name`. A paper whose own `rules/voice.md` lacks the setting takes it from the plugin's paper profile.
+- `glossary-check.py`: a glossary location may name several places, separated by `;` (`### root zone -- Ch4; Ch1`); the earliest one counts, so a short gloss at first use and the full definition later can both be recorded.
+- `code-font-check.py` no longer reads the prose after a raw LaTeX block (```` ```{=latex} ````) as code.
 - `placeholder-check.py` takes files or folders, like `internal-key-check.py`, so it can check a draft kept outside the manuscript folder; `run-checks text PATH` passes the path on.
 
 ## 0.7.0
