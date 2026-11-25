@@ -3,6 +3,32 @@
 The plugin is in early 0.x versions: names, modes and config keys may still change between
 versions. A change that needs work in an existing book is named here.
 
+## 0.7.0
+
+Text a newcomer can read: no private labels or internal keys, citations only for what is held, no placeholder left at release.
+
+### Changes that may need work in your book
+
+- `run-checks text` runs two new checks, and both can report findings in a book that passed before. `internal-key-check.py` (write-text) lists every token shaped like an internal key (a decision id such as `D-12`, a review finding id such as `L3-2`) outside code, quotes, citations and links. Rewrite each one as the idea it stands for (rule 5.10). `writing.internal_key_patterns` adds the book's own key shapes, and `writing.internal_key_allow` lists names in the field that only look like keys (`K-12`).
+- `placeholder-check.py` (build-editions) lists every line that still holds `book.placeholder_text` (`TO BE ASSIGNED` by default) or one of the new `book.other_placeholders` (such as a `TODO:` left for later). A new book's copyright page holds placeholders until the ISBN and the date are known, so its text run now shows `FIND` until they are filled in. The build itself still never stops for a placeholder.
+- `cited-source-check.py`: a source the manuscript cites with no library copy is now `cited-without-copy` (advisory), even when `needed.txt` asks for it, so `run-checks facts` shows `FIND` until the copy is in the library. A source that only the thinking files cite stays `waits-in-needed` (informational).
+- Every Markdown file the plugin writes into a book keeps each paragraph on one line (rule 9.10). The starter files and templates were rewritten that way; a book's own files are not changed.
+
+### New rules
+
+- write-text 5.9: every term in the text, a table or a figure makes sense to a newcomer to the work. A working label ("the Tuesday client", "the north bed") becomes a phrase that explains itself, and two things the text contrasts get paired phrases ("with mulch", "without mulch"). This holds for text a script writes too. review-text lists such labels among its term problems, and the readers review (lens 7) lists every word only the author knows.
+- write-text 5.10: no internal key in the text or in a draft shown to the author (`presenting-changes.md`, item 5).
+- write-text 2.9: cite a work for the idea, finding or words the sentence takes from it, never as a credential, and only a work the book holds a copy of.
+- write-text 13.8, for a paper: a study planned in advance says what was fixed before the data (the plan, the materials such as tasks, code and prompts, and the data kept apart for the final test), where it was recorded, and what changed after seeing data. Data kept apart that was looked at or used twice is no longer called kept apart, and a planned confirmatory round whose plan did not hold is called a pilot. The readers review asks the same for a paper (lens 2); a book never meets these questions.
+
+### Fixes
+
+- collect-sources: `fetch.py --file` caches a local `.txt` or `.md` file as text; it used to refuse it with "unsupported content type ''".
+
+### Maintainers
+
+- `tools/paragraph-lines-check.py` (step 8 of `tools/check-plugin.py`) checks that every Markdown file the plugin copies into a book keeps each paragraph on one line; `--fix` joins broken ones.
+
 ## 0.6.0
 
 Real BibTeX citations, for books and papers.
